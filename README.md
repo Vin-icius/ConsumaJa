@@ -4,7 +4,7 @@
 <img src="screenshot2.png" alt="Tela de Produtos" width="400"/>  
 
 ## 📖 Sobre o Projeto  
-**ExpireSoon** é um aplicativo mobile desenvolvido em **React Native**, que conecta empresas e consumidores para vender produtos próximos do vencimento, evitando desperdícios e permitindo economia.  
+**Consuma** é um aplicativo mobile desenvolvido em **React Native**, que conecta empresas e consumidores para vender produtos próximos do vencimento, evitando desperdícios e permitindo economia.  
 
 🚀 Com **ExpireSoon**, empresas anunciam seus produtos, e consumidores podem buscar ofertas com filtros personalizados.  
 
