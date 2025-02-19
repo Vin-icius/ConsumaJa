@@ -1,4 +1,4 @@
-# 🛒 ExpireSoon - Marketplace de Produtos Próximos à Validade  
+# 🛒 Consuma - Marketplace de Produtos Próximos à Validade  
 
 <img src="screenshot1.png" alt="Tela Inicial do App" width="400"/>  
 <img src="screenshot2.png" alt="Tela de Produtos" width="400"/>  
