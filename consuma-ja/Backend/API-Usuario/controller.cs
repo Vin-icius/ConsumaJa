@@ -37,7 +37,7 @@ namespace API_Usuario
 
         private string GenerateJwtToken(string email)
         {
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("sua_chave_secreta_aqui")); // 🔒 Chave secreta forte
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("ote/N8TXlNon97lpT0/q8Scj+9JipCXYIE1v90i2tqQ=")); // 🔒 Chave secreta forte
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var claims = new[]
