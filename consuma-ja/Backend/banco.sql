@@ -8,19 +8,19 @@ SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
 
 -- -----------------------------------------------------
--- Schema mydb
+-- Schema ConsumaJaDB
 -- -----------------------------------------------------
 
 -- -----------------------------------------------------
--- Schema mydb
+-- Schema ConsumaJaDB
 -- -----------------------------------------------------
-CREATE SCHEMA IF NOT EXISTS `mydb` DEFAULT CHARACTER SET utf8 ;
-USE `mydb` ;
+CREATE SCHEMA IF NOT EXISTS `ConsumaJaDB` DEFAULT CHARACTER SET utf8 ;
+USE `ConsumaJaDB` ;
 
 -- -----------------------------------------------------
--- Table `mydb`.`USER`
+-- Table `ConsumaJaDB`.`USER`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`USER` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`USER` (
   `user_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_nome` VARCHAR(255) NOT NULL,
   `user_email` VARCHAR(255) NOT NULL,
@@ -36,9 +36,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`CLIENTE`
+-- Table `ConsumaJaDB`.`CLIENTE`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`CLIENTE` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`CLIENTE` (
   `user_id` INT UNSIGNED NOT NULL,
   `user_cpf` VARCHAR(14) NOT NULL,
   `user_documentoValidado` TINYINT NOT NULL DEFAULT 0,
@@ -49,16 +49,16 @@ CREATE TABLE IF NOT EXISTS `mydb`.`CLIENTE` (
   UNIQUE INDEX `user_cpf_UNIQUE` (`user_cpf` ASC),
   CONSTRAINT `user_id`
     FOREIGN KEY (`user_id`)
-    REFERENCES `mydb`.`user` (`user_id`)
+    REFERENCES `ConsumaJaDB`.`user` (`user_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`ESTADO`
+-- Table `ConsumaJaDB`.`ESTADO`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`ESTADO` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`ESTADO` (
   `estado_id` INT NOT NULL,
   `estado_nome` VARCHAR(45) NOT NULL,
   `estado_sigla` VARCHAR(3) NOT NULL,
@@ -67,9 +67,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`CIDADE`
+-- Table `ConsumaJaDB`.`CIDADE`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`CIDADE` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`CIDADE` (
   `cidade_id` INT NOT NULL,
   `cidade_nome` VARCHAR(45) NULL,
   `Estado_estado_id` INT NOT NULL,
@@ -77,16 +77,16 @@ CREATE TABLE IF NOT EXISTS `mydb`.`CIDADE` (
   INDEX `fk_Cidade_Estado1_idx` (`Estado_estado_id` ASC),
   CONSTRAINT `fk_Cidade_Estado1`
     FOREIGN KEY (`Estado_estado_id`)
-    REFERENCES `mydb`.`ESTADO` (`estado_id`)
+    REFERENCES `ConsumaJaDB`.`ESTADO` (`estado_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`FORNECEDOR`
+-- Table `ConsumaJaDB`.`FORNECEDOR`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`FORNECEDOR` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`FORNECEDOR` (
   `user_id1` INT UNSIGNED NOT NULL,
   `cnpj` VARCHAR(18) NOT NULL,
   `fornecedor_id` INT UNSIGNED NOT NULL,
@@ -101,21 +101,21 @@ CREATE TABLE IF NOT EXISTS `mydb`.`FORNECEDOR` (
   INDEX `fk_UNIDADE_Cidade1_idx` (`Cidade_cidade_id` ASC),
   CONSTRAINT `fk_user_JURIDICA_user2`
     FOREIGN KEY (`user_id1`)
-    REFERENCES `mydb`.`user` (`user_id`)
+    REFERENCES `ConsumaJaDB`.`user` (`user_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_UNIDADE_Cidade1`
     FOREIGN KEY (`Cidade_cidade_id`)
-    REFERENCES `mydb`.`CIDADE` (`cidade_id`)
+    REFERENCES `ConsumaJaDB`.`CIDADE` (`cidade_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`TIPO_PRODUTO`
+-- Table `ConsumaJaDB`.`TIPO_PRODUTO`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`TIPO_PRODUTO` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`TIPO_PRODUTO` (
   `tipo_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `tipo_nome` VARCHAR(255) NOT NULL,
   PRIMARY KEY (`tipo_id`),
@@ -125,9 +125,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`CATEGORIA_PRODUTO`
+-- Table `ConsumaJaDB`.`CATEGORIA_PRODUTO`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`CATEGORIA_PRODUTO` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`CATEGORIA_PRODUTO` (
   `categoria_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `categoria_nome` VARCHAR(255) NOT NULL,
   PRIMARY KEY (`categoria_id`),
@@ -137,9 +137,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`MARCA_PRODUTO`
+-- Table `ConsumaJaDB`.`MARCA_PRODUTO`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`MARCA_PRODUTO` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`MARCA_PRODUTO` (
   `marca_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `marca_nome` VARCHAR(255) NOT NULL,
   PRIMARY KEY (`marca_id`),
@@ -149,9 +149,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`PRODUTO`
+-- Table `ConsumaJaDB`.`PRODUTO`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`PRODUTO` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`PRODUTO` (
   `produto_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `MARCA_PRODUTO_marca_id` INT UNSIGNED NOT NULL,
   `TIPO_PRODUTO_tipo_id` INT UNSIGNED NOT NULL,
@@ -167,42 +167,42 @@ CREATE TABLE IF NOT EXISTS `mydb`.`PRODUTO` (
   INDEX `fk_PRODUTO_CATEGORIA_PRODUTO1_idx` (`CATEGORIA_PRODUTO_categoria_id` ASC),
   CONSTRAINT `fk_PRODUTO_MARCA_PRODUTO1`
     FOREIGN KEY (`MARCA_PRODUTO_marca_id`)
-    REFERENCES `mydb`.`MARCA_PRODUTO` (`marca_id`)
+    REFERENCES `ConsumaJaDB`.`MARCA_PRODUTO` (`marca_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_PRODUTO_TIPO_PRODUTO1`
     FOREIGN KEY (`TIPO_PRODUTO_tipo_id`)
-    REFERENCES `mydb`.`TIPO_PRODUTO` (`tipo_id`)
+    REFERENCES `ConsumaJaDB`.`TIPO_PRODUTO` (`tipo_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_PRODUTO_CATEGORIA_PRODUTO1`
     FOREIGN KEY (`CATEGORIA_PRODUTO_categoria_id`)
-    REFERENCES `mydb`.`CATEGORIA_PRODUTO` (`categoria_id`)
+    REFERENCES `ConsumaJaDB`.`CATEGORIA_PRODUTO` (`categoria_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`PROMOCAO`
+-- Table `ConsumaJaDB`.`PROMOCAO`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`PROMOCAO` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`PROMOCAO` (
   `promocao_id` INT NOT NULL,
   `fornecedor_cnpj` VARCHAR(18) NOT NULL,
   PRIMARY KEY (`promocao_id`),
   INDEX `fk_PROMOCAO_FORNECEDOR1_idx` (`fornecedor_cnpj` ASC),
   CONSTRAINT `fk_PROMOCAO_FORNECEDOR1`
     FOREIGN KEY (`fornecedor_cnpj`)
-    REFERENCES `mydb`.`FORNECEDOR` (`cnpj`)
+    REFERENCES `ConsumaJaDB`.`FORNECEDOR` (`cnpj`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`LOTEPROD`
+-- Table `ConsumaJaDB`.`LOTEPROD`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`LOTEPROD` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`LOTEPROD` (
   `lote_id` INT NOT NULL,
   `produto_id` INT UNSIGNED NOT NULL,
   `lote_validade` DATE NOT NULL,
@@ -210,16 +210,16 @@ CREATE TABLE IF NOT EXISTS `mydb`.`LOTEPROD` (
   INDEX `fk_LoteProd_PRODUTO1_idx` (`produto_id` ASC),
   CONSTRAINT `fk_LoteProd_PRODUTO1`
     FOREIGN KEY (`produto_id`)
-    REFERENCES `mydb`.`PRODUTO` (`produto_id`)
+    REFERENCES `ConsumaJaDB`.`PRODUTO` (`produto_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`ITEM_VENDA`
+-- Table `ConsumaJaDB`.`ITEM_VENDA`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`ITEM_VENDA` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`ITEM_VENDA` (
   `itemVenda_qtde` INT NOT NULL,
   `itemVenda_preco` DECIMAL(10,2) NOT NULL,
   `LOTEPROD_lote_id` INT NOT NULL,
@@ -228,16 +228,16 @@ CREATE TABLE IF NOT EXISTS `mydb`.`ITEM_VENDA` (
   INDEX `fk_ITEM_VENDA_LOTEPROD1_idx` (`LOTEPROD_lote_id` ASC, `LOTEPROD_produto_id` ASC),
   CONSTRAINT `fk_ITEM_VENDA_LOTEPROD1`
     FOREIGN KEY (`LOTEPROD_lote_id` , `LOTEPROD_produto_id`)
-    REFERENCES `mydb`.`LOTEPROD` (`lote_id` , `produto_id`)
+    REFERENCES `ConsumaJaDB`.`LOTEPROD` (`lote_id` , `produto_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`VENDA`
+-- Table `ConsumaJaDB`.`VENDA`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`VENDA` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`VENDA` (
   `venda_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `venda_data` DATE NOT NULL,
   `venda_total` DECIMAL(10,2) NOT NULL,
@@ -254,26 +254,26 @@ CREATE TABLE IF NOT EXISTS `mydb`.`VENDA` (
   INDEX `fk_VENDA_ITEM_VENDA1_idx` (`ITEM_VENDA_itemVenda_id` ASC, `ITEM_VENDA_LOTEPROD_lote_id` ASC, `ITEM_VENDA_LOTEPROD_produto_id` ASC),
   CONSTRAINT `cliente_id`
     FOREIGN KEY (`cliente_id`)
-    REFERENCES `mydb`.`CLIENTE` (`user_id`)
+    REFERENCES `ConsumaJaDB`.`CLIENTE` (`user_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_VENDA_PROMOCAO1`
     FOREIGN KEY (`PROMOCAO_promocao_id`)
-    REFERENCES `mydb`.`PROMOCAO` (`promocao_id`)
+    REFERENCES `ConsumaJaDB`.`PROMOCAO` (`promocao_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_VENDA_ITEM_VENDA1`
     FOREIGN KEY (`ITEM_VENDA_LOTEPROD_lote_id` , `ITEM_VENDA_LOTEPROD_produto_id`)
-    REFERENCES `mydb`.`ITEM_VENDA` (`LOTEPROD_lote_id` , `LOTEPROD_produto_id`)
+    REFERENCES `ConsumaJaDB`.`ITEM_VENDA` (`LOTEPROD_lote_id` , `LOTEPROD_produto_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`DEVOLUCAO`
+-- Table `ConsumaJaDB`.`DEVOLUCAO`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`DEVOLUCAO` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`DEVOLUCAO` (
   `devolucao_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `devolucao_data` DATE NOT NULL,
   `devolucao_motivo` TEXT NOT NULL,
@@ -284,16 +284,16 @@ CREATE TABLE IF NOT EXISTS `mydb`.`DEVOLUCAO` (
   INDEX `venda_id_idx` (`venda_id` ASC),
   CONSTRAINT `venda_id`
     FOREIGN KEY (`venda_id`)
-    REFERENCES `mydb`.`VENDA` (`venda_id`)
+    REFERENCES `ConsumaJaDB`.`VENDA` (`venda_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`ITEM_DEVOLUCAO`
+-- Table `ConsumaJaDB`.`ITEM_DEVOLUCAO`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`ITEM_DEVOLUCAO` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`ITEM_DEVOLUCAO` (
   `devolucao_id` INT UNSIGNED NOT NULL,
   `item_venda_qtde` INT NOT NULL,
   `item_venda_preco` DECIMAL(10,2) NOT NULL,
@@ -304,21 +304,21 @@ CREATE TABLE IF NOT EXISTS `mydb`.`ITEM_DEVOLUCAO` (
   INDEX `fk_ITEM_DEVOLUCAO_LOTEPROD1_idx` (`LOTEPROD_lote_id` ASC, `LOTEPROD_produto_id` ASC),
   CONSTRAINT `fk_ITEM_DEVOLUCAO_DEVOLUCAO1`
     FOREIGN KEY (`devolucao_id`)
-    REFERENCES `mydb`.`DEVOLUCAO` (`devolucao_id`)
+    REFERENCES `ConsumaJaDB`.`DEVOLUCAO` (`devolucao_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_ITEM_DEVOLUCAO_LOTEPROD1`
     FOREIGN KEY (`LOTEPROD_lote_id` , `LOTEPROD_produto_id`)
-    REFERENCES `mydb`.`LOTEPROD` (`lote_id` , `produto_id`)
+    REFERENCES `ConsumaJaDB`.`LOTEPROD` (`lote_id` , `produto_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`ITEM_PROMOCAO`
+-- Table `ConsumaJaDB`.`ITEM_PROMOCAO`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`ITEM_PROMOCAO` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`ITEM_PROMOCAO` (
   `PROMOCAO_promocao_id` INT NOT NULL,
   `LOTEPROD_lote_id` INT NOT NULL,
   `LOTEPROD_produto_id` INT UNSIGNED NOT NULL,
@@ -329,21 +329,21 @@ CREATE TABLE IF NOT EXISTS `mydb`.`ITEM_PROMOCAO` (
   INDEX `fk_PROMOCAO_has_LOTEPROD_PROMOCAO1_idx` (`PROMOCAO_promocao_id` ASC),
   CONSTRAINT `fk_PROMOCAO_has_LOTEPROD_PROMOCAO1`
     FOREIGN KEY (`PROMOCAO_promocao_id`)
-    REFERENCES `mydb`.`PROMOCAO` (`promocao_id`)
+    REFERENCES `ConsumaJaDB`.`PROMOCAO` (`promocao_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_PROMOCAO_has_LOTEPROD_LOTEPROD1`
     FOREIGN KEY (`LOTEPROD_lote_id` , `LOTEPROD_produto_id`)
-    REFERENCES `mydb`.`LOTEPROD` (`lote_id` , `produto_id`)
+    REFERENCES `ConsumaJaDB`.`LOTEPROD` (`lote_id` , `produto_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`AVALIACAO`
+-- Table `ConsumaJaDB`.`AVALIACAO`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`AVALIACAO` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`AVALIACAO` (
   `avaliacao_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `avaliacao_descricao` TEXT NOT NULL,
   `avaliacao_classificacao` ENUM('1', '2', '3', '4', '5') NOT NULL,
@@ -355,21 +355,21 @@ CREATE TABLE IF NOT EXISTS `mydb`.`AVALIACAO` (
   INDEX `fk_AVALIACAO_CLIENTE1_idx` (`CLIENTE_user_id` ASC),
   CONSTRAINT `fk_AVALIACAO_PROMOCAO1`
     FOREIGN KEY (`PROMOCAO_promocao_id`)
-    REFERENCES `mydb`.`PROMOCAO` (`promocao_id`)
+    REFERENCES `ConsumaJaDB`.`PROMOCAO` (`promocao_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_AVALIACAO_CLIENTE1`
     FOREIGN KEY (`CLIENTE_user_id`)
-    REFERENCES `mydb`.`CLIENTE` (`user_id`)
+    REFERENCES `ConsumaJaDB`.`CLIENTE` (`user_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`PERGUNTAS`
+-- Table `ConsumaJaDB`.`PERGUNTAS`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`PERGUNTAS` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`PERGUNTAS` (
   `perguntas_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `perguntas_descricao` TEXT NOT NULL,
   PRIMARY KEY (`perguntas_id`),
@@ -378,9 +378,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`nota_avaliacao`
+-- Table `ConsumaJaDB`.`nota_avaliacao`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`nota_avaliacao` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`nota_avaliacao` (
   `AVALIACAO_avaliacao_id` INT UNSIGNED NOT NULL,
   `PERGUNTAS_perguntas_id` INT UNSIGNED NOT NULL,
   `avaliacao_nota` INT NULL,
@@ -389,12 +389,12 @@ CREATE TABLE IF NOT EXISTS `mydb`.`nota_avaliacao` (
   INDEX `fk_AVALIACAO_has_PERGUNTAS_AVALIACAO1_idx` (`AVALIACAO_avaliacao_id` ASC),
   CONSTRAINT `fk_AVALIACAO_has_PERGUNTAS_AVALIACAO1`
     FOREIGN KEY (`AVALIACAO_avaliacao_id`)
-    REFERENCES `mydb`.`AVALIACAO` (`avaliacao_id`)
+    REFERENCES `ConsumaJaDB`.`AVALIACAO` (`avaliacao_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_AVALIACAO_has_PERGUNTAS_PERGUNTAS1`
     FOREIGN KEY (`PERGUNTAS_perguntas_id`)
-    REFERENCES `mydb`.`PERGUNTAS` (`perguntas_id`)
+    REFERENCES `ConsumaJaDB`.`PERGUNTAS` (`perguntas_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
