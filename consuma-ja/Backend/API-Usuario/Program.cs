@@ -1,9 +1,24 @@
 var builder = WebApplication.CreateBuilder(args);
 
-// Adiciona os serviços necessários para os controllers
 builder.Services.AddControllers();
 
-// Adiciona o Swagger
+// Configurar autenticação com JWT
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = "suaApi",
+            ValidAudience = "seuCliente",
+            IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+                System.Text.Encoding.UTF8.GetBytes("sua_chave_secreta_aqui"))
+        };
+    });
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -17,7 +32,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// **Mapeia os controllers após registrar os serviços**
+app.UseAuthentication(); // <- Adicione esta linha para ativar a autenticação
+app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();
