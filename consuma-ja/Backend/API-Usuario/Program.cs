@@ -15,7 +15,7 @@ builder.Services.AddAuthentication("Bearer")
             ValidIssuer = "suaApi",
             ValidAudience = "seuCliente",
             IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
-                System.Text.Encoding.UTF8.GetBytes("sua_chave_secreta_aqui"))
+                System.Text.Encoding.UTF8.GetBytes("ote/N8TXlNon97lpT0/q8Scj+9JipCXYIE1v90i2tqQ="))
         };
     });
 

@@ -19,9 +19,9 @@ const LoginScreen = ({ navigation }) => {
     try {
       // Chamada para a API via Axios
       /*
-      const response = await axios.post('http://localhost:7266/api/User/login', {
-        cpf: cpf,
-        senha: senha,
+      const response = await axios.post('https://localhost:7266/api/User/login', {
+        email: "exemplo@email.com",
+        password: "123456"
       });
 
       if (response.data.success) {
@@ -52,7 +52,7 @@ const LoginScreen = ({ navigation }) => {
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="CPF/CNPJ"
+          placeholder="CPF/CNPJ ou email"
           placeholderTextColor="#9CA3AF"
           value={cpf}
           onChangeText={setCpf}
