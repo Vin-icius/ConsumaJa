@@ -87,8 +87,8 @@ const AppNavigator = () => {
   return (
     <Stack.Navigator initialRouteName="Login">
       <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Cadastro Etapa 1" component={CadastroEtapa1} />
-      <Stack.Screen name="Cadastro Etapa 2" component={CadastroEtapa2} />
+      <Stack.Screen name="CadastroEtapa1" component={CadastroEtapa1} />
+      <Stack.Screen name="CadastroEtapa2" component={CadastroEtapa2} />
       <Stack.Screen name="Inicio" component={InicioScreen} />
       <Stack.Screen name="Configurações" component={ConfigScreen} />
       <Stack.Screen name="Relatorios" component={RelatoriosScreen} />
