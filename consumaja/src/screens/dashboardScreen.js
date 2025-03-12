@@ -6,8 +6,7 @@ import { TouchableOpacity, Text } from 'react-native';
 //importações das telas (screens)
 import LoginScreen from '../screens/loginScreen';
 import InicioScreen from '../screens/inicioScreen';
-import OfertasScreen from '../screens/ofertasScreen';
-import EntregasScreen from '../screens/entregasScreen';
+import ConfigScreen from '../screens/configScreen';
 import RelatoriosScreen from '../screens/relatoriosScreen';
 
 const Stack = createStackNavigator();
@@ -35,9 +34,8 @@ const DrawerNavigator = () => (
     }}
   >
     <Drawer.Screen name="Inicio" component={InicioScreen} />
-    <Drawer.Screen name="Ofertas" component={OfertasScreen} />
-    <Drawer.Screen name="Entregas" component={EntregasScreen} />
     <Drawer.Screen name="Relatorios" component={RelatoriosScreen} />
+    <Drawer.Screen name="Configurações" component={ConfigScreen} />
     <Drawer.Screen name="Sair" component={LogoutScreen} />
   </Drawer.Navigator>
 );
