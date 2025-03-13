@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PessoasApi", "PessoasApi\Pe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CEPApi", "CEPApi\CEPApi.csproj", "{A8213297-BB8C-4EB7-AE1B-CB493B05E9DB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductApi", "ProductApi\ProductApi.csproj", "{4F1934A7-AAE1-490B-9B17-D9AFECC8D390}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +43,18 @@ Global
 		{A8213297-BB8C-4EB7-AE1B-CB493B05E9DB}.Release|x64.Build.0 = Release|Any CPU
 		{A8213297-BB8C-4EB7-AE1B-CB493B05E9DB}.Release|x86.ActiveCfg = Release|Any CPU
 		{A8213297-BB8C-4EB7-AE1B-CB493B05E9DB}.Release|x86.Build.0 = Release|Any CPU
+		{4F1934A7-AAE1-490B-9B17-D9AFECC8D390}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F1934A7-AAE1-490B-9B17-D9AFECC8D390}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F1934A7-AAE1-490B-9B17-D9AFECC8D390}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4F1934A7-AAE1-490B-9B17-D9AFECC8D390}.Debug|x64.Build.0 = Debug|Any CPU
+		{4F1934A7-AAE1-490B-9B17-D9AFECC8D390}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4F1934A7-AAE1-490B-9B17-D9AFECC8D390}.Debug|x86.Build.0 = Debug|Any CPU
+		{4F1934A7-AAE1-490B-9B17-D9AFECC8D390}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F1934A7-AAE1-490B-9B17-D9AFECC8D390}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F1934A7-AAE1-490B-9B17-D9AFECC8D390}.Release|x64.ActiveCfg = Release|Any CPU
+		{4F1934A7-AAE1-490B-9B17-D9AFECC8D390}.Release|x64.Build.0 = Release|Any CPU
+		{4F1934A7-AAE1-490B-9B17-D9AFECC8D390}.Release|x86.ActiveCfg = Release|Any CPU
+		{4F1934A7-AAE1-490B-9B17-D9AFECC8D390}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
