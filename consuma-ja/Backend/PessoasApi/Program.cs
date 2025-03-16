@@ -1,44 +1,39 @@
+using Microsoft.EntityFrameworkCore;
+using PessoasApi.Context;
+using PessoasApi.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// Configurações do Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Configuração da conexão com o MySQL
+var mySqlConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<PessoasContext>(options =>
+    options.UseMySql(mySqlConnection, ServerVersion.AutoDetect(mySqlConnection)));
+
+// Injeção de dependência para o serviço
+builder.Services.AddScoped<PessoaService>();
+
+// Configuração de Controllers para API (sem suporte para Views)
+builder.Services.AddControllers();
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configuração do ambiente de desenvolvimento (Swagger)
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+// Configuração de middlewares
 app.UseHttpsRedirection();
+app.UseRouting();
+app.UseAuthorization();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+// Roteamento de Controllers para API
+app.MapControllers();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
