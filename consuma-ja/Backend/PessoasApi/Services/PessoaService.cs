@@ -18,8 +18,10 @@ namespace PessoasApi.Services
         private readonly PessoasContext _context;
         private readonly string _key;
 
-        public PessoaService(PessoasContext context){
+        public PessoaService(PessoasContext context, IConfiguration config)
+        {
             _context = context;
+            _key = config["Jwt:Key"]; // Agora o _key vai receber a chave secreta diretamente do appsettings.json
         }
 
         public IList<Pessoa> ListarTodas(){
@@ -72,13 +74,14 @@ namespace PessoasApi.Services
         }
         public string Autenticar(LoginModel loginModel)
         {
-            var pessoa = _context.Pessoas.FirstOrDefault(p => p.Login == loginModel.Login && p.Senha == loginModel.Senha);
-            
+            var pessoa = _context.Pessoas
+                .FirstOrDefault(p => p.Login == loginModel.Login && p.Senha == loginModel.Senha);
+
             if (pessoa == null)
                 return null;
 
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_config["Jwt:Key"]);
+            var key = Encoding.ASCII.GetBytes(_key);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[]

@@ -44,11 +44,33 @@ const LoginScreen = ({ navigation }) => {
       return;
     }
     try {
-      Alert.alert('Login bem-sucedido!', `Bem-vindo, ${cpfCnpj}`);
-      navigation.navigate('Dashboard');
+      const response = await axios.post('http://localhost:5178/api/Pessoa/login/', {
+        login: cpfCnpj.replace(/\D/g, ''), // Remove formatação de CPF/CNPJ
+        senha: senha
+      });
+  
+      if (response.status === 200) {
+        const token = response.data.token;
+        console.log('Token:', token);
+  
+        // Salva o token localmente (localStorage ou AsyncStorage)
+        await AsyncStorage.setItem('token', token);
+  
+        Alert.alert('Login bem-sucedido!', 'Você foi autenticado com sucesso.');
+        navigation.navigate('Dashboard');
+      }
     } catch (error) {
-      console.error(error);
-      setErrorMessage('Ocorreu um erro, tente novamente.');
+      console.error('Erro de login:', error);
+
+    if (error.response) {
+      if (error.response.status === 401) {
+          setErrorMessage('Login ou senha incorretos.');
+        } else {
+          setErrorMessage('Erro ao tentar fazer login. Tente novamente.');
+        }
+      } else {
+        setErrorMessage('Erro de conexão. Verifique sua rede.');
+      }
     }
   };
 

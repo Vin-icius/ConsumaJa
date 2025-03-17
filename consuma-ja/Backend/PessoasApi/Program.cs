@@ -38,10 +38,26 @@ builder.Services.AddAuthentication("Bearer")
         };
     });
 
+var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowSpecificOrigins,
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:8081") // Adiciona a origem do frontend
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials(); // Se você precisar de cookies ou autenticação
+        });
+});
+
 builder.Services.AddAuthorization();
 
 
 var app = builder.Build();
+
+app.UseCors(MyAllowSpecificOrigins); // Habilita o CORS aqui!
 
 // Configuração do ambiente de desenvolvimento (Swagger)
 if (app.Environment.IsDevelopment())

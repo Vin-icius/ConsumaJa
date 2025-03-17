@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PessoasApi.Models;
 using PessoasApi.Services;
@@ -60,15 +61,23 @@ namespace PessoasApi.Controllers
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginModel model)
         {
+            //usa padrão de senha ES512
             if (model == null || string.IsNullOrEmpty(model.Login) || string.IsNullOrEmpty(model.Senha))
                 return BadRequest(new { message = "Login ou senha inválidos" });
 
-            var pessoa = _pessoaService.ObterPorLogin(model.Login);
+            var token = _pessoaService.Autenticar(model);
 
-            if (pessoa == null || pessoa.Senha != model.Senha)
+            if (token == null)
                 return Unauthorized(new { message = "Login ou senha incorretos" });
 
-            return Ok(new { message = "OK" });
+            return Ok(new { token });
+        }
+
+        [Authorize]
+        [HttpGet("protegida")]
+        public IActionResult RotaProtegida()
+        {
+            return Ok(new { message = "Você tem acesso autorizado!" });
         }
     }
 }
