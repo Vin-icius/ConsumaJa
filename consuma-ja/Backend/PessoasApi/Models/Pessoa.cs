@@ -37,7 +37,8 @@ public class Pessoa
 
 
     //public String? PerfilUrl {get; set;}
-
-
-    public ICollection<int> EnderecosID {get; set;}
+    /*
+    [NotMapped]
+    public IList<int> EnderecosID {get; set;}
+    */
 }

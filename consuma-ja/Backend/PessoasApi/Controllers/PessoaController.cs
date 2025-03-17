@@ -9,7 +9,7 @@ using PessoasApi.Services;
 namespace PessoasApi.Controllers
 {
     [ApiController]
-    [Route("api/pessoa/[controller]/")]
+    [Route("api/[controller]/")]
     public class PessoaController : Controller
     {
         private readonly PessoaService _pessoaService;
@@ -22,7 +22,7 @@ namespace PessoasApi.Controllers
         public IActionResult Index()
         {
             var pessoas = _pessoaService.ListarTodas();
-            return View(pessoas);
+            return Ok(pessoas); // Retorna a lista de pessoas como JSON
         }
 
         [HttpGet("detalhes/{id}")]
@@ -32,8 +32,9 @@ namespace PessoasApi.Controllers
             if (pessoa == null)
                 return NotFound();
 
-            return View(pessoa);
+            return Ok(pessoa); // Retorna como JSON no Swagger
         }
+
 
         [HttpGet("testar-conexao/")]
         public IActionResult TestarConexao()
@@ -54,6 +55,20 @@ namespace PessoasApi.Controllers
                 return RedirectToAction("Index");
             }
             return View(pessoa);
+        }
+
+        [HttpPost("login")]
+        public IActionResult Login([FromBody] LoginModel model)
+        {
+            if (model == null || string.IsNullOrEmpty(model.Login) || string.IsNullOrEmpty(model.Senha))
+                return BadRequest(new { message = "Login ou senha inválidos" });
+
+            var pessoa = _pessoaService.ObterPorLogin(model.Login);
+
+            if (pessoa == null || pessoa.Senha != model.Senha)
+                return Unauthorized(new { message = "Login ou senha incorretos" });
+
+            return Ok(new { message = "OK" });
         }
     }
 }

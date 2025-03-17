@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace PessoasApi.Models;
 
-public class Juridica : Pessoa
+public class Juridica
 {
     public String CNPJ {get; set;}
 }

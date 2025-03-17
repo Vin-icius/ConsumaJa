@@ -1,4 +1,6 @@
+using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using PessoasApi.Context;
 using PessoasApi.Services;
 
@@ -19,6 +21,26 @@ builder.Services.AddScoped<PessoaService>();
 // Configuração de Controllers para API (sem suporte para Views)
 builder.Services.AddControllers();
 
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
+            )
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+
 var app = builder.Build();
 
 // Configuração do ambiente de desenvolvimento (Swagger)
@@ -31,6 +53,10 @@ if (app.Environment.IsDevelopment())
 // Configuração de middlewares
 app.UseHttpsRedirection();
 app.UseRouting();
+
+app.UseAuthentication(); // Antes de UseAuthorization!
+app.UseAuthorization();
+
 app.UseAuthorization();
 
 // Roteamento de Controllers para API
