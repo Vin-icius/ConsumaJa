@@ -47,15 +47,23 @@ namespace PessoasApi.Controllers
                 return StatusCode(500, "Erro ao conectar ao banco de dados.");
         }
 
-        [HttpPost]
-        public IActionResult Criar(Pessoa pessoa)
+        [HttpPost("cadastrar")]
+        public IActionResult Criar([FromBody] Pessoa pessoa)
         {
-            if (ModelState.IsValid)
+            if (pessoa == null || string.IsNullOrEmpty(pessoa.Nome) || string.IsNullOrEmpty(pessoa.Email) || string.IsNullOrEmpty(pessoa.Senha))
+            {
+                return BadRequest(new { message = "Dados inválidos." });
+            }
+
+            try
             {
                 _pessoaService.Adicionar(pessoa);
-                return RedirectToAction("Index");
+                return Ok(new { message = "Usuário cadastrado com sucesso!" });
             }
-            return View(pessoa);
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Erro ao cadastrar usuário.", error = ex.Message });
+            }
         }
 
         [HttpPost("login")]
