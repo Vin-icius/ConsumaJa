@@ -38,48 +38,39 @@ const LoginScreen = ({ navigation }) => {
       setCpfCnpj(formatCNPJ(formattedText));
     }
   };
+  const API_URL = "http://192.168.X.X:5178/api/Pessoa/login"; // ve o seu IP com `ipconfig` (Windows) ou `ifconfig` (Mac/Linux)
 
   const handleLogin = async () => {
     if (!cpfCnpj || (cpfCnpj.length !== 14 && cpfCnpj.length !== 18)) {
-      setErrorMessage('Por favor, preencha um CPF ou CNPJ válido.');
-      return;
+        setErrorMessage('Por favor, preencha um CPF ou CNPJ válido.');
+        return;
     }
     try {
-      const response = await fetch('/api/Pessoa/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          login: cpfCnpj.replace(/\D/g, ''),
-          senha: senha
-        })
-      });
-  
-      const data = await response.json();
-  
-      if (response.ok) {
-        const token = data.token;
-        console.log('Token:', token);
-  
-        await AsyncStorage.setItem('token', token);
-  
-        Alert.alert('Login bem-sucedido!', 'Você foi autenticado com sucesso.');
-        navigation.navigate('Dashboard');
-      } else {
-        if (response.status === 400) {
-          setErrorMessage(data.message || 'Erro ao tentar fazer login.');
-        } else if (response.status === 401) {
-          setErrorMessage('Login ou senha incorretos.');
+        const response = await fetch(API_URL, { // Usa a URL correta
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                login: cpfCnpj.replace(/\D/g, ''),
+                senha: senha
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            Alert.alert('Login bem-sucedido!', 'Você foi autenticado com sucesso.');
+            navigation.navigate('Dashboard');
         } else {
-          setErrorMessage('Erro inesperado no servidor.');
+            setErrorMessage(data.message || 'Erro ao tentar fazer login.');
         }
-      }
     } catch (error) {
-      console.error('Erro de login:', error);
-      setErrorMessage('Erro de conexão. Verifique sua rede.');
+        console.error('Erro de login:', error);
+        setErrorMessage('Erro de conexão. Verifique sua rede.');
     }
-  };
+};
+
 
   return (
     <View style={styles.container}>
