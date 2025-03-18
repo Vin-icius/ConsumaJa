@@ -38,10 +38,10 @@ const LoginScreen = ({ navigation }) => {
       setCpfCnpj(formatCNPJ(formattedText));
     }
   };
-  const API_URL = "http://192.168.X.X:5178/api/Pessoa/login"; // ve o seu IP com `ipconfig` (Windows) ou `ifconfig` (Mac/Linux)
+  const API_URL = "http://localhost:5178/api/Pessoa/login"; // ve o seu IP com `ipconfig` (Windows) ou `ip a` (Linux)
 
   const handleLogin = async () => {
-    if (!cpfCnpj || (cpfCnpj.length !== 14 && cpfCnpj.length !== 18)) {
+    if (!cpfCnpj && (cpfCnpj.length == 14 || cpfCnpj.length == 18 || cpfCnpj.length <=3)) {
         setErrorMessage('Por favor, preencha um CPF ou CNPJ válido.');
         return;
     }
