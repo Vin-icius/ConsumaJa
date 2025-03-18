@@ -3,6 +3,7 @@
   "license": "0BSD",
   "version": "1.0.0",
   "main": "index.js",
+  "proxy": "http://localhost:5178",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = ({ navigation }) => {
   const [senha, setSenha] = useState('');
@@ -39,13 +40,13 @@ const LoginScreen = ({ navigation }) => {
   };
 
   const handleLogin = async () => {
-    if (!cpfCnpj || (cpfCnpj.length !== 1 && cpfCnpj.length !== 14 && cpfCnpj.length !== 18)) {
+    if (!cpfCnpj || (cpfCnpj.length !== 14 && cpfCnpj.length !== 18 && cpfCnpj.length !==1)) {
       setErrorMessage('Por favor, preencha um CPF ou CNPJ válido.');
       return;
     }
     try {
-      const response = await axios.post('http://localhost:5178/api/Pessoa/login/', {
-        login: cpfCnpj.replace(/\D/g, ''), // Remove formatação de CPF/CNPJ
+      const response = await axios.post('/api/Pessoa/login', {
+        login: cpfCnpj.replace(/\D/g, ''),
         senha: senha
       });
   
@@ -53,7 +54,6 @@ const LoginScreen = ({ navigation }) => {
         const token = response.data.token;
         console.log('Token:', token);
   
-        // Salva o token localmente (localStorage ou AsyncStorage)
         await AsyncStorage.setItem('token', token);
   
         Alert.alert('Login bem-sucedido!', 'Você foi autenticado com sucesso.');
@@ -61,12 +61,14 @@ const LoginScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Erro de login:', error);
-
-    if (error.response) {
-      if (error.response.status === 401) {
+  
+      if (error.response) {
+        if (error.response.status === 400) {
+          setErrorMessage(error.response.data.message || 'Erro ao tentar fazer login.');
+        } else if (error.response.status === 401) {
           setErrorMessage('Login ou senha incorretos.');
         } else {
-          setErrorMessage('Erro ao tentar fazer login. Tente novamente.');
+          setErrorMessage('Erro inesperado no servidor.');
         }
       } else {
         setErrorMessage('Erro de conexão. Verifique sua rede.');
@@ -104,21 +106,6 @@ const LoginScreen = ({ navigation }) => {
       <TouchableOpacity onPress={() => navigation.navigate('CadastroEtapa1')}>
         <Text style={styles.linkText}>Cadastre-se</Text>
       </TouchableOpacity>
-
-      <Modal visible={forgotPasswordVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <TouchableOpacity onPress={() => setForgotPasswordVisible(false)} style={styles.closeButton}>
-              <Ionicons name="arrow-back" size={24} color="black" />
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Recuperar Senha</Text>
-            <TextInput style={styles.input} placeholder="E-mail" value={email} onChangeText={setEmail} />
-            <TouchableOpacity style={styles.loginButton} onPress={() => Alert.alert('Senha enviada!', 'Verifique seu e-mail para recuperar a senha.')}>
-              <Text style={styles.loginButtonText}>Confirmar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 };
@@ -160,29 +147,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: 'red',
     textAlign: 'center',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    width: '80%',
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    elevation: 5,
-  },
-  closeButton: {
-    alignSelf: 'flex-start',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
+  }
 });
 
 export default LoginScreen;
