@@ -1,104 +1,33 @@
-# 🔥 Build files
-bin/
-obj/
-*.dll
-*.exe
-*.pdb
-*.log
+**/node_modules/
 
-# 🔥 Rider/Visual Studio files
-.vscode/
-.idea/
-*.csproj.user
+# Ignorar todas as pastas bin e obj em qualquer profundidade
+**/bin/
+**/obj/
+
+# Ignorar configurações locais do Visual Studio e caches
+**/.vs/
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
-*.rsuser
 
-# 🔥 NuGet packages
-*.nupkg
-packages/
-# The following line prevents tracking of .NET-specific package directories
-**/node_modules/
+# Ignorar pacotes e caches de dependências
+**/packages/
+**/.nuget/
+project.lock.json
+project.fragment.lock.json
 
-# 🔥 Temporary files
-*.tmp
-*.cache
-*.bak
-*.swp
-
-# 🔥 Logs
-*.log
+# Ignorar pastas de publicação e logs temporários
+**/publish/
 **/logs/
-logfile.txt
-
-# 🔥 Configuration files
-appsettings.json
-appsettings.Development.json
-secrets.json
-
-# 🔥 OS-specific files
-.DS_Store
-Thumbs.db
-
-# 🔥 Test output
-TestResults/
-*.trx
-*.coverage
-
-# 🔥 Entity Framework Migrations
-Migrations/
-
-# 🔥 Docker
-.dockerignore
-docker-compose.*
-Dockerfile
-
-# 🔥 Security files
-*.crt
-*.key
-*.pem
-*.pfx
-*.cer
-
-# 🔥 JetBrains Rider
-.idea/
-*.dotCover
-*.dotSettings
-*.dotSettings.user
-
-# 🔥 Generated Code
-*.Designer.cs
-*.g.cs
-*.g.i.cs
-ServiceFabric/*.xml
-ServiceFabric/*.json
-
-# 🔥 ASP.NET Identity
-*.db
-*.mdf
-*.ldf
-
-# 🔥 Mono-specific files
-.mono/
-
-# 🔥 Visual Studio database files
-*.mdf
-*.ldf
-*.dbmdl
-
-# 🔥 Resharper
-_ReSharper.Caches/
-*.DotSettings.user
-
-# 🔥 VSCode launch files (opcional, se você não quer compartilhar configs de debug)
-.vscode/launch.json
-.vscode/tasks.json
-
-# 🔥 Misc
-*.tlog
-*.cache
-*.ilk
 *.log
-*.manifest
+
+# Ignorar configurações específicas de ambiente
+**/appsettings.Development.json
+**/appsettings.Local.json
+
+# Ignorar arquivos de sistema e IDEs
+Thumbs.db
+desktop.ini
+.idea/
+*.DotSettings.user
