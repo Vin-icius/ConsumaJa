@@ -69,7 +69,6 @@ namespace PessoasApi.Controllers
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginModel model)
         {
-            //usa padrão de senha ES512
             if (model == null || string.IsNullOrEmpty(model.Login) || string.IsNullOrEmpty(model.Senha))
                 return BadRequest(new { message = "Login ou senha inválidos" });
 

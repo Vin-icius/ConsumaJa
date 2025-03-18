@@ -418,5 +418,5 @@ SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 
-insert into PESSOA values(1, 'Admin', 'admin@email.com', '111111111', 'Admin', 1, 1, 1);
+insert into PESSOA values(1, 'Admin', 'admin@email.com', '111111111', 'Admin', '1', '$2a$11$JKTbvCrhA99mX44.spT2J.BrXvgVG1uLKvlMDbM294oD/Zslvz9FW', 1);
 select * from PESSOA;
