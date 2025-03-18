@@ -33,6 +33,7 @@ namespace PessoasApi.Services
         }
 
         public void Adicionar(Pessoa pessoa){
+            pessoa.Senha = BCrypt.Net.BCrypt.HashPassword(pessoa.Senha);
             _context.Pessoas.Add(pessoa);
             _context.SaveChanges();
         }
@@ -75,11 +76,11 @@ namespace PessoasApi.Services
         public string Autenticar(LoginModel loginModel)
         {
             var pessoa = _context.Pessoas
-                .FirstOrDefault(p => p.Login == loginModel.Login && p.Senha == loginModel.Senha);
+                .FirstOrDefault(p => p.Login == loginModel.Login);
 
-            if (pessoa == null)
+            if (pessoa == null || !BCrypt.Net.BCrypt.Verify(loginModel.Senha, pessoa.Senha))
                 return null;
-
+                
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_key);
             var tokenDescriptor = new SecurityTokenDescriptor
