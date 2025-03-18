@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 
-const EntregasScreen = () => {
+const ConfigScreen = () => {
   return (
     <View>
-      <Text>Tela de Entregas</Text>
+      <Text>Tela de Configuração do sistema</Text>
     </View>
   );
 };
 
-export default EntregasScreen;
+export default ConfigScreen;

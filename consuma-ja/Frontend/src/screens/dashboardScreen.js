@@ -1,20 +1,25 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { TouchableOpacity, Text } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-//importações das telas (screens)
+// Importações das telas (screens)
 import LoginScreen from '../screens/loginScreen';
 import InicioScreen from '../screens/inicioScreen';
 import ConfigScreen from '../screens/configScreen';
 import RelatoriosScreen from '../screens/relatoriosScreen';
+import PromocoesScreen from '../screens/promocoesScreen';
+import EntregasScreen from '../screens/entregasScreen';
+import FeedbacksScreen from '../screens/feedbacksScreen';
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
 
-const LogoutScreen = () => {
-  const handleLogout = () => {
-    console.log("Usuário deslogado");
+const LogoutScreen = ({ navigation }) => {
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('userType');
+    navigation.replace('Login');
   };
 
   return (
@@ -24,27 +29,48 @@ const LogoutScreen = () => {
   );
 };
 
-const DrawerNavigator = () => (
-  <Drawer.Navigator
-    initialRouteName="Inicio"
-    screenOptions={{
-      drawerStyle: { backgroundColor: '#2F4F4F', width: 240 },
-      headerStyle: { backgroundColor: '#4CAF50' },
-      headerTintColor: '#FFFFFF',
-    }}
-  >
-    <Drawer.Screen name="Inicio" component={InicioScreen} />
-    <Drawer.Screen name="Relatorios" component={RelatoriosScreen} />
-    <Drawer.Screen name="Configurações" component={ConfigScreen} />
-    <Drawer.Screen name="Sair" component={LogoutScreen} />
-  </Drawer.Navigator>
-);
+const DrawerNavigator = () => {
+  const [userType, setUserType] = useState(null);
+
+  useEffect(() => {
+    const fetchUserType = async () => {
+      const storedUserType = await AsyncStorage.getItem('userType');
+      setUserType(storedUserType);
+    };
+    fetchUserType();
+  }, []);
+
+  return (
+    userType && (
+      <Drawer.Navigator
+        initialRouteName="Inicio"
+        screenOptions={{
+          drawerStyle: { backgroundColor: '#2F4F4F', width: 240 },
+          headerStyle: { backgroundColor: '#4CAF50' },
+          headerTintColor: '#FFFFFF',
+        }}
+      >
+        <Drawer.Screen name="Inicio" component={InicioScreen} />
+        <Drawer.Screen name="Relatorios" component={RelatoriosScreen} />
+        <Drawer.Screen name="Configurações" component={ConfigScreen} />
+        {userType === 'CNPJ' && (
+          <>
+            <Drawer.Screen name="Promoções" component={PromocoesScreen} />
+            <Drawer.Screen name="Entregas" component={EntregasScreen} />
+            <Drawer.Screen name="Feedbacks" component={FeedbacksScreen} />
+          </>
+        )}
+        <Drawer.Screen name="Sair" component={LogoutScreen} />
+      </Drawer.Navigator>
+    )
+  );
+};
 
 const AppNavigator = () => {
   return (
     <Stack.Navigator initialRouteName="Login">
       <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Dashboard" component={DrawerNavigator} />
+      <Stack.Screen name="Dashboard" component={DrawerNavigator} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 };

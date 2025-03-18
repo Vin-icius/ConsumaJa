@@ -1,34 +1,44 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, FlatList, Image, TouchableOpacity, StyleSheet, Alert, Modal } from 'react-native';
+import { View, Text, TextInput, FlatList, Image, TouchableOpacity, StyleSheet, Alert, Modal, ScrollView } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 const InicioScreen = () => {
-  const navigation = useNavigation();
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState([]);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
-  const [selectedType, setSelectedType] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedBrand, setSelectedBrand] = useState('');
+  const [selectedPromotion, setSelectedPromotion] = useState(null);
 
-  const allProducts = [
-    { id: 1, name: 'Leite Integral', brand: 'Marca A', type: 'Bebida', category: 'Laticínios', measure: '1L', price: 5.99, imageUrl: 'https://via.placeholder.com/80' },
-    { id: 2, name: 'Arroz Branco', brand: 'Marca B', type: 'Alimento', category: 'Grãos', measure: '5Kg', price: 25.99, imageUrl: 'https://via.placeholder.com/80' },
-    { id: 3, name: 'Detergente Neutro', brand: 'Marca C', type: 'Limpeza', category: 'Produtos de Limpeza', measure: '500ML', price: 3.49, imageUrl: 'https://via.placeholder.com/80' }
+  const allPromotions = [
+    {
+      id: 1,
+      supplier: 'Fornecedor 1',
+      products: [
+        { id: 101, name: 'Leite Integral', category: 'Laticínios', price: 5.99, imageUrl: 'https://via.placeholder.com/80' },
+        { id: 102, name: 'Arroz Branco', category: 'Grãos', price: 25.99, imageUrl: 'https://via.placeholder.com/80' }
+      ],
+      totalValue: 31.98
+    },
+    {
+      id: 2,
+      supplier: 'Fornecedor 2',
+      products: [
+        { id: 103, name: 'Detergente Neutro', category: 'Limpeza', price: 3.49, imageUrl: 'https://via.placeholder.com/80' },
+        { id: 104, name: 'Sabão em Pó', category: 'Limpeza', price: 10.99, imageUrl: 'https://via.placeholder.com/80' }
+      ],
+      totalValue: 14.48
+    }
   ];
 
-  const [products, setProducts] = useState(allProducts);
+  const [promotions, setPromotions] = useState(allPromotions);
 
   const handleSearch = () => {
-    const filteredProducts = allProducts.filter(item => 
-      item.name.toLowerCase().includes(search.toLowerCase()) &&
-      (selectedType ? item.type === selectedType : true) &&
-      (selectedCategory ? item.category === selectedCategory : true) &&
-      (selectedBrand ? item.brand === selectedBrand : true)
+    const filteredPromotions = allPromotions.filter(promo =>
+      promo.supplier.toLowerCase().includes(search.toLowerCase()) ||
+      promo.products.some(product => product.name.toLowerCase().includes(search.toLowerCase()))
     );
-    setProducts(filteredProducts);
+    setPromotions(filteredPromotions);
   };
 
   const addToCart = (product) => {
@@ -41,14 +51,14 @@ const InicioScreen = () => {
       return;
     }
     const total = cart.reduce((sum, item) => sum + item.price, 0);
-    Alert.alert('Compra Finalizada', `Total: R$ ${total.toFixed(2)}\nData: ${new Date().toLocaleDateString()}`);
+    Alert.alert('Compra Finalizada', `Total: R$ ${total.toFixed(2)}`);
     setCart([]);
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Consuma!</Text>
+        <Text style={styles.title}>Promoções</Text>
         <TouchableOpacity onPress={finalizePurchase}>
           <Ionicons name="cart" size={28} color="black" />
           <Text>{cart.length}</Text>
@@ -58,7 +68,7 @@ const InicioScreen = () => {
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchBar}
-          placeholder="Buscar produto..."
+          placeholder="Buscar promoção ou produto..."
           value={search}
           onChangeText={setSearch}
           onSubmitEditing={handleSearch}
@@ -67,45 +77,58 @@ const InicioScreen = () => {
           <Ionicons name="filter" size={28} color="black" style={styles.filterIcon} />
         </TouchableOpacity>
       </View>
-      
+
       <FlatList
-        data={products}
+        data={promotions}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <View style={styles.productCard}>
-            <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
-            <View style={styles.productInfo}>
-              <Text style={styles.productName}>{item.name}</Text>
-              <Text style={styles.productDescription}>{item.brand} - {item.type} - {item.measure}</Text>
-              <Text style={styles.productPrice}>R$ {item.price.toFixed(2)}</Text>
-              <TouchableOpacity style={styles.addButton} onPress={() => addToCart(item)}>
-                <Text style={styles.addButtonText}>Adicionar ao Carrinho</Text>
-              </TouchableOpacity>
+          <View style={styles.promotionCard}>
+            <Text style={styles.promotionTitle}>{item.supplier}</Text>
+            <View style={styles.productPreviewContainer}>
+              {item.products.slice(0, 2).map(product => (
+                <View key={product.id} style={styles.productPreview}>
+                  <Image source={{ uri: product.imageUrl }} style={styles.productImage} />
+                  <Text style={styles.productPrice}>R$ {product.price.toFixed(2)}</Text>
+                </View>
+              ))}
             </View>
+            <TouchableOpacity onPress={() => setSelectedPromotion(item)}>
+              <Text style={styles.viewDetails}>Ver Detalhes</Text>
+            </TouchableOpacity>
           </View>
         )}
       />
 
+      <Modal visible={!!selectedPromotion} animationType="slide">
+        <ScrollView style={styles.modalContainer}>
+          {selectedPromotion && (
+            <>
+              <Text style={styles.modalTitle}>{selectedPromotion.supplier}</Text>
+              {selectedPromotion.products.map(product => (
+                <View key={product.id} style={styles.productDetail}>
+                  <Image source={{ uri: product.imageUrl }} style={styles.productImage} />
+                  <Text>{product.name} - R$ {product.price.toFixed(2)}</Text>
+                  <TouchableOpacity onPress={() => addToCart(product)}>
+                    <Text style={styles.addToCart}>Adicionar ao Carrinho</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+              <TouchableOpacity onPress={() => setSelectedPromotion(null)}>
+                <Text style={styles.closeModal}>Fechar</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </ScrollView>
+      </Modal>
+
       <Modal visible={filterModalVisible} animationType="slide">
         <View style={styles.modalContainer}>
-          <Text>Filtrar por:</Text>
-          <Picker selectedValue={selectedType} onValueChange={setSelectedType}>
-            <Picker.Item label="Tipo" value="" />
-            <Picker.Item label="Bebida" value="Bebida" />
-            <Picker.Item label="Alimento" value="Alimento" />
-            <Picker.Item label="Limpeza" value="Limpeza" />
-          </Picker>
+          <Text>Filtrar por Categoria:</Text>
           <Picker selectedValue={selectedCategory} onValueChange={setSelectedCategory}>
-            <Picker.Item label="Categoria" value="" />
+            <Picker.Item label="Todas" value="" />
             <Picker.Item label="Laticínios" value="Laticínios" />
             <Picker.Item label="Grãos" value="Grãos" />
-            <Picker.Item label="Produtos de Limpeza" value="Produtos de Limpeza" />
-          </Picker>
-          <Picker selectedValue={selectedBrand} onValueChange={setSelectedBrand}>
-            <Picker.Item label="Marca" value="" />
-            <Picker.Item label="Marca A" value="Marca A" />
-            <Picker.Item label="Marca B" value="Marca B" />
-            <Picker.Item label="Marca C" value="Marca C" />
+            <Picker.Item label="Limpeza" value="Limpeza" />
           </Picker>
           <TouchableOpacity onPress={() => { handleSearch(); setFilterModalVisible(false); }}>
             <Text>Aplicar Filtros</Text>
@@ -123,12 +146,18 @@ const styles = StyleSheet.create({
   searchContainer: { flexDirection: 'row', alignItems: 'center' },
   searchBar: { flex: 1, height: 40, borderWidth: 1, borderColor: '#ccc', borderRadius: 8, paddingHorizontal: 10 },
   filterIcon: { marginLeft: 10 },
-  productCard: { flexDirection: 'row', marginBottom: 16, borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10 },
-  productImage: { width: 80, height: 80, marginRight: 10 },
-  productInfo: { flex: 1 },
-  productName: { fontSize: 18, fontWeight: 'bold' },
-  productDescription: { fontSize: 14, color: '#666' },
-  productPrice: { fontSize: 16, color: '#008000', marginTop: 5 },
+  promotionCard: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, marginBottom: 10 },
+  promotionTitle: { fontSize: 18, fontWeight: 'bold' },
+  productPreviewContainer: { flexDirection: 'row', marginTop: 10 },
+  productPreview: { marginRight: 10, alignItems: 'center' },
+  productImage: { width: 80, height: 80 },
+  productPrice: { fontSize: 14, color: '#008000' },
+  viewDetails: { color: 'blue', marginTop: 5 },
+  modalContainer: { flex: 1, padding: 20, backgroundColor: '#fff' },
+  modalTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
+  productDetail: { marginBottom: 10 },
+  addToCart: { color: 'green' },
+  closeModal: { color: 'red', marginTop: 20, textAlign: 'center' }
 });
 
 export default InicioScreen;
