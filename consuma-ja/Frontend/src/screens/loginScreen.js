@@ -40,39 +40,44 @@ const LoginScreen = ({ navigation }) => {
   };
 
   const handleLogin = async () => {
-    if (!cpfCnpj || (cpfCnpj.length !== 14 && cpfCnpj.length !== 18 && cpfCnpj.length !==1)) {
+    if (!cpfCnpj || (cpfCnpj.length !== 14 && cpfCnpj.length !== 18)) {
       setErrorMessage('Por favor, preencha um CPF ou CNPJ válido.');
       return;
     }
     try {
-      const response = await axios.post('/api/Pessoa/login', {
-        login: cpfCnpj.replace(/\D/g, ''),
-        senha: senha
+      const response = await fetch('/api/Pessoa/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          login: cpfCnpj.replace(/\D/g, ''),
+          senha: senha
+        })
       });
   
-      if (response.status === 200) {
-        const token = response.data.token;
+      const data = await response.json();
+  
+      if (response.ok) {
+        const token = data.token;
         console.log('Token:', token);
   
         await AsyncStorage.setItem('token', token);
   
         Alert.alert('Login bem-sucedido!', 'Você foi autenticado com sucesso.');
         navigation.navigate('Dashboard');
-      }
-    } catch (error) {
-      console.error('Erro de login:', error);
-  
-      if (error.response) {
-        if (error.response.status === 400) {
-          setErrorMessage(error.response.data.message || 'Erro ao tentar fazer login.');
-        } else if (error.response.status === 401) {
+      } else {
+        if (response.status === 400) {
+          setErrorMessage(data.message || 'Erro ao tentar fazer login.');
+        } else if (response.status === 401) {
           setErrorMessage('Login ou senha incorretos.');
         } else {
           setErrorMessage('Erro inesperado no servidor.');
         }
-      } else {
-        setErrorMessage('Erro de conexão. Verifique sua rede.');
       }
+    } catch (error) {
+      console.error('Erro de login:', error);
+      setErrorMessage('Erro de conexão. Verifique sua rede.');
     }
   };
 
