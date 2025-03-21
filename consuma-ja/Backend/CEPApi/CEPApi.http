@@ -1,6 +1,0 @@
-@CEPApi_HostAddress = http://localhost:5194
-
-GET {{CEPApi_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
