@@ -9,7 +9,7 @@ const promise_1 = __importDefault(require("mysql2/promise"));
 exports.mysqlConnection = promise_1.default.createPool({
     host: 'localhost',
     user: 'root',
-    password: 'LeonEGe.11082023',
+    password: '',
     database: 'consumajadb',
     waitForConnections: true,
     connectionLimit: 10,
