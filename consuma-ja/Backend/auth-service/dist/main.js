@@ -25,7 +25,7 @@ async function bootstrap() {
     // Rotas
     app.use('/auth', (0, auth_routes_1.authRoutes)(authController));
     // Inicialização do servidor
-    const PORT = process.env.PORT || 3000;
+    const PORT = process.env.PORT;
     app.listen(PORT, () => {
         console.log(`Servidor de autenticação rodando na porta ${PORT}`);
     });

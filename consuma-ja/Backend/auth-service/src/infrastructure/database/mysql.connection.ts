@@ -8,8 +8,8 @@ export class MysqlConnection {
   private constructor() {
     this.pool = createPool({
       host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
+      user: "root",
+      password: "LeonEGe.11082023",
       database: process.env.DB_NAME,
       waitForConnections: true,
       connectionLimit: 10,
