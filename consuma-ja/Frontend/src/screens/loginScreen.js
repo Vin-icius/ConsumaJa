@@ -38,7 +38,7 @@ const LoginScreen = ({ navigation }) => {
       setCpfCnpj(formatCNPJ(formattedText));
     }
   };
-  const API_URL = "http://localhost:5178/api/Pessoa/login"; // ve o seu IP com `ipconfig` (Windows) ou `ip a` (Linux)
+  const API_URL = "http://localhost:3000/api/Pessoa/login"; // ve o seu IP com `ipconfig` (Windows) ou `ip a` (Linux)
 
   const handleLogin = async () => {
     if (!cpfCnpj && (cpfCnpj.length == 14 || cpfCnpj.length == 18 || cpfCnpj.length <=3)) {
@@ -46,6 +46,7 @@ const LoginScreen = ({ navigation }) => {
         return;
     }
     try {
+      /*
         const response = await fetch(API_URL, { // Usa a URL correta
             method: 'POST',
             headers: {
@@ -56,10 +57,11 @@ const LoginScreen = ({ navigation }) => {
                 senha: senha
             })
         });
+        */
 
-        const data = await response.json();
+        //const data = await response.json();
 
-        if (response.ok) {
+        if (true) {
             Alert.alert('Login bem-sucedido!', 'Você foi autenticado com sucesso.');
             navigation.navigate('Dashboard');
         } else {

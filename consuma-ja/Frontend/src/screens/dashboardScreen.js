@@ -53,6 +53,11 @@ const DrawerNavigator = () => {
         <Drawer.Screen name="Inicio" component={InicioScreen} />
         <Drawer.Screen name="Relatorios" component={RelatoriosScreen} />
         <Drawer.Screen name="Configurações" component={ConfigScreen} />
+        <Drawer.Screen name="Cadastro Categoria" component={CadastroCategoriaScreen} />
+        <Drawer.Screen name="Cadastro Marca" component={CadastroMarcaScreen} />
+        <Drawer.Screen name="Cadastro Tipo" component={CadastroTipoScreen} />
+        <Drawer.Screen name="Cadastro Produto" component={CadastroProdutoScreen} />
+        <Drawer.Screen name="Aprovação de Produtos" component={AprovacaoProdutoScreen} />
         {userType === 'CNPJ' && (
           <>
             <Drawer.Screen name="Promoções" component={PromocoesScreen} />
@@ -65,6 +70,22 @@ const DrawerNavigator = () => {
     )
   );
 };
+
+/*
+
+      <Drawer.Screen name="Cadastro Categoria" component={CadastroCategoriaScreen} />
+      <Drawer.Screen name="Cadastro Marca" component={CadastroMarcaScreen} />
+      <Drawer.Screen name="Cadastro Tipo" component={CadastroTipoScreen} />
+      <Drawer.Screen name="Cadastro Produto" component={CadastroProdutoScreen} />
+      <Drawer.Screen name="Aprovação de Produtos" component={AprovacaoProdutoScreen} />
+
+
+      <Stack.Screen name="Cadastro Categoria" component={CadastroCategoriaScreen} />
+      <Stack.Screen name="Cadastro Marca" component={CadastroMarcaScreen} />
+      <Stack.Screen name="Cadastro Tipo" component={CadastroTipoScreen} />
+      <Stack.Screen name="Cadastro Produto" component={CadastroProdutoScreen} />
+      <Stack.Screen name="Aprovação de Produtos" component={AprovacaoProdutoScreen} />
+*/
 
 const AppNavigator = () => {
   return (
