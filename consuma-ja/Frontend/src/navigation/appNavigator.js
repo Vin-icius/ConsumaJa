@@ -10,6 +10,11 @@ import RelatoriosScreen from '../screens/relatoriosScreen';
 import ConfigScreen from '../screens/configScreen';
 import CadastroEtapa1 from '../screens/CadastroEtapa1';
 import CadastroEtapa2 from '../screens/CadastroEtapa2';
+import CadastroCategoriaScreen from '../screens/CadastroCategoriaScreen';
+import CadastroMarcaScreen from '../screens/CadastroMarcaScreen';
+import CadastroTipoScreen from '../screens/CadastroTipoScreen';
+import CadastroProdutoScreen from '../screens/CadastroProdutoScreen';
+import AprovacaoProdutoScreen from '../screens/AprovacaoProdutoScreen';
 
 const Stack = createStackNavigator();
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -63,6 +68,23 @@ const Sidebar = ({ navigation, isVisible, toggleMenu }) => {
       <TouchableOpacity onPress={() => { navigation.navigate('Configurações'); toggleMenu(); }}>
         <Text style={{ fontSize: 18, color: 'white', marginBottom: 15 }}>Configurações</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => { navigation.navigate('Cadastro Categoria'); toggleMenu(); }}>
+        <Text style={{ fontSize: 18, color: 'white', marginBottom: 15 }}>Cadastro Categoria</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => { navigation.navigate('Cadastro Marca'); toggleMenu(); }}>
+        <Text style={{ fontSize: 18, color: 'white', marginBottom: 15 }}>Cadastro Marca </Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => { navigation.navigate('Cadastro Tipo'); toggleMenu(); }}>
+        <Text style={{ fontSize: 18, color: 'white', marginBottom: 15 }}>Cadastro Tipo</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => { navigation.navigate('Cadastro Produto'); toggleMenu(); }}>
+        <Text style={{ fontSize: 18, color: 'white', marginBottom: 15 }}>Cadastro Produto</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => { navigation.navigate('Aprovação de Produtos'); toggleMenu(); }}>
+        <Text style={{ fontSize: 18, color: 'white', marginBottom: 15 }}>Aprovação de Produtos</Text>
+      </TouchableOpacity>
+
       <LogoutButton navigation={navigation} />
     </Animated.View>
   );
@@ -93,6 +115,11 @@ const AppNavigator = () => {
       <Stack.Screen name="Configurações" component={ConfigScreen} />
       <Stack.Screen name="Relatorios" component={RelatoriosScreen} />
       <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Cadastro Categoria" component={CadastroCategoriaScreen} />
+      <Stack.Screen name="Cadastro Marca" component={CadastroMarcaScreen} />
+      <Stack.Screen name="Cadastro Tipo" component={CadastroTipoScreen} />
+      <Stack.Screen name="Cadastro Produto" component={CadastroProdutoScreen} />
+      <Stack.Screen name="Aprovação de Produtos" component={AprovacaoProdutoScreen} />
     </Stack.Navigator>
   );
 };

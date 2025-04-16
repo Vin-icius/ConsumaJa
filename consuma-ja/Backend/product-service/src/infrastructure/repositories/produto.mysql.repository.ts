@@ -112,7 +112,37 @@ export class ProdutoMySQLRepository implements ProdutoRepository {
     ));
   }
 
+  async listarPendentes(): Promise<Produto[]> {
+    const pendente = 'PENDENTE'
+    const [rows]: any = await mysqlConnection.execute('SELECT * FROM PRODUTO WHERE produto_status = ?', [pendente]);
+
+    return rows.map((row: any) => new Produto(
+      row.produto_id,
+      new Marca(row.MARCA_PRODUTO_marca_id, ''), // Necessário buscar o nome da marca
+      new Categoria(row.CATEGORIA_PRODUTO_categoria_id, ''), // Necessário buscar o nome da categoria
+      new Tipo(row.TIPO_PRODUTO_tipo_id, ''), // Necessário buscar o nome do tipo
+      row.produto_nome,
+      row.produto_status,
+      row.produto_medida,
+      row.produto_precoOriginal,
+      row.motivo,
+      row.descricao,
+      row.data_registro,
+      row.data_aprovacao,
+      row.data_exlusao,
+      row.status
+    ));
+  }
+
   async excluir(id: number): Promise<void> {
     await mysqlConnection.execute('DELETE FROM PRODUTO WHERE produto_id = ?', [id]);
+  }
+
+  async aprovar(produtoId: number): Promise<void> {
+    await mysqlConnection.execute('UPDATE PRODUTO SET produto_status = "APROVADO", motivo = null WHERE produto_id = ?', [produtoId]);
+  }
+
+  async rejeitar(produtoId: number, motivoRejeicao: string): Promise<void> {
+    await mysqlConnection.execute('UPDATE PRODUTO SET produto_status = "REJEITADO", motivo = ? WHERE produto_id = ?', [motivoRejeicao, produtoId]);
   }
 }

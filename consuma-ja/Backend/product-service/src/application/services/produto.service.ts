@@ -21,7 +21,30 @@ export class ProdutoService {
     return this.produtoRepository.listar();
   }
 
+  async listarPendentes(): Promise<Produto[]> {
+    return this.produtoRepository.listarPendentes();
+  }
+
   async excluirProduto(id: number): Promise<void> {
     await this.produtoRepository.excluir(id);
+  }
+
+  async aprovarProduto(produtoId: number): Promise<void> {
+    const produto = await this.produtoRepository.buscarPorId(produtoId);
+    if (!produto) {
+      throw new Error('Produto não encontrado');
+    }
+    produto.status = 'APROVADO';
+    await this.produtoRepository.aprovar(produto.id);
+  }
+
+  async rejeitarProduto(produtoId: number, motivoRejeicao: string): Promise<void> {
+    const produto = await this.produtoRepository.buscarPorId(produtoId);
+    if (!produto) {
+      throw new Error('Produto não encontrado');
+    }
+    produto.status = 'REJEITADO';
+    produto.motivo = motivoRejeicao;
+    await this.produtoRepository.rejeitar(produto.id, produto.motivo);
   }
 }
