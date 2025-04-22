@@ -1,9 +1,14 @@
 import { Categoria } from "../entities/categoria.entity";
 
+
+export type CreateCategoriaData = Omit<Categoria, 'categoria_id' | 'ativo'>;
+export type UpdateCategoriaData = Partial<Pick<Categoria, 'categoria_nome'>>;
 export interface CategoriaRepository {
-    criar(categoria: Categoria): Promise<Categoria>;
-    listar(): Promise<Categoria[]>;
-    buscarPorId(id: number): Promise<Categoria | null>;
-    atualizar(categoria: Categoria): Promise<Categoria>;
-    excluir(id: number): Promise<void>;
-  }
+
+    findByNome(nome: string): Promise<Categoria | null>;
+    criar(data: CreateCategoriaData): Promise<Categoria>;
+    listar(apenasAtivos?: boolean): Promise<Categoria[]>;
+    buscarPorId(id: number, incluirInativos?: boolean): Promise<Categoria | null>;
+    atualizar(id: number, data: UpdateCategoriaData): Promise<Categoria | null>;
+    excluir(id: number): Promise<boolean>;
+}

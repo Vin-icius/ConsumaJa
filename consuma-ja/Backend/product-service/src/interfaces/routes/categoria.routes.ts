@@ -1,15 +1,18 @@
 import express from 'express';
-import { CategoriaController } from '../../interfaces/controls/categoria.controller';
+import { CategoriaController } from '../controls/categoria.controller';
 import { CategoriaService } from '../../application/services/categoria.service';
 import { CategoriaMySQLRepository } from '../../infrastructure/repositories/categoria.mysql.repository';
 
 const router = express.Router();
-const categoriaController = new CategoriaController(new CategoriaService(new CategoriaMySQLRepository()));
 
-router.post('/', categoriaController.criarCategoria.bind(categoriaController));
-router.get('/', categoriaController.listarCategorias.bind(categoriaController));
-router.get('/:id', categoriaController.buscarCategoriaPorId.bind(categoriaController));
-router.put('/:id', categoriaController.atualizarCategoria.bind(categoriaController));
-router.delete('/:id', categoriaController.excluirCategoria.bind(categoriaController));
+const categoriaRepository = new CategoriaMySQLRepository();
+const categoriaService = new CategoriaService(categoriaRepository);
+const categoriaController = new CategoriaController(categoriaService);
+
+router.post('/', categoriaController.criarCategoria);
+router.get('/', categoriaController.listarCategorias);
+router.get('/:id', categoriaController.buscarCategoriaPorId);
+router.put('/:id', categoriaController.atualizarCategoria);
+router.delete('/:id', categoriaController.excluirCategoria);
 
 export default router;

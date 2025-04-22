@@ -1,3 +1,5 @@
-export class Tipo {
-    constructor(public id: number, public nome: string) {}
-  }
+export interface Tipo {
+  tipo_id: number;
+  tipo_nome: string;
+  ativo: boolean;
+}

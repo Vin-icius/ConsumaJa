@@ -1,15 +1,20 @@
 import express from 'express';
-import { MarcaController } from '../../interfaces/controls/marca.controller';
+import { MarcaController } from '../controls/marca.controller';
 import { MarcaService } from '../../application/services/marca.service';
 import { MarcaMySQLRepository } from '../../infrastructure/repositories/marca.mysql.repository';
 
 const router = express.Router();
-const marcaController = new MarcaController(new MarcaService(new MarcaMySQLRepository()));
 
-router.post('/', marcaController.criarMarca.bind(marcaController));
-router.get('/', marcaController.listarMarcas.bind(marcaController));
-router.get('/:id', marcaController.buscarMarcaPorId.bind(marcaController));
-router.put('/:id', marcaController.atualizarMarca.bind(marcaController));
-router.delete('/:id', marcaController.excluirMarca.bind(marcaController));
+// Instanciação
+const marcaRepository = new MarcaMySQLRepository();
+const marcaService = new MarcaService(marcaRepository);
+const marcaController = new MarcaController(marcaService);
+
+// Rotas
+router.post('/', marcaController.criarMarca);
+router.get('/', marcaController.listarMarcas);
+router.get('/:id', marcaController.buscarMarcaPorId);
+router.put('/:id', marcaController.atualizarMarca);
+router.delete('/:id', marcaController.excluirMarca);
 
 export default router;

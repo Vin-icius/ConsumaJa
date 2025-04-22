@@ -1,9 +1,13 @@
-import { Marca } from '../entities/marca.entity';
+import { Marca } from "../entities/marca.entity";
+
+export type CreateMarcaData = Omit<Marca, 'marca_id' | 'ativo'>;
+export type UpdateMarcaData = Partial<CreateMarcaData>;
 
 export interface MarcaRepository {
-    criar(marca: Marca): Promise<Marca>;
-    listar(): Promise<Marca[]>;
-    buscarPorId(id: number): Promise<Marca | null>;
-    atualizar(marca: Marca): Promise<Marca>;
-    excluir(id: number): Promise<void>;
-  }
+    findByNome(nome: string): Promise<Marca | null>;
+    criar(data: CreateMarcaData): Promise<Marca>;
+    listar(apenasAtivos?: boolean): Promise<Marca[]>;
+    buscarPorId(id: number, incluirInativos?: boolean): Promise<Marca | null>;
+    atualizar(id: number, data: UpdateMarcaData): Promise<Marca | null>;
+    excluir(id: number): Promise<boolean>; // Exclusão lógica
+}
