@@ -1,0 +1,35 @@
+# Dependências
+backend/location-service/node_modules/
+backend/product-service/node_modules/
+backend/pessoa-service/node_modules/ # Adicionar para todos os serviços
+
+# Arquivos de Build / Compilados
+backend/location-service/dist/
+backend/product-service/dist/
+backend/pessoa-service/dist/ # Adicionar para todos os serviços
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Arquivos de Sistema Operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos de Editor/IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Arquivos de Teste (Opcional, depende do seu fluxo)
+coverage/
+.nyc_output/

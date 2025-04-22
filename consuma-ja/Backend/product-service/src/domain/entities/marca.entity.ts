@@ -1,3 +1,5 @@
-export class Marca {
-    constructor(public id: number, public nome: string) {}
-  }
+export interface Marca {
+  marca_id: number;
+  marca_nome: string;
+  ativo: boolean;
+}
