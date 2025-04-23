@@ -215,25 +215,57 @@ class PessoaMySQLRepository {
     }
     // Listar (Exemplo básico, sem paginação ou filtros complexos)
     async listar(apenasAtivos = true) {
-        let query = `
-             SELECT p.*, f.pessoa_cpf, f.pessoa_documentoValidado, f.pessoa_fotoValidada, j.cnpj, j.fornecedor_num
-             FROM PESSOA p
-             LEFT JOIN FISICA f ON p.pessoa_id = f.PESSOA_pessoa_id AND p.pessoa_tipo = 'Fisica'
-             LEFT JOIN JURIDICA j ON p.pessoa_id = j.PESSOA_pessoa_id AND p.pessoa_tipo = 'Juridica'
-         `;
+        let query = ` SELECT p.*, f.pessoa_cpf, f.pessoa_documentoValidado, f.pessoa_fotoValidada, j.cnpj, j.fornecedor_num FROM PESSOA p LEFT JOIN FISICA f ON p.pessoa_id = f.PESSOA_pessoa_id AND p.pessoa_tipo = 'Fisica' LEFT JOIN JURIDICA j ON p.pessoa_id = j.PESSOA_pessoa_id AND p.pessoa_tipo = 'Juridica' `;
         if (apenasAtivos) {
-            query += " WHERE p.pessoa_status = 1";
+            query += " WHERE p.pessoa_status = 1"; // Filtra por status ativo
         }
         query += " ORDER BY p.pessoa_nome";
         try {
             if (!mysql_connection_1.pool)
-                throw new app_error_1.AppError("Pool de conexão não definido!", 500, false);
+                throw new app_error_1.AppError("Pool...", 500, false);
             const [rows] = await mysql_connection_1.pool.query(query);
-            return rows.map(this.mapRowToPessoa);
+            // Mapeia removendo a senha
+            return rows.map(row => {
+                const pessoa = this.mapRowToPessoa(row);
+                delete pessoa.pessoa_senha;
+                return pessoa;
+            });
         }
         catch (error) {
             console.error("[Repo] Erro ao listar pessoas:", error);
-            throw new app_error_1.AppError("Erro no banco de dados ao listar pessoas.", 500, false);
+            throw new app_error_1.AppError("Erro DB ao listar pessoas.", 500, false);
+        }
+    }
+    async atualizarCaminhosFotos(pessoaId, paths) {
+        const setParts = [];
+        const values = [];
+        if (paths.foto_selfie_path) {
+            setParts.push("foto_selfie_path = ?");
+            values.push(paths.foto_selfie_path);
+        }
+        if (paths.foto_documento_path) {
+            setParts.push("foto_documento_path = ?");
+            values.push(paths.foto_documento_path);
+        }
+        if (setParts.length === 0) {
+            console.warn(`[Repo] Chamado atualizarCaminhosFotos para pessoa ${pessoaId} sem paths.`);
+            return false; // Nada a atualizar
+        }
+        // Atualiza na tabela FISICA associada à PESSOA
+        const query = `UPDATE FISICA SET ${setParts.join(', ')} WHERE PESSOA_pessoa_id = ?`;
+        values.push(pessoaId);
+        try {
+            if (!mysql_connection_1.pool)
+                throw new app_error_1.AppError("Pool de conexão não definido!", 500, false);
+            console.log(`[Repo] Atualizando paths fotos para pessoa ${pessoaId}:`, query, values);
+            const [result] = await mysql_connection_1.pool.query(query, values);
+            console.log(`[Repo] Resultado update paths fotos:`, result);
+            return result.affectedRows > 0; // Retorna true se atualizou
+        }
+        catch (error) {
+            console.error(`[Repo] Erro ao atualizar caminhos fotos para pessoa ${pessoaId}:`, error);
+            // Não lança AppError aqui, serviço pode tentar de novo ou logar
+            return false; // Indica falha
         }
     }
 }

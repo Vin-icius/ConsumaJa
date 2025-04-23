@@ -11,12 +11,10 @@ const authMiddleware = (req, res, next) => {
     const token = authHeader.split(' ')[1];
     try {
         const decodedPayload = jwt_util_1.JwtUtil.verifyToken(token);
-        // Anexa os dados do usuário decodificados ao objeto 'req'
         req.user = decodedPayload;
-        next(); // Prossegue para a próxima rota/middleware
+        next();
     }
     catch (error) {
-        // Erros do JwtUtil (TokenExpiredError, JsonWebTokenError) já são AppError 401
         next(error);
     }
 };

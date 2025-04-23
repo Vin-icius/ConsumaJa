@@ -6,6 +6,7 @@ import cors from 'cors';
 
 // Importar Rotas
 import authRoutes from './interfaces/routes/auth.routes';
+import pessoaRoutes from './interfaces/routes/pessoa.routes';
 
 // Importar Middlewares e Helpers
 import { errorHandler } from './interfaces/middlewares/error.middleware';
@@ -29,8 +30,7 @@ const apiRouter = express.Router();
 
 // Montar rotas de autenticação
 apiRouter.use('/auth', authRoutes);
-// Montar outras rotas de pessoa
-// apiRouter.use('/users', pessoaRoutes);
+apiRouter.use('/pessoa', pessoaRoutes);
 
 // Aplicar prefixo '/api'
 app.use('/api', apiRouter);
