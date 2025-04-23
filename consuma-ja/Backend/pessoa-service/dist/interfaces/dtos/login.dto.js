@@ -10,7 +10,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LoginDto = void 0;
-// src/interfaces/dtos/login.dto.ts
 const class_validator_1 = require("class-validator");
 class LoginDto {
 }

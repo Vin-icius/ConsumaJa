@@ -13,7 +13,6 @@ class AuthController {
         const dto = (0, class_transformer_1.plainToClass)(login_dto_1.LoginDto, req.body);
         const errors = await (0, class_validator_1.validate)(dto);
         if (errors.length > 0) {
-            // Passa erros de validação para o errorHandler
             return next(errors);
         }
         try {
@@ -21,7 +20,6 @@ class AuthController {
             res.status(200).json(authResponse); // Retorna token e dados do usuário
         }
         catch (error) {
-            // Passa AppError (401, 403, 500) ou outros para o errorHandler
             next(error);
         }
     }
