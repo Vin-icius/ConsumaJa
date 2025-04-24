@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // !!!!! VERIFIQUE SE ESTA URL BASE ESTÁ CORRETA !!!!!
 // (IP da sua máquina, Porta do pessoa-service, Caminho base '/api')
-const API_URL_BASE = 'http://172.16.241.5:3002/api';
+const API_URL_BASE = 'http://localhost:3002/api';
 
 // Funções auxiliares para tratamento de erro
 const handleRequest = async (requestPromise) => {

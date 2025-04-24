@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Keyboard, ActivityIndicator, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import authService from '../../services/authService';
+import CadastroScreen from './CadastroScreen';
 
 const LoginScreen = ({ navigation }) => {
   const [senha, setSenha] = useState('');
@@ -116,7 +117,7 @@ const LoginScreen = ({ navigation }) => {
       {/* Campo unificado */}
       <TextInput
         style={styles.input}
-        placeholder="Login, Email, CPF ou CNPJ"
+        placeholder="CPF ou CNPJ"
         // Ajustar keyboardType dependendo se permite texto ou não
         // keyboardType="default" // Permite texto e números
         keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric'} // Melhor para CPF/CNPJ, mas dificulta email/login
@@ -149,7 +150,7 @@ const LoginScreen = ({ navigation }) => {
       </TouchableOpacity>
 
       {/* Links mantidos */}
-      <TouchableOpacity onPress={() => navigation.navigate('CadastroEtapa1')}>
+      <TouchableOpacity onPress={() => navigation.navigate('Cadastro')}>
         <Text style={styles.linkText}>Cadastre-se</Text>
       </TouchableOpacity>
     </View>
