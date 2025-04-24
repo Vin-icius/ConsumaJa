@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL_BASE = 'http://localhost:3000/api/product';
+const API_URL_BASE = 'http://172.20.0.13:3000/api/product';
 
 // Funções auxiliares para tratamento de erro (pode mover para um utils)
 const handleRequest = async (requestPromise) => {
