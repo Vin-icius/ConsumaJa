@@ -344,7 +344,7 @@ CREATE TABLE `nota_avaliacao` (
 INSERT INTO PESSOA
   (pessoa_nome, pessoa_email, pessoa_telefone, pessoa_tipo, pessoa_login, pessoa_senha, pessoa_status, data_criacao)
 VALUES
-  ('Admin User', 'admin@email.com', '11999999999', 'Admin', 'admin', '$2a$11$JKTbvCrhA99mX44.spT2J.BrXvgVG1uLKvlMDbM294oD/Zslvz9FW', 1, CURDATE()); -- Senha é 'admin'
+  ('Admin User', 'admin@email.com', '11999999999', 'Admin', '1', '$2a$11$JKTbvCrhA99mX44.spT2J.BrXvgVG1uLKvlMDbM294oD/Zslvz9FW', 1, CURDATE()); -- Senha é 'admin'
 
 -- Inserir dados base (garantindo que 'ativo' está incluído onde necessário)
 -- Use INSERT IGNORE para evitar erro se já existirem com mesmo nome/ID

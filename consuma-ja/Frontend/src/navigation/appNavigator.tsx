@@ -53,7 +53,7 @@ const MainAppDrawer = () => {
     drawerScreens.push(<Drawer.Screen key="Configuracoes" name="Configuracoes" component={ConfigScreen} options={{ title:'Configurações', drawerIcon: ({ color, size }) => (<Ionicons name="settings-outline" color={color} size={size} />) }} />);
 
     // Telas de Cadastros/Gerenciamento Produto
-    drawerScreens.push(<Drawer.Screen key="Cadastro Categoria" name="Cadastro Categoria" component={CategoriaListScreen} options={{ title:'Gerenciar Categorias', drawerIcon: ({ color, size }) => (<Ionicons name="pricetag-outline" color={color} size={size} />) }}/>);
+    drawerScreens.push(<Drawer.Screen key="Cadastro Categoria" name="Cadastro Categoria" component={CategoriaListScreen} options={{ title:'Gerenciar Categorias', drawerIcon: ({ color, size }) => (<Ionicons name="pricetag-outline" color={color} size={size}/>) }}/>);
     drawerScreens.push(<Drawer.Screen key="Cadastro Marca" name="Cadastro Marca" component={MarcaListScreen} options={{ title:'Gerenciar Marcas', drawerIcon: ({ color, size }) => (<Ionicons name="bookmark-outline" color={color} size={size} />) }}/>);
     drawerScreens.push(<Drawer.Screen key="Cadastro Tipo" name="Cadastro Tipo" component={TipoListScreen} options={{ title:'Gerenciar Tipos', drawerIcon: ({ color, size }) => (<Ionicons name="file-tray-outline" color={color} size={size} />) }}/>);
     drawerScreens.push(<Drawer.Screen key="Cadastro Produto" name="Cadastro Produto" component={ProductListScreen} options={{ title:'Gerenciar Produtos', drawerIcon: ({ color, size }) => (<Ionicons name="cube-outline" color={color} size={size} />) }}/>);
@@ -79,7 +79,7 @@ const MainAppDrawer = () => {
             drawerContent={(props) => <Sidebar {...props} />}
             screenOptions={{ drawerActiveTintColor: '#4CAF50', // <<< Define a cor do ÍCONE e TEXTO ATIVO como verde
               drawerInactiveTintColor: 'white', // <<< Define a cor do ÍCONE e TEXTO INATIVO como branco
-              drawerLabelStyle: { color: 'white', fontSize: 16, marginLeft: -16}, // <<< FORÇA a cor do TEXTO (label) a ser branco SEMPRE
+              drawerLabelStyle: { color: 'white', fontSize: 16, marginLeft: 5}, // <<< FORÇA a cor do TEXTO (label) a ser branco SEMPRE
               drawerStyle: { backgroundColor: '#2F4F4F', /*...*/ } }}
         >
             {drawerScreens}
