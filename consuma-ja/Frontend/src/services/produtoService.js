@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL_BASE = 'http://localhost:3000/api/product'; // <<< CORRIGIDO: Termina antes do recurso específico
+const API_URL_BASE = 'http://172.20.0.13:3000/api/product'; // <<< CORRIGIDO: Termina antes do recurso específico
 
 // Funções auxiliares para tratamento de erro
 const handleRequest = async (requestPromise) => {

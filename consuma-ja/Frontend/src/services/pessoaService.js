@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // !!!!! VERIFIQUE SE ESTA URL BASE ESTÁ CORRETA !!!!!
 // (IP da sua máquina, Porta do pessoa-service, Caminho base '/api')
-const API_URL_BASE = 'http://localhost:3002/api';
+const API_URL_BASE = 'http://172.20.0.13:3002/api';
 
 // Funções auxiliares para tratamento de erro
 const handleRequest = async (requestPromise) => {
@@ -72,15 +72,15 @@ const uploadFoto = async (pessoaId, tipoFoto, imageUri) => {
         // Enviar como multipart/form-data
         const response = await axios.post(endpoint, formData, {
             headers: {
-                // 'Content-Type': 'multipart/form-data', // Axios geralmente define isso automaticamente para FormData
+                 'Content-Type': 'multipart/form-data', // Axios geralmente define isso automaticamente para FormData
                 // Adicionar token de autenticação se necessário
                 // 'Authorization': `Bearer ${await AsyncStorage.getItem('userToken')}`
             },
              // Opcional: callback de progresso de upload
-             // onUploadProgress: (progressEvent) => {
-             //   let percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-             //   console.log(`Upload ${tipoFoto}: ${percentCompleted}%`);
-             // }
+              onUploadProgress: (progressEvent) => {
+                let percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                console.log(`Upload ${tipoFoto}: ${percentCompleted}%`);
+              }
         });
         return response.data;
     } catch (error) {
