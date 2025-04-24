@@ -74,7 +74,7 @@ app.use(errorHandler);
 // --- Iniciar o servidor ---
 // Armazena a instância do servidor para poder fechá-la depois
 const server = app.listen(port, () => {
-  console.log(`[Server] Location Service está rodando em http://localhost:${port}`);
+  console.log(`[Server] Location Service está rodando em http://172.20.0.13:${port}`);
   console.log(`[Server] Ambiente: ${process.env.NODE_ENV || 'development'}`);
 });
 

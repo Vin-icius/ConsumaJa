@@ -52,7 +52,7 @@ app.use((req, res, next) => {
 app.use(error_middleware_1.errorHandler);
 // --- Iniciar o servidor ---
 const server = app.listen(port, () => {
-    console.log(`[Server] Product Service está rodando em http://localhost:${port}`);
+    console.log(`[Server] Product Service está rodando em http://172.20.0.13:${port}`);
     console.log(`[Server] Ambiente: ${process.env.NODE_ENV || 'development'}`);
 });
 //# sourceMappingURL=main.js.map

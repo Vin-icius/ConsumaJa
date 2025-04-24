@@ -62,7 +62,7 @@ app.use(error_middleware_1.errorHandler);
 // --- Iniciar o servidor ---
 // Armazena a instância do servidor para poder fechá-la depois
 var server = app.listen(port, function () {
-    console.log("[Server] Location Service est\u00E1 rodando em http://localhost:".concat(port));
+    console.log("[Server] Location Service est\u00E1 rodando em http://172.20.0.13:".concat(port));
     console.log("[Server] Ambiente: ".concat(process.env.NODE_ENV || 'development'));
 });
 // --- Graceful Shutdown ---
