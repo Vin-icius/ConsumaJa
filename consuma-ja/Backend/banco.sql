@@ -385,3 +385,39 @@ INSERT INTO PRODUTO (
     NULL, -- data_exclusao
     TRUE -- ativo (TRUE ou 1)
 );
+
+INSERT INTO PESSOA
+  (pessoa_nome, pessoa_email, pessoa_telefone, pessoa_tipo, pessoa_login, pessoa_senha, pessoa_status, data_criacao) 
+VALUES ('Teste', 'testess@gmail.com', '18815487354', 'Fisica', '23125425484', '$2b$10$zv.Dvfb8PFiKImcWsSUwKO0V.9KkhT8MjuztOTzJWKpDpej9Gmk8W', '1', '2025-04-24');
+
+INSERT INTO PESSOA
+  (pessoa_nome, pessoa_email, pessoa_telefone, pessoa_tipo, pessoa_login, pessoa_senha, pessoa_status, data_criacao)
+VALUES  ('Capeta', 'capetinha@hotmail.com', '6666666666', 'Fisica', '66666666666', '$2b$10$neYFNfb0HKSwqzYhLyIUS.Sjgo5g86oCXEh8fuvfEqFO9p36NS9xm', '0', '2025-04-24');
+
+INSERT INTO PESSOA
+  (pessoa_nome, pessoa_email, pessoa_telefone, pessoa_tipo, pessoa_login, pessoa_senha, pessoa_status, data_criacao)
+VALUES ('Gabryel', 'gablerlivros@gmail.com', '18998082383', 'Fisica', '47806728806', '$2b$10$d2YsKYhI14q.WyzrUBtgReQ3IzIIFUd6aALTcftDlwIIrebTdGxZi', '1', '2025-04-24');
+
+INSERT INTO PESSOA
+  (pessoa_nome, pessoa_email, pessoa_telefone, pessoa_tipo, pessoa_login, pessoa_senha, pessoa_status, data_criacao)
+VALUES ('Hajjajsh', 'teste@gmail.com', '81545845456', 'Fisica', '11111111111', '$2b$10$k61YOrw8z5m4HJTfbXGAreAKyheB1q4EB4Uz/az97SYDqZgEBh.B.', '1', '2025-04-24');
+
+INSERT INTO PESSOA
+  (pessoa_nome, pessoa_email, pessoa_telefone, pessoa_tipo, pessoa_login, pessoa_senha, pessoa_status, data_criacao)
+VALUES ('Francisco Maracci', 'fvmaracci@gmail.com', '18997442619', 'Fisica', '30922325855', '$2b$10$R56bBKp.Mr6u2TeHQ3A1P.kf57dDksmfwc0D.XRngRGySd9nl.po2', '1', '2025-04-24');
+
+INSERT INTO FISICA
+  (pessoa_cpf, foto_selfie_path, foto_documento_path, PESSOA_pessoa_id)
+VALUES('66666666666', 'fotosUsuarios/8-selfie-1745499150683.jpg', 'fotosUsuarios/8-documento-1745499151063.jpg', '2');
+
+INSERT INTO FISICA
+  (pessoa_cpf, foto_selfie_path, foto_documento_path, PESSOA_pessoa_id)
+VALUES('47806728806', 'fotosUsuarios/9-selfie-1745500237863.jpg', 'fotosUsuarios/9-documento-1745500238288.jpg', '3');
+
+INSERT INTO FISICA
+  (pessoa_cpf, foto_selfie_path, foto_documento_path, PESSOA_pessoa_id)
+VALUES('11111111111', 'fotosUsuarios/10-selfie-1745500909344.jpg', 'fotosUsuarios/10-documento-1745500909589.jpg', '4');
+
+INSERT INTO FISICA
+  (pessoa_cpf, foto_selfie_path, foto_documento_path, PESSOA_pessoa_id)
+VALUES('30922325855', 'fotosUsuarios/11-selfie-1745503965164.jpeg', 'fotosUsuarios/11-documento-1745503965323.jpeg', '5');
