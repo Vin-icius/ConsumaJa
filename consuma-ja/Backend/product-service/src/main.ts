@@ -65,6 +65,6 @@ app.use(errorHandler);
 
 // --- Iniciar o servidor ---
 const server = app.listen(port, () => {
-  console.log(`[Server] Product Service está rodando em http://159.112.183.233:${port}`);
+  console.log(`[Server] Product Service está rodando em http://172.20.0.13:${port}`);
   console.log(`[Server] Ambiente: ${process.env.NODE_ENV || 'development'}`);
 });
