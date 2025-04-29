@@ -43,4 +43,4 @@ app.use((req: Request, res: Response, next: NextFunction) => { next(new AppError
 app.use(errorHandler);
 
 // --- Iniciar o servidor ---
-const server = app.listen(port, () => { console.log(`[Server] Pessoa Service rodando em http://172.20.0.13:${port}`); });
+const server = app.listen(port, () => { console.log(`[Server] Pessoa Service rodando em http://159.112.183.233ort}`); });
