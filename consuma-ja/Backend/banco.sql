@@ -10,10 +10,10 @@ CREATE SCHEMA IF NOT EXISTS `ConsumaJaDB` DEFAULT CHARACTER SET utf8mb4 COLLATE 
 USE `ConsumaJaDB` ;
 
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`pessoa`
+-- Table `ConsumaJaDB`.`PESSOA`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `pessoa`;
-CREATE TABLE `pessoa` (
+DROP TABLE IF EXISTS `PESSOA`;
+CREATE TABLE `PESSOA` (
   `pessoa_id` int unsigned NOT NULL AUTO_INCREMENT,
   `pessoa_nome` varchar(255) NOT NULL,
   `pessoa_email` varchar(255) NOT NULL,
@@ -30,10 +30,10 @@ CREATE TABLE `pessoa` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`estado`
+-- Table `ConsumaJaDB`.`ESTADO`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `estado`;
-CREATE TABLE `estado` (
+DROP TABLE IF EXISTS `ESTADO`;
+CREATE TABLE `ESTADO` (
   `estado_id` int NOT NULL AUTO_INCREMENT,
   `estado_nome` varchar(45) NOT NULL,
   `estado_sigla` varchar(3) NOT NULL,
@@ -41,10 +41,10 @@ CREATE TABLE `estado` (
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`cidade`
+-- Table `ConsumaJaDB`.`CIDADE`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `cidade`;
-CREATE TABLE `cidade` (
+DROP TABLE IF EXISTS `CIDADE`;
+CREATE TABLE `CIDADE` (
   `cidade_id` int NOT NULL AUTO_INCREMENT,
   `cidade_nome` varchar(45) DEFAULT NULL,
   `regiao_ddd` varchar(4) NOT NULL,
@@ -52,14 +52,14 @@ CREATE TABLE `cidade` (
   PRIMARY KEY (`cidade_id`),
   UNIQUE KEY `idx_cidade_unica_estado` (`cidade_nome`, `ESTADO_estado_id`),
   KEY `fk_CIDADE_ESTADO1_idx` (`ESTADO_estado_id`),
-  CONSTRAINT `fk_CIDADE_ESTADO1` FOREIGN KEY (`ESTADO_estado_id`) REFERENCES `estado` (`estado_id`)
+  CONSTRAINT `fk_CIDADE_ESTADO1` FOREIGN KEY (`ESTADO_estado_id`) REFERENCES `ESTADO` (`estado_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`endereco`
+-- Table `ConsumaJaDB`.`ENDERECO`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `endereco`;
-CREATE TABLE `endereco` (
+DROP TABLE IF EXISTS `ENDERECO`;
+CREATE TABLE `ENDERECO` (
   `endereco_id` int NOT NULL AUTO_INCREMENT,
   `rua` varchar(60) NOT NULL,
   `bairro` varchar(45) NOT NULL,
@@ -72,42 +72,46 @@ CREATE TABLE `endereco` (
   PRIMARY KEY (`endereco_id`),
   KEY `fk_ENDERECO_CIDADE1_idx` (`CIDADE_cidade_id`),
   KEY `fk_ENDERECO_PESSOA1_idx` (`PESSOA_pessoa_id`),
-  CONSTRAINT `fk_ENDERECO_CIDADE1` FOREIGN KEY (`CIDADE_cidade_id`) REFERENCES `cidade` (`cidade_id`),
-  CONSTRAINT `fk_ENDERECO_PESSOA1` FOREIGN KEY (`PESSOA_pessoa_id`) REFERENCES `pessoa` (`pessoa_id`)
+  CONSTRAINT `fk_ENDERECO_CIDADE1` FOREIGN KEY (`CIDADE_cidade_id`) REFERENCES `CIDADE` (`cidade_id`),
+  CONSTRAINT `fk_ENDERECO_PESSOA1` FOREIGN KEY (`PESSOA_pessoa_id`) REFERENCES `PESSOA` (`pessoa_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`fisica`
+-- Table `ConsumaJaDB`.`FISICA`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `fisica`;
-CREATE TABLE `fisica` (
+DROP TABLE IF EXISTS `FISICA`;
+CREATE TABLE `FISICA` (
   `pessoa_cpf` varchar(14) NOT NULL,
   `pessoa_documentoValidado` tinyint NOT NULL DEFAULT '0',
   `pessoa_fotoValidada` tinyint NOT NULL DEFAULT '0',
   `PESSOA_pessoa_id` int unsigned NOT NULL,
   PRIMARY KEY (`PESSOA_pessoa_id`),
   UNIQUE KEY `pessoa_cpf_UNIQUE` (`pessoa_cpf`),
-  CONSTRAINT `fk_FISICA_PESSOA1` FOREIGN KEY (`PESSOA_pessoa_id`) REFERENCES `pessoa` (`pessoa_id`)
+  CONSTRAINT `fk_FISICA_PESSOA1` FOREIGN KEY (`PESSOA_pessoa_id`) REFERENCES `PESSOA` (`pessoa_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+ALTER TABLE FISICA
+ADD COLUMN foto_selfie_path VARCHAR(512) NULL DEFAULT NULL COMMENT 'Caminho relativo da foto da selfie no servidor' AFTER pessoa_fotoValidada,
+ADD COLUMN foto_documento_path VARCHAR(512) NULL DEFAULT NULL COMMENT 'Caminho relativo da foto do documento no servidor' AFTER foto_selfie_path;
+
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`juridica`
+-- Table `ConsumaJaDB`.`JURIDICA`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `juridica`;
-CREATE TABLE `juridica` (
+DROP TABLE IF EXISTS `JURIDICA`;
+CREATE TABLE `JURIDICA` (
   `cnpj` varchar(18) NOT NULL,
   `fornecedor_num` int DEFAULT NULL,
   `PESSOA_pessoa_id` int unsigned NOT NULL,
   PRIMARY KEY (`PESSOA_pessoa_id`),
   UNIQUE KEY `pessoa_cnpj_UNIQUE` (`cnpj`),
-  CONSTRAINT `fk_JURIDICA_PESSOA1` FOREIGN KEY (`PESSOA_pessoa_id`) REFERENCES `pessoa` (`pessoa_id`)
+  CONSTRAINT `fk_JURIDICA_PESSOA1` FOREIGN KEY (`PESSOA_pessoa_id`) REFERENCES `PESSOA` (`pessoa_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`categoria_produto`
+-- Table `ConsumaJaDB`.`CATEGORIA_PRODUTO`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `categoria_produto`;
-CREATE TABLE `categoria_produto` (
+DROP TABLE IF EXISTS `CATEGORIA_PRODUTO`;
+CREATE TABLE `CATEGORIA_PRODUTO` (
   `categoria_id` int unsigned NOT NULL AUTO_INCREMENT,
   `categoria_nome` varchar(255) NOT NULL,
   `ativo` boolean NOT NULL DEFAULT TRUE,
@@ -116,10 +120,10 @@ CREATE TABLE `categoria_produto` (
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`marca_produto`
+-- Table `ConsumaJaDB`.`MARCA_PRODUTO`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `marca_produto`;
-CREATE TABLE `marca_produto` (
+DROP TABLE IF EXISTS `MARCA_PRODUTO`;
+CREATE TABLE `MARCA_PRODUTO` (
   `marca_id` int unsigned NOT NULL AUTO_INCREMENT,
   `marca_nome` varchar(255) NOT NULL,
   `ativo` boolean NOT NULL DEFAULT TRUE,
@@ -128,10 +132,10 @@ CREATE TABLE `marca_produto` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`tipo_produto`
+-- Table `ConsumaJaDB`.`TIPO_PRODUTO`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `tipo_produto`;
-CREATE TABLE `tipo_produto` (
+DROP TABLE IF EXISTS `TIPO_PRODUTO`;
+CREATE TABLE `TIPO_PRODUTO` (
   `tipo_id` int unsigned NOT NULL AUTO_INCREMENT,
   `tipo_nome` varchar(255) NOT NULL,
   `ativo` boolean NOT NULL DEFAULT TRUE,
@@ -140,10 +144,10 @@ CREATE TABLE `tipo_produto` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`produto`
+-- Table `ConsumaJaDB`.`PRODUTO`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `produto`;
-CREATE TABLE `produto` (
+DROP TABLE IF EXISTS `PRODUTO`;
+CREATE TABLE `PRODUTO` (
   `produto_id` int unsigned NOT NULL AUTO_INCREMENT,
   `MARCA_PRODUTO_marca_id` int unsigned NOT NULL,
   `TIPO_PRODUTO_tipo_id` int unsigned NOT NULL,
@@ -163,16 +167,16 @@ CREATE TABLE `produto` (
   KEY `fk_PRODUTO_MARCA_PRODUTO1_idx` (`MARCA_PRODUTO_marca_id`),
   KEY `fk_PRODUTO_TIPO_PRODUTO1_idx` (`TIPO_PRODUTO_tipo_id`),
   KEY `fk_PRODUTO_CATEGORIA_PRODUTO1_idx` (`CATEGORIA_PRODUTO_categoria_id`),
-  CONSTRAINT `fk_PRODUTO_CATEGORIA_PRODUTO1` FOREIGN KEY (`CATEGORIA_PRODUTO_categoria_id`) REFERENCES `categoria_produto` (`categoria_id`),
-  CONSTRAINT `fk_PRODUTO_MARCA_PRODUTO1` FOREIGN KEY (`MARCA_PRODUTO_marca_id`) REFERENCES `marca_produto` (`marca_id`),
-  CONSTRAINT `fk_PRODUTO_TIPO_PRODUTO1` FOREIGN KEY (`TIPO_PRODUTO_tipo_id`) REFERENCES `tipo_produto` (`tipo_id`)
+  CONSTRAINT `fk_PRODUTO_CATEGORIA_PRODUTO1` FOREIGN KEY (`CATEGORIA_PRODUTO_categoria_id`) REFERENCES `CATEGORIA_PRODUTO` (`categoria_id`),
+  CONSTRAINT `fk_PRODUTO_MARCA_PRODUTO1` FOREIGN KEY (`MARCA_PRODUTO_marca_id`) REFERENCES `MARCA_PRODUTO` (`marca_id`),
+  CONSTRAINT `fk_PRODUTO_TIPO_PRODUTO1` FOREIGN KEY (`TIPO_PRODUTO_tipo_id`) REFERENCES `TIPO_PRODUTO` (`tipo_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`loteprod`
+-- Table `ConsumaJaDB`.`LOTEPROD`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `loteprod`;
-CREATE TABLE `loteprod` (
+DROP TABLE IF EXISTS `LOTEPROD`;
+CREATE TABLE `LOTEPROD` (
   `lote_id` int NOT NULL AUTO_INCREMENT,
   `produto_id` int unsigned NOT NULL,
   `lote_codigo` varchar(100) NOT NULL,
@@ -183,14 +187,14 @@ CREATE TABLE `loteprod` (
   PRIMARY KEY (`lote_id`),
   UNIQUE KEY `idx_lote_unico_produto` (`produto_id`, `lote_codigo`),
   KEY `fk_LOTEPROD_PRODUTO1_idx` (`produto_id`),
-  CONSTRAINT `fk_LOTEPROD_PRODUTO1` FOREIGN KEY (`produto_id`) REFERENCES `produto` (`produto_id`)
+  CONSTRAINT `fk_LOTEPROD_PRODUTO1` FOREIGN KEY (`produto_id`) REFERENCES `PRODUTO` (`produto_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`promocao`
+-- Table `ConsumaJaDB`.`PROMOCAO`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `promocao`;
-CREATE TABLE `promocao` (
+DROP TABLE IF EXISTS `PROMOCAO`;
+CREATE TABLE `PROMOCAO` (
   `promocao_id` int NOT NULL AUTO_INCREMENT,
   `promocao_descricao` varchar(255) NOT NULL,
   `inicio` datetime NOT NULL,
@@ -201,30 +205,30 @@ CREATE TABLE `promocao` (
   PRIMARY KEY (`promocao_id`),
   KEY `fk_PROMOCAO_JURIDICA1_idx` (`JURIDICA_PESSOA_pessoa_id`),
   KEY `fk_PROMOCAO_ENDERECO1_idx` (`endereco_id`),
-  CONSTRAINT `fk_PROMOCAO_ENDERECO1` FOREIGN KEY (`endereco_id`) REFERENCES `endereco` (`endereco_id`),
-  CONSTRAINT `fk_PROMOCAO_JURIDICA1` FOREIGN KEY (`JURIDICA_PESSOA_pessoa_id`) REFERENCES `juridica` (`PESSOA_pessoa_id`)
+  CONSTRAINT `fk_PROMOCAO_ENDERECO1` FOREIGN KEY (`endereco_id`) REFERENCES `ENDERECO` (`endereco_id`),
+  CONSTRAINT `fk_PROMOCAO_JURIDICA1` FOREIGN KEY (`JURIDICA_PESSOA_pessoa_id`) REFERENCES `JURIDICA` (`PESSOA_pessoa_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`item_promocao`
+-- Table `ConsumaJaDB`.`ITEM_PROMOCAO`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `item_promocao`;
-CREATE TABLE `item_promocao` (
+DROP TABLE IF EXISTS `ITEM_PROMOCAO`;
+CREATE TABLE `ITEM_PROMOCAO` (
   `PROMOCAO_promocao_id` int NOT NULL,
   `LOTEPROD_lote_id` int NOT NULL,
   `itemPromocao_qtde` int NOT NULL,
   `itemPromocao_valor` decimal(10,2) NOT NULL,
   PRIMARY KEY (`PROMOCAO_promocao_id`,`LOTEPROD_lote_id`),
   KEY `fk_ITEM_PROMOCAO_LOTEPROD1_idx` (`LOTEPROD_lote_id`),
-  CONSTRAINT `fk_ITEM_PROMOCAO_LOTEPROD1` FOREIGN KEY (`LOTEPROD_lote_id`) REFERENCES `loteprod` (`lote_id`),
-  CONSTRAINT `fk_ITEM_PROMOCAO_PROMOCAO1` FOREIGN KEY (`PROMOCAO_promocao_id`) REFERENCES `promocao` (`promocao_id`)
+  CONSTRAINT `fk_ITEM_PROMOCAO_LOTEPROD1` FOREIGN KEY (`LOTEPROD_lote_id`) REFERENCES `LOTEPROD` (`lote_id`),
+  CONSTRAINT `fk_ITEM_PROMOCAO_PROMOCAO1` FOREIGN KEY (`PROMOCAO_promocao_id`) REFERENCES `PROMOCAO` (`promocao_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`venda`
+-- Table `ConsumaJaDB`.`VENDA`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `venda`;
-CREATE TABLE `venda` (
+DROP TABLE IF EXISTS `VENDA`;
+CREATE TABLE `VENDA` (
   `venda_id` int unsigned NOT NULL AUTO_INCREMENT,
   `venda_data` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `venda_total` decimal(10,2) NOT NULL,
@@ -237,16 +241,16 @@ CREATE TABLE `venda` (
   KEY `fk_VENDA_PROMOCAO1_idx` (`PROMOCAO_promocao_id`),
   KEY `fk_VENDA_PESSOA1_idx` (`PESSOA_pessoa_id`),
   KEY `fk_VENDA_ENDERECO1_idx` (`ENDERECO_endereco_id`),
-  CONSTRAINT `fk_VENDA_ENDERECO1` FOREIGN KEY (`ENDERECO_endereco_id`) REFERENCES `endereco` (`endereco_id`),
-  CONSTRAINT `fk_VENDA_PESSOA1` FOREIGN KEY (`PESSOA_pessoa_id`) REFERENCES `pessoa` (`pessoa_id`),
-  CONSTRAINT `fk_VENDA_PROMOCAO1` FOREIGN KEY (`PROMOCAO_promocao_id`) REFERENCES `promocao` (`promocao_id`)
+  CONSTRAINT `fk_VENDA_ENDERECO1` FOREIGN KEY (`ENDERECO_endereco_id`) REFERENCES `ENDERECO` (`endereco_id`),
+  CONSTRAINT `fk_VENDA_PESSOA1` FOREIGN KEY (`PESSOA_pessoa_id`) REFERENCES `PESSOA` (`pessoa_id`),
+  CONSTRAINT `fk_VENDA_PROMOCAO1` FOREIGN KEY (`PROMOCAO_promocao_id`) REFERENCES `PROMOCAO` (`promocao_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`item_venda`
+-- Table `ConsumaJaDB`.`ITEM_VENDA`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `item_venda`;
-CREATE TABLE `item_venda` (
+DROP TABLE IF EXISTS `ITEM_VENDA`;
+CREATE TABLE `ITEM_VENDA` (
   `itemVenda_qtde` int NOT NULL,
   `itemVenda_preco` decimal(10,2) NOT NULL,
   `LOTEPROD_lote_id` int NOT NULL,
@@ -254,15 +258,15 @@ CREATE TABLE `item_venda` (
   PRIMARY KEY (`LOTEPROD_lote_id`,`VENDA_venda_id`),
   KEY `fk_ITEM_VENDA_LOTEPROD1_idx` (`LOTEPROD_lote_id`),
   KEY `fk_ITEM_VENDA_VENDA1_idx` (`VENDA_venda_id`),
-  CONSTRAINT `fk_ITEM_VENDA_LOTEPROD1` FOREIGN KEY (`LOTEPROD_lote_id`) REFERENCES `loteprod` (`lote_id`),
-  CONSTRAINT `fk_ITEM_VENDA_VENDA1` FOREIGN KEY (`VENDA_venda_id`) REFERENCES `venda` (`venda_id`)
+  CONSTRAINT `fk_ITEM_VENDA_LOTEPROD1` FOREIGN KEY (`LOTEPROD_lote_id`) REFERENCES `LOTEPROD` (`lote_id`),
+  CONSTRAINT `fk_ITEM_VENDA_VENDA1` FOREIGN KEY (`VENDA_venda_id`) REFERENCES `VENDA` (`venda_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`devolucao`
+-- Table `ConsumaJaDB`.`DEVOLUCAO`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `devolucao`;
-CREATE TABLE `devolucao` (
+DROP TABLE IF EXISTS `DEVOLUCAO`;
+CREATE TABLE `DEVOLUCAO` (
   `devolucao_id` int unsigned NOT NULL AUTO_INCREMENT,
   `devolucao_data` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `devolucao_motivo` text NOT NULL,
@@ -271,29 +275,29 @@ CREATE TABLE `devolucao` (
   PRIMARY KEY (`devolucao_id`),
   UNIQUE KEY `idDEVOLUCAO_UNIQUE` (`devolucao_id`),
   KEY `fk_DEVOLUCAO_VENDA1_idx` (`VENDA_venda_id`),
-  CONSTRAINT `fk_DEVOLUCAO_VENDA1` FOREIGN KEY (`VENDA_venda_id`) REFERENCES `venda` (`venda_id`)
+  CONSTRAINT `fk_DEVOLUCAO_VENDA1` FOREIGN KEY (`VENDA_venda_id`) REFERENCES `VENDA` (`venda_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`item_devolucao`
+-- Table `ConsumaJaDB`.`ITEM_DEVOLUCAO`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `item_devolucao`;
-CREATE TABLE `item_devolucao` (
+DROP TABLE IF EXISTS `ITEM_DEVOLUCAO`;
+CREATE TABLE `ITEM_DEVOLUCAO` (
   `DEVOLUCAO_devolucao_id` int unsigned NOT NULL,
   `LOTEPROD_lote_id` int NOT NULL,
   `itemDevolucao_qtde` int NOT NULL,
   PRIMARY KEY (`DEVOLUCAO_devolucao_id`,`LOTEPROD_lote_id`),
   KEY `fk_ITEM_DEVOLUCAO_DEVOLUCAO1_idx` (`DEVOLUCAO_devolucao_id`),
   KEY `fk_ITEM_DEVOLUCAO_LOTEPROD1_idx` (`LOTEPROD_lote_id`),
-  CONSTRAINT `fk_ITEM_DEVOLUCAO_DEVOLUCAO1` FOREIGN KEY (`DEVOLUCAO_devolucao_id`) REFERENCES `devolucao` (`devolucao_id`),
-  CONSTRAINT `fk_ITEM_DEVOLUCAO_LOTEPROD1` FOREIGN KEY (`LOTEPROD_lote_id`) REFERENCES `loteprod` (`lote_id`)
+  CONSTRAINT `fk_ITEM_DEVOLUCAO_DEVOLUCAO1` FOREIGN KEY (`DEVOLUCAO_devolucao_id`) REFERENCES `DEVOLUCAO` (`devolucao_id`),
+  CONSTRAINT `fk_ITEM_DEVOLUCAO_LOTEPROD1` FOREIGN KEY (`LOTEPROD_lote_id`) REFERENCES `LOTEPROD` (`lote_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`perguntas`
+-- Table `ConsumaJaDB`.`PERGUNTAS`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `perguntas`;
-CREATE TABLE `perguntas` (
+DROP TABLE IF EXISTS `PERGUNTAS`;
+CREATE TABLE `PERGUNTAS` (
   `perguntas_id` int unsigned NOT NULL AUTO_INCREMENT,
   `perguntas_descricao` text NOT NULL,
   `ativo` boolean NOT NULL DEFAULT TRUE,
@@ -302,10 +306,10 @@ CREATE TABLE `perguntas` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`avaliacao`
+-- Table `ConsumaJaDB`.`AVALIACAO`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `avaliacao`;
-CREATE TABLE `avaliacao` (
+DROP TABLE IF EXISTS `AVALIACAO`;
+CREATE TABLE `AVALIACAO` (
   `avaliacao_id` int unsigned NOT NULL AUTO_INCREMENT,
   `avaliacao_descricao` text,
   `PROMOCAO_promocao_id` int DEFAULT NULL,
@@ -317,24 +321,24 @@ CREATE TABLE `avaliacao` (
   KEY `fk_AVALIACAO_PROMOCAO1_idx` (`PROMOCAO_promocao_id`),
   KEY `fk_AVALIACAO_PESSOA1_idx` (`PESSOA_pessoa_id`),
   KEY `fk_AVALIACAO_VENDA1_idx` (`VENDA_venda_id`),
-  CONSTRAINT `fk_AVALIACAO_PESSOA1` FOREIGN KEY (`PESSOA_pessoa_id`) REFERENCES `pessoa` (`pessoa_id`),
-  CONSTRAINT `fk_AVALIACAO_PROMOCAO1` FOREIGN KEY (`PROMOCAO_promocao_id`) REFERENCES `promocao` (`promocao_id`),
-  CONSTRAINT `fk_AVALIACAO_VENDA1` FOREIGN KEY (`VENDA_venda_id`) REFERENCES `venda` (`venda_id`)
+  CONSTRAINT `fk_AVALIACAO_PESSOA1` FOREIGN KEY (`PESSOA_pessoa_id`) REFERENCES `PESSOA` (`pessoa_id`),
+  CONSTRAINT `fk_AVALIACAO_PROMOCAO1` FOREIGN KEY (`PROMOCAO_promocao_id`) REFERENCES `PROMOCAO` (`promocao_id`),
+  CONSTRAINT `fk_AVALIACAO_VENDA1` FOREIGN KEY (`VENDA_venda_id`) REFERENCES `VENDA` (`venda_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------
--- Table `ConsumaJaDB`.`nota_avaliacao`
+-- Table `ConsumaJaDB`.`NOTA_AVALIACAO`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `nota_avaliacao`;
-CREATE TABLE `nota_avaliacao` (
+DROP TABLE IF EXISTS `NOTA_AVALIACAO`;
+CREATE TABLE `NOTA_AVALIACAO` (
   `AVALIACAO_avaliacao_id` int unsigned NOT NULL,
   `PERGUNTAS_perguntas_id` int unsigned NOT NULL,
   `avaliacao_nota` tinyint NOT NULL,
   PRIMARY KEY (`AVALIACAO_avaliacao_id`,`PERGUNTAS_perguntas_id`),
   KEY `fk_AVALIACAO_has_PERGUNTAS_PERGUNTAS1_idx` (`PERGUNTAS_perguntas_id`),
   KEY `fk_AVALIACAO_has_PERGUNTAS_AVALIACAO1_idx` (`AVALIACAO_avaliacao_id`),
-  CONSTRAINT `fk_AVALIACAO_has_PERGUNTAS_AVALIACAO1` FOREIGN KEY (`AVALIACAO_avaliacao_id`) REFERENCES `avaliacao` (`avaliacao_id`),
-  CONSTRAINT `fk_AVALIACAO_has_PERGUNTAS_PERGUNTAS1` FOREIGN KEY (`PERGUNTAS_perguntas_id`) REFERENCES `perguntas` (`perguntas_id`)
+  CONSTRAINT `fk_AVALIACAO_has_PERGUNTAS_AVALIACAO1` FOREIGN KEY (`AVALIACAO_avaliacao_id`) REFERENCES `AVALIACAO` (`avaliacao_id`),
+  CONSTRAINT `fk_AVALIACAO_has_PERGUNTAS_PERGUNTAS1` FOREIGN KEY (`PERGUNTAS_perguntas_id`) REFERENCES `PERGUNTAS` (`perguntas_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------
@@ -348,12 +352,12 @@ VALUES
 
 -- Inserir dados base (garantindo que 'ativo' está incluído onde necessário)
 -- Use INSERT IGNORE para evitar erro se já existirem com mesmo nome/ID
-INSERT IGNORE INTO estado (estado_id, estado_nome, estado_sigla) VALUES (1,'São Paulo','SP'), (2,'Santa Catarina','SC');
-INSERT IGNORE INTO cidade (cidade_id, cidade_nome, regiao_ddd, ESTADO_estado_id) VALUES (2,'Pirapozinho','18',1), (3,'Presidente Prudente','18',1), (4,'Florianópolis','48',2);
+INSERT IGNORE INTO ESTADO (estado_id, estado_nome, estado_sigla) VALUES (1,'São Paulo','SP'), (2,'Santa Catarina','SC');
+INSERT IGNORE INTO CIDADE (cidade_id, cidade_nome, regiao_ddd, ESTADO_estado_id) VALUES (2,'Pirapozinho','18',1), (3,'Presidente Prudente','18',1), (4,'Florianópolis','48',2);
 
-INSERT IGNORE INTO tipo_produto (tipo_id, tipo_nome, ativo) VALUES (1, 'Barra de Chocolate', TRUE);
-INSERT IGNORE INTO categoria_produto (categoria_id, categoria_nome, ativo) VALUES (1, 'Chocolates', TRUE),(3,'Bebidas', TRUE);
-INSERT IGNORE INTO marca_produto (marca_id, marca_nome, ativo) VALUES (1, 'Garoto', TRUE);
+INSERT IGNORE INTO TIPO_PRODUTO (tipo_id, tipo_nome, ativo) VALUES (1, 'Barra de Chocolate', TRUE);
+INSERT IGNORE INTO CATEGORIA_PRODUTO (categoria_id, categoria_nome, ativo) VALUES (1, 'Chocolates', TRUE),(3,'Bebidas', TRUE);
+INSERT IGNORE INTO MARCA_PRODUTO (marca_id, marca_nome, ativo) VALUES (1, 'Garoto', TRUE);
 
 -- Inserir Produto (corrigido nome coluna 'ativo' e 'data_exclusao')
 INSERT INTO PRODUTO (
