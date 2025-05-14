@@ -2,10 +2,19 @@ import { Produto } from "../../domain/entities/produto.entity";
 import { Categoria } from "../../domain/entities/categoria.entity";
 import { Marca } from "../../domain/entities/marca.entity";
 import { Tipo } from "../../domain/entities/tipo.entity";
+<<<<<<< HEAD
 import { ProdutoRepository, CreateProdutoData, UpdateProdutoData } from "../../domain/repositories/produto.repository";
 import { pool } from "../database/mysql.connection";
 import { AppError } from "../../common/errors/app-error";
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
+=======
+import { ProdutoRepository, CreateProdutoData, UpdateProdutoData, PaginatedRepositoryResponse } from "../../domain/repositories/produto.repository";
+import { pool } from "../database/mysql.connection";
+import { AppError } from "../../common/errors/app-error";
+import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import { ListarProdutosSelecaoQueryDto } from '../../interfaces/dtos/listar-produtos-selecao-query.dto';
+import { ListarProdutosQueryDto } from "../../interfaces/dtos/listar-produtos-query.dto";
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 
 // Interface para linha do DB com dados das tabelas relacionadas via JOIN
 // Usa alias para colunas de tabelas relacionadas para evitar ambiguidade
@@ -111,6 +120,84 @@ export class ProdutoMySQLRepository implements ProdutoRepository {
         }
     }
 
+<<<<<<< HEAD
+=======
+    async listarParaSelecaoPromocao(
+        filtros: ListarProdutosSelecaoQueryDto
+    ): Promise<PaginatedRepositoryResponse<Pick<Produto, "produto_id" | "produto_nome" | "produto_imagem_url">>> {
+        console.log("[Repo Produto] Listando produtos para seleção com filtros (paginado):", filtros);
+
+        const baseQuery = `
+            FROM PRODUTO p
+            LEFT JOIN CATEGORIA_PRODUTO cat ON p.CATEGORIA_PRODUTO_categoria_id = cat.categoria_id
+            LEFT JOIN MARCA_PRODUTO mar ON p.MARCA_PRODUTO_marca_id = mar.marca_id
+            LEFT JOIN TIPO_PRODUTO tip ON p.TIPO_PRODUTO_tipo_id = tip.tipo_id
+        `;
+        const conditions: string[] = ["p.ativo = TRUE", "p.produto_status = 'APROVADO'"];
+        const params: any[] = [];
+
+        if (filtros.nomeQuery && filtros.nomeQuery.trim() !== "") {
+            conditions.push("p.produto_nome LIKE ?");
+            params.push(`%${filtros.nomeQuery.trim()}%`);
+        }
+        if (filtros.categoriaId) {
+            conditions.push("p.CATEGORIA_PRODUTO_categoria_id = ?");
+            params.push(filtros.categoriaId);
+        }
+        if (filtros.marcaId) {
+            conditions.push("p.MARCA_PRODUTO_marca_id = ?");
+            params.push(filtros.marcaId);
+        }
+        if (filtros.tipoId) {
+            conditions.push("p.TIPO_PRODUTO_tipo_id = ?");
+            params.push(filtros.tipoId);
+        }
+        // Filtro fornecedorId omitido conforme discussão anterior
+
+        const whereClause = conditions.length > 0 ? " WHERE " + conditions.join(" AND ") : "";
+
+        // 1. Query para Contar o Total de Itens (sem LIMIT/OFFSET)
+        const countQuery = `SELECT COUNT(DISTINCT p.produto_id) as total ${baseQuery} ${whereClause}`;
+
+        // 2. Query para buscar os dados da página atual
+        let dataQuery = `SELECT DISTINCT p.produto_id, p.produto_nome, p.produto_imagem_url ${baseQuery} ${whereClause}`;
+        dataQuery += " ORDER BY p.produto_nome ASC";
+
+        const page = Number(filtros.page) || 1;
+        const limit = Number(filtros.limit) || 10;
+        const offset = (page - 1) * limit;
+
+        dataQuery += " LIMIT ? OFFSET ?";
+        const dataParams = [...params, limit, offset];
+
+
+        try {
+            if (!pool) throw new AppError("Pool de conexão não definido!", 500, false);
+
+            console.log("[Repo Produto] Count Query:", countQuery.replace(/\s+/g, ' ').trim());
+            console.log("[Repo Produto] Count Params:", params);
+            const [countRows] = await pool.query<RowDataPacket[]>(countQuery, params);
+            const total = countRows[0]?.total || 0;
+
+            console.log("[Repo Produto] Data Query:", dataQuery.replace(/\s+/g, ' ').trim());
+            console.log("[Repo Produto] Data Params:", dataParams);
+            const [dataRows] = await pool.query<RowDataPacket[]>(dataQuery, dataParams);
+
+            const data = dataRows.map((row) => ({
+                produto_id: row.produto_id,
+                produto_nome: row.produto_nome,
+                produto_imagem_url: row.produto_imagem_url,
+            }));
+
+            return { data, total };
+
+        } catch (error: any) {
+            console.error("[Repo Produto] Erro em listarParaSelecaoPromocao:", error);
+            throw new AppError("Erro no banco de dados ao buscar produtos para seleção.", 500, false);
+        }
+    }
+
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
     async criar(data: CreateProdutoData): Promise<Produto> {
         const {
             produto_nome, produto_medida, produto_precoOriginal, descricao,
@@ -142,6 +229,7 @@ export class ProdutoMySQLRepository implements ProdutoRepository {
         }
     }
 
+<<<<<<< HEAD
     async listar(apenasAtivos = true, filtros: any = {}): Promise<Produto[]> {
         let query = this.BASE_SELECT_QUERY;
         const params: any[] = [];
@@ -179,6 +267,96 @@ export class ProdutoMySQLRepository implements ProdutoRepository {
             throw new AppError("Erro no banco de dados ao listar produtos.", 500, false);
         }
     }
+=======
+    async listar(filtros: ListarProdutosQueryDto): Promise<PaginatedRepositoryResponse<Produto>> {
+        console.log("[Repo Produto] Listando produtos (geral) com filtros:", filtros);
+    
+        let baseFromClause = `
+            FROM PRODUTO p
+            LEFT JOIN CATEGORIA_PRODUTO cat ON p.CATEGORIA_PRODUTO_categoria_id = cat.categoria_id
+            LEFT JOIN MARCA_PRODUTO mar ON p.MARCA_PRODUTO_marca_id = mar.marca_id
+            LEFT JOIN TIPO_PRODUTO tip ON p.TIPO_PRODUTO_tipo_id = tip.tipo_id
+        `;
+        let countSelectQuery = `SELECT COUNT(DISTINCT p.produto_id) as total ${baseFromClause}`;
+        let dataSelectQuery = `SELECT DISTINCT p.*, cat.categoria_nome, mar.marca_nome, tip.tipo_nome ${baseFromClause}`;
+    
+        const conditions: string[] = [];
+        const params: any[] = [];
+    
+        if (filtros.produto_id) {
+            conditions.push("p.produto_id = ?");
+            params.push(filtros.produto_id);
+        }
+        if (filtros.nomeQuery && filtros.nomeQuery.trim() !== "") {
+            conditions.push("p.produto_nome LIKE ?");
+            params.push(`%${filtros.nomeQuery.trim()}%`);
+        }
+        if (filtros.categoriaId) {
+            conditions.push("p.CATEGORIA_PRODUTO_categoria_id = ?");
+            params.push(filtros.categoriaId);
+        }
+        if (filtros.marcaId) {
+            conditions.push("p.MARCA_PRODUTO_marca_id = ?");
+            params.push(filtros.marcaId);
+        }
+        if (filtros.tipoId) {
+            conditions.push("p.TIPO_PRODUTO_tipo_id = ?");
+            params.push(filtros.tipoId);
+        }
+        if (filtros.produto_status) {
+            conditions.push("p.produto_status = ?");
+            params.push(filtros.produto_status);
+        }
+    
+        // Tratamento do filtro 'ativo' (string "true" ou "false")
+        if (filtros.ativo !== undefined) {
+            conditions.push("p.ativo = ?");
+            params.push(filtros.ativo === 'true'); // Converte string para boolean
+        } else {
+            // Comportamento padrão se 'ativo' não for especificado: listar apenas ativos
+            conditions.push("p.ativo = TRUE");
+        }
+    
+    
+        const whereClause = conditions.length > 0 ? " WHERE " + conditions.join(" AND ") : "";
+        countSelectQuery += whereClause;
+        dataSelectQuery += whereClause;
+    
+        dataSelectQuery += " ORDER BY p.produto_nome ASC";
+    
+        const page = parseInt(String(filtros.page), 10) || 1;
+        const limit = parseInt(String(filtros.limit), 10) || 10;
+        const offset = (page - 1) * limit;
+    
+        dataSelectQuery += " LIMIT ? OFFSET ?";
+        const dataParamsQuery = [...params, limit, offset]; // Parâmetros para a query de dados
+        const countParamsQuery = [...params]; // Parâmetros para a query de contagem (sem limit/offset)
+    
+    
+        try {
+            if (!pool) throw new AppError("Pool de conexão não definido!", 500, false);
+    
+            console.log("[Repo Produto] Listar - Count Query:", countSelectQuery.replace(/\s+/g, ' ').trim(), countParamsQuery);
+            const [countRows] = await pool.query<RowDataPacket[]>(countSelectQuery, countParamsQuery);
+            const total = countRows[0]?.total || 0;
+    
+            console.log("[Repo Produto] Listar - Data Query:", dataSelectQuery.replace(/\s+/g, ' ').trim(), dataParamsQuery);
+            const [dataRows] = await pool.query<ProdutoRow[]>(dataSelectQuery, dataParamsQuery);
+    
+            const data = dataRows.map(row => {
+                const produto = this.mapRowToProduto(row);
+                // delete produto.pessoa_senha; // Produto não tem pessoa_senha
+                return produto;
+            });
+    
+            return { data, total };
+    
+        } catch (error: any) {
+            console.error("[Repo Produto] Erro ao listar produtos:", error);
+            throw new AppError("Erro no banco de dados ao listar produtos.", 500, false);
+        }
+      }
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 
      async buscarPorId(id: number, incluirInativos = false): Promise<Produto | null> {
         let query = this.BASE_SELECT_QUERY + " WHERE p.produto_id = ?";

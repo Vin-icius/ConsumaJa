@@ -7,6 +7,19 @@
   import { CreateProdutoDto } from "../../interfaces/dtos/create-produto.dto";
   import { UpdateProdutoDto } from "../../interfaces/dtos/update-produto.dto";
   import { RejeitarProdutoDto } from "../../interfaces/dtos/rejeitar-produto.dto";
+<<<<<<< HEAD
+=======
+  import { ListarProdutosSelecaoQueryDto } from "../../interfaces/dtos/listar-produtos-selecao-query.dto"
+  import { ListarProdutosQueryDto } from "../../interfaces/dtos/listar-produtos-query.dto"
+
+  export interface PaginatedServiceResponse<T> {
+    data: T[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 
   export class ProdutoService {
     constructor(
@@ -63,6 +76,7 @@
         }
     }
 
+<<<<<<< HEAD
     async listarProdutos(filtros?: any): Promise<Produto[]> {
         try {
             return await this.produtoRepository.listar(true, filtros);
@@ -72,6 +86,16 @@
             throw new AppError("Erro interno ao listar produtos.", 500, false);
         }
     }
+=======
+    async listarProdutos(filtros: ListarProdutosQueryDto): Promise<PaginatedServiceResponse<Produto>> {
+        const page = filtros.page || 1;
+        const limit = filtros.limit || 10;
+        try {
+          const { data, total } = await this.produtoRepository.listar(filtros); // Repositório retorna {data, total}
+          return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+        } catch (error) { /* ... */ throw new AppError("Erro interno...", 500, false); }
+      }
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 
     async buscarProdutoPorId(id: number): Promise<Produto> {
         try {
@@ -169,4 +193,21 @@
               throw new AppError(`Erro interno ao rejeitar produto ${id}.`, 500, false);
         }
     }
+<<<<<<< HEAD
+=======
+
+    async listarParaSelecaoPromocao(
+        filtros: ListarProdutosSelecaoQueryDto
+      ): Promise<PaginatedServiceResponse<Pick<Produto, "produto_id" | "produto_nome" | "produto_imagem_url">>> {
+        console.log("[Service Produto] Listando produtos para seleção (paginado) com filtros:", filtros);
+        const page = filtros.page || 1;
+        const limit = filtros.limit || 10;
+        try {
+          const { data, total } = await this.produtoRepository.listarParaSelecaoPromocao({ ...filtros, page, limit });
+          const totalPages = Math.ceil(total / limit);
+          console.log(`[Service Produto] Produtos para seleção: ${data.length} de ${total} total. Página ${page}/${totalPages}.`);
+          return { data, total, page, limit, totalPages };
+        } catch (error) { /* ... */ throw new AppError("Erro interno...", 500, false); }
+      }
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
   }

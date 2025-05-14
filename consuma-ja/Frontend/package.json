@@ -10,8 +10,14 @@
     "web": "expo start --web"
   },
   "dependencies": {
+<<<<<<< HEAD
     "@expo/metro-runtime": "~4.0.1",
     "@react-native-async-storage/async-storage": "^1.23.1",
+=======
+    "@expo/metro-runtime": "~5.0.4",
+    "@react-native-async-storage/async-storage": "2.1.2",
+    "@react-native-community/datetimepicker": "8.3.0",
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
     "@react-native-community/viewpager": "^5.0.11",
     "@react-native-picker/picker": "^2.9.0",
     "@react-navigation/drawer": "^7.1.2",
@@ -20,6 +26,7 @@
     "@react-navigation/stack": "^7.1.2",
     "axios": "^1.8.4",
     "dotenv": "^16.5.0",
+<<<<<<< HEAD
     "expo": "~52.0.46",
     "expo-image-picker": "^16.0.6",
     "expo-status-bar": "~2.0.1",
@@ -35,11 +42,33 @@
     "react-native-svg": "^15.8.0",
     "react-native-vector-icons": "^10.2.0",
     "react-native-web": "~0.19.13"
+=======
+    "expo": "^53.0.9",
+    "expo-image-picker": "~16.1.4",
+    "expo-status-bar": "~2.2.3",
+    "path": "^0.12.7",
+    "pretty-format": "^29.7.0",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-native": "0.79.2",
+    "react-native-gesture-handler": "~2.24.0",
+    "react-native-modal-datetime-picker": "^18.0.0",
+    "react-native-reanimated": "~3.17.4",
+    "react-native-safe-area-context": "5.4.0",
+    "react-native-screens": "~4.10.0",
+    "react-native-svg": "^15.8.0",
+    "react-native-vector-icons": "^10.2.0",
+    "react-native-web": "^0.20.0"
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@react-native-community/cli": "latest",
+<<<<<<< HEAD
     "@types/react": "~18.3.12",
+=======
+    "@types/react": "^19.0.0",
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
     "typescript": "^5.3.3"
   },
   "private": true

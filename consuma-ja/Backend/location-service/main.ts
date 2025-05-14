@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // main.ts
 import 'dotenv/config'; // <<< GARANTE QUE .ENV SEJA CARREGADO PRIMEIRO
 
@@ -8,14 +9,27 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Motivo:', reason);
   // Descomente a linha abaixo em desenvolvimento para travar e ver o stack trace completo
   // throw reason;
+=======
+import 'reflect-metadata';
+import 'dotenv/config';
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('!!! REJEIÇÃO NÃO TRATADA !!!');
+  console.error('Motivo:', reason);
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 });
 
 process.on('uncaughtException', (error) => {
   console.error('!!! EXCEÇÃO NÃO CAPTURADA !!!');
   console.error('Erro:', error);
+<<<<<<< HEAD
   // Considerar sair do processo (process.exit(1)) em produção após logar
 });
 // ----------------------------------------------------
+=======
+});
+
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 
 import * as express from 'express';
 import { Express, Request, Response, NextFunction } from 'express';
@@ -26,6 +40,10 @@ import cepRoutes from './src/interfaces/routes/cep.routes';
 import { errorHandler } from './src/interfaces/middlewares/error.middleware';
 import { testDbConnection } from './src/infrastructure/database/mysql.connection';
 import { AppError } from './src/common/errors/app-error';
+<<<<<<< HEAD
+=======
+import enderecoRoutes from './src/interfaces/routes/endereco.routes';
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 
 const app: Express = express();
 const port = process.env.PORT || 3001;
@@ -54,6 +72,10 @@ const apiRouter = express.Router();
 apiRouter.use(estadoRoutes);
 apiRouter.use(cidadeRoutes);
 apiRouter.use(cepRoutes);
+<<<<<<< HEAD
+=======
+apiRouter.use('/enderecos',enderecoRoutes);
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 app.use('/api/location', apiRouter);
 
 // Rota de Health Check básica

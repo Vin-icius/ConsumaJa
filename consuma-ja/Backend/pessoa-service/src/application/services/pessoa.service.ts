@@ -5,10 +5,25 @@ import { PessoaRepository, CreatePessoaData, UpdatePessoaData } from "../../doma
 import { AppError } from "../../common/errors/app-error";
 import { PasswordUtil } from "../../common/utils/password.util";
 // <<< Garanta que os DTOs corretos estão sendo importados >>>
+<<<<<<< HEAD
+=======
+import { ListarPessoasQueryDto } from "../../interfaces/dtos/listar-pessoas-query.dto";
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 import { CreateFisicaDto } from "../../interfaces/dtos/create-fisica.dto";
 import { CreateJuridicaDto } from "../../interfaces/dtos/create-juridica.dto";
 import { UpdatePessoaDto } from "../../interfaces/dtos/update-pessoa.dto"; // Garanta que este DTO exista e esteja correto
 
+<<<<<<< HEAD
+=======
+export interface PaginatedServiceResponse<T> {
+     data: T[];
+     total: number;
+     page: number;
+     limit: number;
+     totalPages: number;
+   }
+
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 export class PessoaService {
   // Injeta o repositório
   constructor(private pessoaRepository: PessoaRepository) {}
@@ -58,6 +73,7 @@ export class PessoaService {
 
       // 4. Montar dados para o repositório
       const dataToCreate: CreatePessoaData = {
+<<<<<<< HEAD
           pessoa_nome: dto.pessoa_nome,
           pessoa_email: dto.pessoa_email,
           pessoa_telefone: dto.pessoa_telefone ?? null,
@@ -68,6 +84,26 @@ export class PessoaService {
           ...(dto.pessoa_tipo === 'Fisica' && cpf && { fisicaData: { pessoa_cpf: cpf } }),
           ...(dto.pessoa_tipo === 'Juridica' && cnpj && { juridicaData: { cnpj: cnpj, fornecedor_num: (dto as CreateJuridicaDto).fornecedor_num ?? null } }),
       };
+=======
+        pessoa_nome: dto.pessoa_nome,
+        pessoa_email: dto.pessoa_email,
+        pessoa_telefone: dto.pessoa_telefone ?? null,
+        pessoa_tipo: dto.pessoa_tipo,
+        pessoa_login: loginParaSalvar,
+        pessoa_senha: hashedPassword, // Senha já hashada
+        pessoa_status: 1, // Ativo por padrão
+        // Dados de endereço do DTO
+        cep: dto.cep.replace(/\D/g, ''), // Limpa CEP
+        rua: dto.rua,
+        bairro: dto.bairro,
+        numero: dto.numero,
+        complemento: dto.complemento ?? null,
+        CIDADE_cidade_id: dto.CIDADE_cidade_id,
+        // Dados específicos de Fisica/Juridica
+        ...(dto.pessoa_tipo === 'Fisica' && cpf && { fisicaData: { pessoa_cpf: cpf } }),
+        ...(dto.pessoa_tipo === 'Juridica' && cnpj && { juridicaData: { cnpj: cnpj, fornecedor_num: (dto as CreateJuridicaDto).fornecedor_num ?? null } }),
+    };
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 
       // Adicionar lógica para Endereço aqui, se criar junto...
 
@@ -207,6 +243,7 @@ export class PessoaService {
     /**
      * Lista pessoas (apenas ativos por padrão).
      */
+<<<<<<< HEAD
     async listarPessoas(apenasAtivos = true): Promise<Pessoa[]> {
        console.log(`[Service] Listando pessoas ${apenasAtivos ? '(apenas ativos)' : '(todos)'}`);
        try {
@@ -221,6 +258,33 @@ export class PessoaService {
             console.error("[Service] Erro ao listar pessoas:", error);
             throw new AppError("Erro interno ao listar pessoas.", 500, false);
        }
+=======
+    async listarPessoas(filtrosDto: ListarPessoasQueryDto): Promise<PaginatedServiceResponse<Pessoa>> {
+     console.log(`[Service Pessoa] Listando pessoas com filtros DTO:`, filtrosDto);
+ 
+     const page = filtrosDto.page || 1;
+     const limit = filtrosDto.limit || 10; // Limite padrão
+ 
+     // Passa o DTO diretamente para o repositório, que sabe como usar seus campos
+     try {
+       const { data, total } = await this.pessoaRepository.listar(filtrosDto);
+ 
+       const totalPages = Math.ceil(total / limit);
+       console.log(`[Service Pessoa] Pessoas listadas: ${data.length} de ${total}. Página ${page}/${totalPages}.`);
+ 
+       return {
+           data,
+           total,
+           page,
+           limit,
+           totalPages
+       };
+     } catch (error) {
+       if (error instanceof AppError) throw error;
+       console.error("[Service Pessoa] Erro ao listar pessoas:", error);
+       throw new AppError("Erro interno ao listar pessoas.", 500, false);
+     }
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
    }
 
 } // Fim da classe PessoaService

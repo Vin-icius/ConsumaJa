@@ -2,7 +2,11 @@ import axios from 'axios'; // Importa o axios diretamente
 
 // !!!!! SUBSTITUA 'SEU_IP_LOCAL_AQUI' PELO SEU IP LOCAL REAL !!!!!
 // !!!!! CONFIRME SE A PORTA 3001 ESTÁ CORRETA PARA ESTE SERVIÇO !!!!!
+<<<<<<< HEAD
 const API_URL_BASE = 'http://172.20.0.13:3001/api/location';
+=======
+const API_URL_BASE = 'http://172.16.241.5:3001/api/location';
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 
 // --- Funções do Serviço ---
 

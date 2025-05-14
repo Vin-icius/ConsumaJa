@@ -5,6 +5,7 @@ import { validate } from 'class-validator';
 import { CreateProdutoDto } from '../dtos/create-produto.dto';
 import { UpdateProdutoDto } from '../dtos/update-produto.dto';
 import { RejeitarProdutoDto } from '../dtos/rejeitar-produto.dto';
+<<<<<<< HEAD
 import { AppError } from '../../common/errors/app-error';
 
 export class ProdutoController {
@@ -18,6 +19,23 @@ export class ProdutoController {
     this.listarPendentes = this.listarPendentes.bind(this);
     this.aprovarProduto = this.aprovarProduto.bind(this);
     this.rejeitarProduto = this.rejeitarProduto.bind(this);
+=======
+import { ListarProdutosSelecaoQueryDto } from "../dtos/listar-produtos-selecao-query.dto"
+import { AppError } from '../../common/errors/app-error';
+
+export class ProdutoController {
+   constructor(private produtoService: ProdutoService) {
+      // Bind de todos os métodos que serão usados como handlers de rota
+      this.criarProduto = this.criarProduto.bind(this);
+      this.listarProdutos = this.listarProdutos.bind(this);
+      this.buscarProdutoPorId = this.buscarProdutoPorId.bind(this);
+      this.atualizarProduto = this.atualizarProduto.bind(this);
+      this.excluirProduto = this.excluirProduto.bind(this);
+      this.aprovarProduto = this.aprovarProduto.bind(this);
+      this.rejeitarProduto = this.rejeitarProduto.bind(this);
+      this.listarPendentes = this.listarPendentes.bind(this);
+      this.listarParaSelecao = this.listarParaSelecao.bind(this);
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
   }
 
   async criarProduto(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -39,6 +57,29 @@ export class ProdutoController {
      } catch (error) { next(error); }
   }
 
+<<<<<<< HEAD
+=======
+  async listarParaSelecao(req: Request, res: Response, next: NextFunction): Promise<void> {
+   console.log('[ProdutoController] GET /para-selecao-promocao - Query Params:', req.query); // Log Adicionado
+   const dto = plainToClass(ListarProdutosSelecaoQueryDto, req.query);
+   const errors = await validate(dto);
+   if (errors.length > 0) {
+       console.error('[ProdutoController] Erros de validação DTO listarParaSelecao:', errors);
+       return next(errors);
+   }
+   try {
+       // 'this' aqui deve referenciar a instância do ProdutoController
+       // e this.produtoService deve estar definido.
+       const produtos = await this.produtoService.listarParaSelecaoPromocao(dto);
+       console.log('[ProdutoController] Produtos para seleção listados:', produtos.data.length);
+       res.status(200).json(produtos);
+   } catch (error) {
+       console.error('[ProdutoController] Erro capturado em listarParaSelecao:', error);
+       next(error);
+   }
+}
+
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
   async buscarProdutoPorId(req: Request, res: Response, next: NextFunction): Promise<void> {
      try {
         const id = parseInt(req.params.id, 10);
