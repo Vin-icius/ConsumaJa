@@ -1,11 +1,19 @@
 import { Pessoa, PessoaStatus, PessoaTipo } from "../../domain/entities/pessoa.entity";
 import { Fisica } from "../../domain/entities/fisica.entity";
 import { Juridica } from "../../domain/entities/juridica.entity";
+<<<<<<< HEAD
 import { PessoaRepository, CreatePessoaData, UpdatePessoaData } from "../../domain/repositories/pessoa.repository";
 import { pool } from "../database/mysql.connection";
 import { AppError } from "../../common/errors/app-error";
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 
+=======
+import { PessoaRepository, CreatePessoaData, UpdatePessoaData, PaginatedRepositoryResponse } from "../../domain/repositories/pessoa.repository";
+import { pool } from "../database/mysql.connection";
+import { AppError } from "../../common/errors/app-error";
+import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import { ListarPessoasQueryDto } from "../../interfaces/dtos/listar-pessoas-query.dto"
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 // Interface para a linha retornada do DB com JOINs opcionais
 interface PessoaRow extends RowDataPacket {
     pessoa_id: number;
@@ -59,6 +67,73 @@ export class PessoaMySQLRepository implements PessoaRepository {
         return pessoa;
     }
 
+<<<<<<< HEAD
+=======
+    async listar(filtros: ListarPessoasQueryDto): Promise<PaginatedRepositoryResponse<Pessoa>> {
+        console.log("[Repo Pessoa] Listando pessoas com filtros:", filtros);
+
+        let baseFromClause = `
+            FROM PESSOA p
+            LEFT JOIN FISICA f ON p.pessoa_id = f.PESSOA_pessoa_id AND p.pessoa_tipo = 'Fisica'
+            LEFT JOIN JURIDICA j ON p.pessoa_id = j.PESSOA_pessoa_id AND p.pessoa_tipo = 'Juridica'
+        `;
+        let countSelectQuery = `SELECT COUNT(DISTINCT p.pessoa_id) as total ${baseFromClause}`;
+        let dataSelectQuery = `SELECT p.*, f.pessoa_cpf, f.pessoa_documentoValidado, f.pessoa_fotoValidada, f.foto_selfie_path, f.foto_documento_path, j.cnpj, j.fornecedor_num ${baseFromClause}`;
+
+        const conditions: string[] = [];
+        const params: any[] = [];
+
+        if (filtros.nomeQuery && filtros.nomeQuery.trim() !== "") {
+            conditions.push("p.pessoa_nome LIKE ?");
+            params.push(`%${filtros.nomeQuery.trim()}%`);
+        }
+        if (filtros.pessoa_tipo) {
+            conditions.push("p.pessoa_tipo = ?");
+            params.push(filtros.pessoa_tipo);
+        }
+        if (filtros.pessoa_status !== undefined) {
+            conditions.push("p.pessoa_status = ?");
+            params.push(filtros.pessoa_status);
+        }
+
+        const whereClause = conditions.length > 0 ? " WHERE " + conditions.join(" AND ") : "";
+        countSelectQuery += whereClause;
+        dataSelectQuery += whereClause;
+
+        dataSelectQuery += " ORDER BY p.pessoa_nome ASC";
+
+        const page = filtros.page || 1;
+        const limit = filtros.limit || 10;
+        const offset = (page - 1) * limit;
+
+        dataSelectQuery += " LIMIT ? OFFSET ?";
+        const dataParams = [...params, limit, offset];
+
+        try {
+            if (!pool) throw new AppError("Pool de conexão não definido!", 500, false);
+
+            console.log("[Repo Pessoa] Count Query:", countSelectQuery.replace(/\s+/g, ' ').trim(), params);
+            const [countRows] = await pool.query<RowDataPacket[]>(countSelectQuery, params);
+            const total = countRows[0]?.total || 0;
+
+            console.log("[Repo Pessoa] Data Query:", dataSelectQuery.replace(/\s+/g, ' ').trim(), dataParams);
+            const [dataRows] = await pool.query<PessoaRow[]>(dataSelectQuery, dataParams);
+
+            const data = dataRows.map(row => {
+                const pessoa = this.mapRowToPessoa(row);
+                delete pessoa.pessoa_senha; // Nunca retornar senha em listagens
+                return pessoa;
+            });
+
+            return { data, total };
+
+        } catch (error: any) {
+            console.error("[Repo Pessoa] Erro ao listar pessoas:", error);
+            throw new AppError("Erro no banco de dados ao listar pessoas.", 500, false);
+        }
+    }
+
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
     // --- Métodos de Busca ---
     async findByLoginOrEmailOrDoc(identifier: string): Promise<Pessoa | null> {
         // <<< Incluir p.pessoa_senha na query de login >>>
@@ -126,7 +201,12 @@ export class PessoaMySQLRepository implements PessoaRepository {
         const {
             pessoa_nome, pessoa_email, pessoa_telefone, pessoa_tipo,
             pessoa_login, pessoa_senha, // Senha JÁ VEM HASHADA do Service
+<<<<<<< HEAD
             fisicaData, juridicaData
+=======
+            fisicaData, juridicaData,
+            cep, rua, bairro, numero, complemento, CIDADE_cidade_id
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
         } = data;
 
         let connection;
@@ -155,6 +235,21 @@ export class PessoaMySQLRepository implements PessoaRepository {
                  throw new AppError(`Dados incompletos para tipo de pessoa '${pessoa_tipo}'`, 400); // Erro se não for Admin e faltar dados
             }
 
+<<<<<<< HEAD
+=======
+            // <<< 3. INSERIR NA TABELA ENDERECO >>>
+            const enderecoQuery = `
+                INSERT INTO ENDERECO (PESSOA_pessoa_id, CIDADE_cidade_id, rua, numero, bairro, cep, complemento, ativo)
+                VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)
+            `;
+            // O frontend já deve ter validado e obtido CIDADE_cidade_id
+            await connection.query<ResultSetHeader>(enderecoQuery, [
+                insertedId, CIDADE_cidade_id, rua, numero, bairro, cep, complemento
+            ]);
+            console.log(`[Repo Pessoa] Endereço inserido para Pessoa ID: ${insertedId}`);
+            // ------------------------------------
+
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
             await connection.commit();
 
             // Busca a pessoa recém-criada completa
@@ -163,11 +258,31 @@ export class PessoaMySQLRepository implements PessoaRepository {
             return novaPessoa;
 
         } catch (error: any) {
+<<<<<<< HEAD
             if (connection) await connection.rollback();
             // Tratamento de erro DUP_ENTRY mantido...
              if (error.code === 'ER_DUP_ENTRY') { /* ... tratamento mantido ... */ throw new AppError("Erro duplicado...", 409); }
              console.error("[Repo] Erro ao criar pessoa:", error);
              throw new AppError("Erro no banco de dados ao criar pessoa.", 500, false);
+=======
+            if (connection) await connection.rollback(); // Rollback em caso de erro
+            // Tratar erros de duplicação (ER_DUP_ENTRY) ou FK (ER_NO_REFERENCED_ROW_2)
+            if (error.code === 'ER_DUP_ENTRY') {
+                 // Identificar qual campo causou a duplicação
+                 if (error.message.includes('pessoa_email_UNIQUE')) throw new AppError(`O email "${pessoa_email}" já está em uso.`, 409);
+                 if (error.message.includes('pessoa_login_UNIQUE')) throw new AppError(`O login/documento "${pessoa_login}" já está em uso.`, 409);
+                 // Adicionar checagens para CPF/CNPJ se eles têm constraints UNIQUE separadas
+                 if (fisicaData && error.message.includes(fisicaData.pessoa_cpf)) throw new AppError(`O CPF "${fisicaData.pessoa_cpf}" já está em uso.`, 409);
+                 if (juridicaData && error.message.includes(juridicaData.cnpj)) throw new AppError(`O CNPJ "${juridicaData.cnpj}" já está em uso.`, 409);
+                 throw new AppError("Erro de duplicação ao criar pessoa.", 409);
+             } else if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+                 // Verificar qual FK falhou (ex: CIDADE_cidade_id)
+                 if (error.message.includes('fk_ENDERECO_CIDADE1')) throw new AppError(`Cidade com ID ${CIDADE_cidade_id} não encontrada. Verifique os dados de endereço.`, 400);
+                 throw new AppError("Erro de referência: Cidade ou outro dado relacionado inválido.", 400);
+             }
+             console.error("[Repo Pessoa] Erro ao criar pessoa e endereço:", error);
+             throw new AppError("Erro no banco de dados ao criar pessoa e endereço.", 500, false);
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
         } finally {
             if (connection) connection.release();
         }
@@ -231,6 +346,7 @@ export class PessoaMySQLRepository implements PessoaRepository {
          }
      }
 
+<<<<<<< HEAD
      // Listar (Exemplo básico, sem paginação ou filtros complexos)
      async listar(apenasAtivos = true): Promise<Pessoa[]> {
         let query = ` SELECT p.*, f.pessoa_cpf, f.pessoa_documentoValidado, f.pessoa_fotoValidada, j.cnpj, j.fornecedor_num FROM PESSOA p LEFT JOIN FISICA f ON p.pessoa_id = f.PESSOA_pessoa_id AND p.pessoa_tipo = 'Fisica' LEFT JOIN JURIDICA j ON p.pessoa_id = j.PESSOA_pessoa_id AND p.pessoa_tipo = 'Juridica' `;
@@ -253,6 +369,8 @@ export class PessoaMySQLRepository implements PessoaRepository {
         }
     }
 
+=======
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
      async atualizarCaminhosFotos(pessoaId: number, paths: { foto_selfie_path?: string; foto_documento_path?: string }): Promise<boolean> {
         const setParts: string[] = [];
         const values: any[] = [];

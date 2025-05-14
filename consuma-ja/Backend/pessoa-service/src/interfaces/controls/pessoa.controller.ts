@@ -6,6 +6,10 @@ import { validate } from 'class-validator';
 import { CreateFisicaDto } from '../dtos/create-fisica.dto';
 import { CreateJuridicaDto } from '../dtos/create-juridica.dto';
 import { UpdatePessoaDto } from '../dtos/update-pessoa.dto';
+<<<<<<< HEAD
+=======
+import { ListarPessoasQueryDto } from '../dtos/listar-pessoas-query.dto';
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 import { AppError } from '../../common/errors/app-error';
 import path from 'path';
 import fs from 'fs'; // Para deletar arquivo em caso de erro no DB
@@ -81,6 +85,7 @@ export class PessoaController {
         } catch (error) { next(error); }
    }
     
+<<<<<<< HEAD
      async listarPessoas(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             // TODO: Adicionar lógica para filtros de query string (req.query) se necessário
@@ -91,6 +96,26 @@ export class PessoaController {
             next(error);
         }
     }
+=======
+   async listarPessoas(req: Request, res: Response, next: NextFunction): Promise<void> {
+    console.log('[PessoaController] GET /pessoa - Query Params:', req.query);
+    // <<< USA O NOVO DTO DE FILTRO >>>
+    const dto = plainToClass(ListarPessoasQueryDto, req.query);
+    const errors = await validate(dto);
+    if (errors.length > 0) {
+        console.error('[PessoaController] Erros de validação DTO Listar:', errors);
+        return next(errors);
+    }
+    // ---------------------------------
+    try {
+        // Passa o DTO validado para o serviço
+        const paginatedResponse = await this.pessoaService.listarPessoas(dto);
+        res.status(200).json(paginatedResponse); // Envia a resposta paginada
+    } catch (error) {
+        next(error);
+    }
+}
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 
     // <<< NOVO/ATUALIZADO: Atualizar Pessoa >>>
     async atualizarPessoa(req: Request, res: Response, next: NextFunction): Promise<void> {

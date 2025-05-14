@@ -4,7 +4,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // !!!!! SUBSTITUA 'SEU_IP_LOCAL_AQUI' PELO SEU IP LOCAL REAL !!!!!
 // !!!!! CONFIRME SE A PORTA 3002 (ou outra) ESTÁ CORRETA PARA O pessoa-service !!!!!
 // !!!!! CONFIRME SE O CAMINHO BASE '/api' ESTÁ CORRETO (conforme main.ts do pessoa-service) !!!!!
+<<<<<<< HEAD
 const API_URL_BASE = 'http://172.20.0.13:3002/api'; // Base da API do Pessoa Service
+=======
+const API_URL_BASE = 'http://172.16.241.5:3002/api'; // Base da API do Pessoa Service
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 
 // Função auxiliar para tratar requests que esperam dados de volta
 const handleRequest = async (requestPromise) => {

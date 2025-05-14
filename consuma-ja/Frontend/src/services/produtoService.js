@@ -1,6 +1,10 @@
 import axios from 'axios';
 
+<<<<<<< HEAD
 const API_URL_BASE = 'http://172.20.0.13:3000/api/product'; // <<< CORRIGIDO: Termina antes do recurso específico
+=======
+const API_URL_BASE = 'http://172.16.241.5:3000/api/product'; // <<< CORRIGIDO: Termina antes do recurso específico
+>>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 
 // Funções auxiliares para tratamento de erro
 const handleRequest = async (requestPromise) => {
