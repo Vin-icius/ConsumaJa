@@ -1,21 +1,15 @@
 "use strict";
 exports.__esModule = true;
-// main.ts
-require("dotenv/config"); // <<< GARANTE QUE .ENV SEJA CARREGADO PRIMEIRO
-// --- Listeners Globais de Erro para Diagnóstico ---
-// Coloque isso bem no início para pegar erros que podem ocorrer cedo
+require("reflect-metadata");
+require("dotenv/config");
 process.on('unhandledRejection', function (reason, promise) {
     console.error('!!! REJEIÇÃO NÃO TRATADA !!!');
     console.error('Motivo:', reason);
-    // Descomente a linha abaixo em desenvolvimento para travar e ver o stack trace completo
-    // throw reason;
 });
 process.on('uncaughtException', function (error) {
     console.error('!!! EXCEÇÃO NÃO CAPTURADA !!!');
     console.error('Erro:', error);
-    // Considerar sair do processo (process.exit(1)) em produção após logar
 });
-// ----------------------------------------------------
 var express = require("express");
 var cors = require("cors");
 var estado_routes_1 = require("./src/interfaces/routes/estado.routes");
@@ -24,6 +18,7 @@ var cep_routes_1 = require("./src/interfaces/routes/cep.routes");
 var error_middleware_1 = require("./src/interfaces/middlewares/error.middleware");
 var mysql_connection_1 = require("./src/infrastructure/database/mysql.connection");
 var app_error_1 = require("./src/common/errors/app-error");
+var endereco_routes_1 = require("./src/interfaces/routes/endereco.routes");
 var app = express();
 var port = process.env.PORT || 3001;
 // --- Middlewares essenciais ---
@@ -46,6 +41,7 @@ var apiRouter = express.Router();
 apiRouter.use(estado_routes_1["default"]);
 apiRouter.use(cidade_routes_1["default"]);
 apiRouter.use(cep_routes_1["default"]);
+apiRouter.use('/enderecos', endereco_routes_1["default"]);
 app.use('/api/location', apiRouter);
 // Rota de Health Check básica
 app.get('/health', function (req, res) {
@@ -62,7 +58,7 @@ app.use(error_middleware_1.errorHandler);
 // --- Iniciar o servidor ---
 // Armazena a instância do servidor para poder fechá-la depois
 var server = app.listen(port, function () {
-    console.log("[Server] Location Service est\u00E1 rodando em http://172.20.0.13:".concat(port));
+    console.log("[Server] Location Service est\u00E1 rodando em http://159.112.183.233:".concat(port));
     console.log("[Server] Ambiente: ".concat(process.env.NODE_ENV || 'development'));
 });
 // --- Graceful Shutdown ---

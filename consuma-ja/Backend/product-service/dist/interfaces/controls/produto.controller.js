@@ -6,19 +6,21 @@ const class_validator_1 = require("class-validator");
 const create_produto_dto_1 = require("../dtos/create-produto.dto");
 const update_produto_dto_1 = require("../dtos/update-produto.dto");
 const rejeitar_produto_dto_1 = require("../dtos/rejeitar-produto.dto");
+const listar_produtos_selecao_query_dto_1 = require("../dtos/listar-produtos-selecao-query.dto");
 const app_error_1 = require("../../common/errors/app-error");
 class ProdutoController {
     constructor(produtoService) {
         this.produtoService = produtoService;
-        // Binding
+        // Bind de todos os métodos que serão usados como handlers de rota
         this.criarProduto = this.criarProduto.bind(this);
         this.listarProdutos = this.listarProdutos.bind(this);
         this.buscarProdutoPorId = this.buscarProdutoPorId.bind(this);
         this.atualizarProduto = this.atualizarProduto.bind(this);
         this.excluirProduto = this.excluirProduto.bind(this);
-        this.listarPendentes = this.listarPendentes.bind(this);
         this.aprovarProduto = this.aprovarProduto.bind(this);
         this.rejeitarProduto = this.rejeitarProduto.bind(this);
+        this.listarPendentes = this.listarPendentes.bind(this);
+        this.listarParaSelecao = this.listarParaSelecao.bind(this);
     }
     async criarProduto(req, res, next) {
         const dto = (0, class_transformer_1.plainToClass)(create_produto_dto_1.CreateProdutoDto, req.body);
@@ -41,6 +43,26 @@ class ProdutoController {
             res.status(200).json(produtos);
         }
         catch (error) {
+            next(error);
+        }
+    }
+    async listarParaSelecao(req, res, next) {
+        console.log('[ProdutoController] GET /para-selecao-promocao - Query Params:', req.query); // Log Adicionado
+        const dto = (0, class_transformer_1.plainToClass)(listar_produtos_selecao_query_dto_1.ListarProdutosSelecaoQueryDto, req.query);
+        const errors = await (0, class_validator_1.validate)(dto);
+        if (errors.length > 0) {
+            console.error('[ProdutoController] Erros de validação DTO listarParaSelecao:', errors);
+            return next(errors);
+        }
+        try {
+            // 'this' aqui deve referenciar a instância do ProdutoController
+            // e this.produtoService deve estar definido.
+            const produtos = await this.produtoService.listarParaSelecaoPromocao(dto);
+            console.log('[ProdutoController] Produtos para seleção listados:', produtos.data.length);
+            res.status(200).json(produtos);
+        }
+        catch (error) {
+            console.error('[ProdutoController] Erro capturado em listarParaSelecao:', error);
             next(error);
         }
     }

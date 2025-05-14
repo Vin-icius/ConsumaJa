@@ -11,22 +11,28 @@ const categoria_mysql_repository_1 = require("../../infrastructure/repositories/
 const marca_mysql_repository_1 = require("../../infrastructure/repositories/marca.mysql.repository");
 const tipo_mysql_repository_1 = require("../../infrastructure/repositories/tipo.mysql.repository");
 const router = express_1.default.Router();
-const produtoRepository = new produto_mysql_repository_1.ProdutoMySQLRepository();
+// --- Instanciação (Idealmente usar DI) ---
 const categoriaRepository = new categoria_mysql_repository_1.CategoriaMySQLRepository();
 const marcaRepository = new marca_mysql_repository_1.MarcaMySQLRepository();
 const tipoRepository = new tipo_mysql_repository_1.TipoMySQLRepository();
+const produtoRepository = new produto_mysql_repository_1.ProdutoMySQLRepository();
 const produtoService = new produto_service_1.ProdutoService(produtoRepository, categoriaRepository, marcaRepository, tipoRepository);
 const produtoController = new produto_controller_1.ProdutoController(produtoService);
-// --- DEFINIR ROTAS ESPECÍFICAS PRIMEIRO ---
-router.get('/pendentes', produtoController.listarPendentes); // <<< Rota para listar pendentes
-router.patch('/:id/aprovar', produtoController.aprovarProduto); // <<< Rota para aprovar (PATCH é mais semântico)
-router.patch('/:id/rejeitar', /* validateDto(RejeitarProdutoDto), */ produtoController.rejeitarProduto); // <<< Rota para rejeitar (PATCH)
-// --- DEPOIS, AS ROTAS CRUD MAIS GENÉRICAS ---
-router.post('/', /* validateDto(CreateProdutoDto), */ produtoController.criarProduto); // POST /produtos
-router.get('/', produtoController.listarProdutos); // GET /produtos
-// --- ROTAS COM PARÂMETRO ':id' VÊM POR ÚLTIMO ---
-router.get('/:id', produtoController.buscarProdutoPorId); // GET /produtos/:id
-router.put('/:id', /* validateDto(UpdateProdutoDto), */ produtoController.atualizarProduto); // PUT /produtos/:id
-router.delete('/:id', produtoController.excluirProduto); // DELETE /produtos/:id
+// --- Rotas ---
+// <<< ROTAS MAIS ESPECÍFICAS PRIMEIRO >>>
+router.get('/pendentes', /* authMiddleware, */ produtoController.listarPendentes);
+router.get('/para-selecao-promocao', produtoController.listarParaSelecao); // Para o formulário de promoção
+// ------------------------------------
+// Rota de listagem geral (pode ter query params, mas não params de rota conflitantes)
+router.get('/', /* authMiddleware, */ produtoController.listarProdutos);
+// Rotas de criação (sem ID na URL)
+router.post('/', /* authMiddleware, */ produtoController.criarProduto);
+// <<< ROTAS COM PARÂMETRO /:id VÊM DEPOIS DAS ESPECÍFICAS >>>
+router.get('/:id', /* authMiddleware, */ produtoController.buscarProdutoPorId);
+router.put('/:id', /* authMiddleware, */ produtoController.atualizarProduto);
+router.delete('/:id', /* authMiddleware, */ produtoController.excluirProduto); // Exclusão lógica
+router.patch('/:id/aprovar', /* authMiddleware, */ produtoController.aprovarProduto);
+router.patch('/:id/rejeitar', /* authMiddleware, */ produtoController.rejeitarProduto);
+// ---------------------------------------------------------
 exports.default = router;
 //# sourceMappingURL=produto.routes.js.map
