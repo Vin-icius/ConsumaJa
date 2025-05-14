@@ -72,6 +72,67 @@ class ProdutoMySQLRepository {
             throw new app_error_1.AppError("Erro no banco de dados ao buscar produto por nome.", 500, false);
         }
     }
+    async listarParaSelecaoPromocao(filtros) {
+        var _a;
+        console.log("[Repo Produto] Listando produtos para seleção com filtros (paginado):", filtros);
+        const baseQuery = `
+            FROM PRODUTO p
+            LEFT JOIN CATEGORIA_PRODUTO cat ON p.CATEGORIA_PRODUTO_categoria_id = cat.categoria_id
+            LEFT JOIN MARCA_PRODUTO mar ON p.MARCA_PRODUTO_marca_id = mar.marca_id
+            LEFT JOIN TIPO_PRODUTO tip ON p.TIPO_PRODUTO_tipo_id = tip.tipo_id
+        `;
+        const conditions = ["p.ativo = TRUE", "p.produto_status = 'APROVADO'"];
+        const params = [];
+        if (filtros.nomeQuery && filtros.nomeQuery.trim() !== "") {
+            conditions.push("p.produto_nome LIKE ?");
+            params.push(`%${filtros.nomeQuery.trim()}%`);
+        }
+        if (filtros.categoriaId) {
+            conditions.push("p.CATEGORIA_PRODUTO_categoria_id = ?");
+            params.push(filtros.categoriaId);
+        }
+        if (filtros.marcaId) {
+            conditions.push("p.MARCA_PRODUTO_marca_id = ?");
+            params.push(filtros.marcaId);
+        }
+        if (filtros.tipoId) {
+            conditions.push("p.TIPO_PRODUTO_tipo_id = ?");
+            params.push(filtros.tipoId);
+        }
+        // Filtro fornecedorId omitido conforme discussão anterior
+        const whereClause = conditions.length > 0 ? " WHERE " + conditions.join(" AND ") : "";
+        // 1. Query para Contar o Total de Itens (sem LIMIT/OFFSET)
+        const countQuery = `SELECT COUNT(DISTINCT p.produto_id) as total ${baseQuery} ${whereClause}`;
+        // 2. Query para buscar os dados da página atual
+        let dataQuery = `SELECT DISTINCT p.produto_id, p.produto_nome, p.produto_imagem_url ${baseQuery} ${whereClause}`;
+        dataQuery += " ORDER BY p.produto_nome ASC";
+        const page = Number(filtros.page) || 1;
+        const limit = Number(filtros.limit) || 10;
+        const offset = (page - 1) * limit;
+        dataQuery += " LIMIT ? OFFSET ?";
+        const dataParams = [...params, limit, offset];
+        try {
+            if (!mysql_connection_1.pool)
+                throw new app_error_1.AppError("Pool de conexão não definido!", 500, false);
+            console.log("[Repo Produto] Count Query:", countQuery.replace(/\s+/g, ' ').trim());
+            console.log("[Repo Produto] Count Params:", params);
+            const [countRows] = await mysql_connection_1.pool.query(countQuery, params);
+            const total = ((_a = countRows[0]) === null || _a === void 0 ? void 0 : _a.total) || 0;
+            console.log("[Repo Produto] Data Query:", dataQuery.replace(/\s+/g, ' ').trim());
+            console.log("[Repo Produto] Data Params:", dataParams);
+            const [dataRows] = await mysql_connection_1.pool.query(dataQuery, dataParams);
+            const data = dataRows.map((row) => ({
+                produto_id: row.produto_id,
+                produto_nome: row.produto_nome,
+                produto_imagem_url: row.produto_imagem_url,
+            }));
+            return { data, total };
+        }
+        catch (error) {
+            console.error("[Repo Produto] Erro em listarParaSelecaoPromocao:", error);
+            throw new app_error_1.AppError("Erro no banco de dados ao buscar produtos para seleção.", 500, false);
+        }
+    }
     async criar(data) {
         const { produto_nome, produto_medida, produto_precoOriginal, descricao, CATEGORIA_PRODUTO_categoria_id, MARCA_PRODUTO_marca_id, TIPO_PRODUTO_tipo_id } = data;
         const query = `
@@ -105,37 +166,79 @@ class ProdutoMySQLRepository {
             throw new app_error_1.AppError("Erro no banco de dados ao criar produto.", 500, false);
         }
     }
-    async listar(apenasAtivos = true, filtros = {}) {
-        let query = this.BASE_SELECT_QUERY;
+    async listar(filtros) {
+        var _a;
+        console.log("[Repo Produto] Listando produtos (geral) com filtros:", filtros);
+        let baseFromClause = `
+            FROM PRODUTO p
+            LEFT JOIN CATEGORIA_PRODUTO cat ON p.CATEGORIA_PRODUTO_categoria_id = cat.categoria_id
+            LEFT JOIN MARCA_PRODUTO mar ON p.MARCA_PRODUTO_marca_id = mar.marca_id
+            LEFT JOIN TIPO_PRODUTO tip ON p.TIPO_PRODUTO_tipo_id = tip.tipo_id
+        `;
+        let countSelectQuery = `SELECT COUNT(DISTINCT p.produto_id) as total ${baseFromClause}`;
+        let dataSelectQuery = `SELECT DISTINCT p.*, cat.categoria_nome, mar.marca_nome, tip.tipo_nome ${baseFromClause}`;
+        const conditions = [];
         const params = [];
-        const whereConditions = [];
-        if (apenasAtivos) {
-            whereConditions.push("p.ativo = TRUE");
+        if (filtros.produto_id) {
+            conditions.push("p.produto_id = ?");
+            params.push(filtros.produto_id);
         }
-        if (filtros.nome) {
-            whereConditions.push("p.produto_nome LIKE ?");
-            params.push(`%${filtros.nome}%`);
+        if (filtros.nomeQuery && filtros.nomeQuery.trim() !== "") {
+            conditions.push("p.produto_nome LIKE ?");
+            params.push(`%${filtros.nomeQuery.trim()}%`);
         }
         if (filtros.categoriaId) {
-            whereConditions.push("p.CATEGORIA_PRODUTO_categoria_id = ?");
+            conditions.push("p.CATEGORIA_PRODUTO_categoria_id = ?");
             params.push(filtros.categoriaId);
         }
-        if (filtros.status) {
-            whereConditions.push("p.produto_status = ?");
-            params.push(filtros.status);
+        if (filtros.marcaId) {
+            conditions.push("p.MARCA_PRODUTO_marca_id = ?");
+            params.push(filtros.marcaId);
         }
-        if (whereConditions.length > 0) {
-            query += " WHERE " + whereConditions.join(" AND ");
+        if (filtros.tipoId) {
+            conditions.push("p.TIPO_PRODUTO_tipo_id = ?");
+            params.push(filtros.tipoId);
         }
-        query += " ORDER BY p.produto_nome";
+        if (filtros.produto_status) {
+            conditions.push("p.produto_status = ?");
+            params.push(filtros.produto_status);
+        }
+        // Tratamento do filtro 'ativo' (string "true" ou "false")
+        if (filtros.ativo !== undefined) {
+            conditions.push("p.ativo = ?");
+            params.push(filtros.ativo === 'true'); // Converte string para boolean
+        }
+        else {
+            // Comportamento padrão se 'ativo' não for especificado: listar apenas ativos
+            conditions.push("p.ativo = TRUE");
+        }
+        const whereClause = conditions.length > 0 ? " WHERE " + conditions.join(" AND ") : "";
+        countSelectQuery += whereClause;
+        dataSelectQuery += whereClause;
+        dataSelectQuery += " ORDER BY p.produto_nome ASC";
+        const page = parseInt(String(filtros.page), 10) || 1;
+        const limit = parseInt(String(filtros.limit), 10) || 10;
+        const offset = (page - 1) * limit;
+        dataSelectQuery += " LIMIT ? OFFSET ?";
+        const dataParamsQuery = [...params, limit, offset]; // Parâmetros para a query de dados
+        const countParamsQuery = [...params]; // Parâmetros para a query de contagem (sem limit/offset)
         try {
             if (!mysql_connection_1.pool)
                 throw new app_error_1.AppError("Pool de conexão não definido!", 500, false);
-            const [rows] = await mysql_connection_1.pool.query(query, params);
-            return rows.map(this.mapRowToProduto);
+            console.log("[Repo Produto] Listar - Count Query:", countSelectQuery.replace(/\s+/g, ' ').trim(), countParamsQuery);
+            const [countRows] = await mysql_connection_1.pool.query(countSelectQuery, countParamsQuery);
+            const total = ((_a = countRows[0]) === null || _a === void 0 ? void 0 : _a.total) || 0;
+            console.log("[Repo Produto] Listar - Data Query:", dataSelectQuery.replace(/\s+/g, ' ').trim(), dataParamsQuery);
+            const [dataRows] = await mysql_connection_1.pool.query(dataSelectQuery, dataParamsQuery);
+            const data = dataRows.map(row => {
+                const produto = this.mapRowToProduto(row);
+                // delete produto.pessoa_senha; // Produto não tem pessoa_senha
+                return produto;
+            });
+            return { data, total };
         }
         catch (error) {
-            console.error("[Repo] Erro ao listar produtos:", error);
+            console.error("[Repo Produto] Erro ao listar produtos:", error);
             throw new app_error_1.AppError("Erro no banco de dados ao listar produtos.", 500, false);
         }
     }

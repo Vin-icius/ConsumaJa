@@ -4,11 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // !!!!! VERIFIQUE SE ESTA URL BASE ESTÁ CORRETA !!!!!
 // (IP da sua máquina, Porta do pessoa-service, Caminho base '/api')
-<<<<<<< HEAD
-const API_URL_BASE = 'http://172.20.0.13:3002/api';
-=======
 const API_URL_BASE = 'http://172.16.241.5:3002/api';
->>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 
 // Funções auxiliares para tratamento de erro
 const handleRequest = async (requestPromise) => {
@@ -98,11 +94,7 @@ const uploadFoto = async (pessoaId, tipoFoto, imageUri) => {
  */
 const listarPessoas = (params = {}) => {
     // GET /api/pessoa
-<<<<<<< HEAD
-    return handleRequest(axios.get(`${API_URL_BASE}/pessoa`, { params }));
-=======
     return handleRequest(pessoaApiClient.get('/pessoa', { params: { /*...*/ } }));
->>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 };
 
 /**

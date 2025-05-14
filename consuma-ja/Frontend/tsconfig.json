@@ -1,9 +1,4 @@
 {
-<<<<<<< HEAD
-  "compilerOptions": {},
-  "extends": "expo/tsconfig.base"
-}
-=======
   "compilerOptions": {
     "strict": true,
     "skipLibCheck": true,
@@ -29,4 +24,3 @@
     "node_modules"
   ]
 }
->>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)

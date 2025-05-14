@@ -1,16 +1,5 @@
 USE ConsumaJaDB;
 
-SET FOREIGN_KEY_CHECKS = 0;
-
-TRUNCATE TABLE produto;             -- Limpa Produtos
-TRUNCATE TABLE tipo_produto;       -- Limpa Tipos
-TRUNCATE TABLE marca_produto;      -- Limpa Marcas
-TRUNCATE TABLE categoria_produto;   -- Limpa Categorias
-TRUNCATE TABLE cidade;             -- Limpa Cidades
-TRUNCATE TABLE estado;             -- Limpa Estados
-
-SET FOREIGN_KEY_CHECKS = 1;
-
 -- -----------------------------------------------------
 -- INSERTS PARA LOCATION-SERVICE
 -- -----------------------------------------------------
@@ -21,6 +10,7 @@ INSERT INTO ESTADO (estado_nome, estado_sigla) VALUES
 ('Minas Gerais', 'MG');
 
 INSERT INTO CIDADE (cidade_nome, regiao_ddd, ESTADO_estado_id) VALUES
+('Presidente Prudente', '18', 1),
 ('São Paulo', '11', 1),
 ('Campinas', '19', 1),
 ('Curitiba', '41', 2),

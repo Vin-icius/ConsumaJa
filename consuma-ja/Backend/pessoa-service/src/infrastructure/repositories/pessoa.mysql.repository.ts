@@ -1,19 +1,11 @@
 import { Pessoa, PessoaStatus, PessoaTipo } from "../../domain/entities/pessoa.entity";
 import { Fisica } from "../../domain/entities/fisica.entity";
 import { Juridica } from "../../domain/entities/juridica.entity";
-<<<<<<< HEAD
-import { PessoaRepository, CreatePessoaData, UpdatePessoaData } from "../../domain/repositories/pessoa.repository";
-import { pool } from "../database/mysql.connection";
-import { AppError } from "../../common/errors/app-error";
-import { RowDataPacket, ResultSetHeader } from 'mysql2';
-
-=======
 import { PessoaRepository, CreatePessoaData, UpdatePessoaData, PaginatedRepositoryResponse } from "../../domain/repositories/pessoa.repository";
 import { pool } from "../database/mysql.connection";
 import { AppError } from "../../common/errors/app-error";
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { ListarPessoasQueryDto } from "../../interfaces/dtos/listar-pessoas-query.dto"
->>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 // Interface para a linha retornada do DB com JOINs opcionais
 interface PessoaRow extends RowDataPacket {
     pessoa_id: number;
@@ -67,8 +59,6 @@ export class PessoaMySQLRepository implements PessoaRepository {
         return pessoa;
     }
 
-<<<<<<< HEAD
-=======
     async listar(filtros: ListarPessoasQueryDto): Promise<PaginatedRepositoryResponse<Pessoa>> {
         console.log("[Repo Pessoa] Listando pessoas com filtros:", filtros);
 
@@ -133,7 +123,6 @@ export class PessoaMySQLRepository implements PessoaRepository {
         }
     }
 
->>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
     // --- Métodos de Busca ---
     async findByLoginOrEmailOrDoc(identifier: string): Promise<Pessoa | null> {
         // <<< Incluir p.pessoa_senha na query de login >>>
@@ -201,12 +190,8 @@ export class PessoaMySQLRepository implements PessoaRepository {
         const {
             pessoa_nome, pessoa_email, pessoa_telefone, pessoa_tipo,
             pessoa_login, pessoa_senha, // Senha JÁ VEM HASHADA do Service
-<<<<<<< HEAD
-            fisicaData, juridicaData
-=======
             fisicaData, juridicaData,
             cep, rua, bairro, numero, complemento, CIDADE_cidade_id
->>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
         } = data;
 
         let connection;
@@ -235,8 +220,6 @@ export class PessoaMySQLRepository implements PessoaRepository {
                  throw new AppError(`Dados incompletos para tipo de pessoa '${pessoa_tipo}'`, 400); // Erro se não for Admin e faltar dados
             }
 
-<<<<<<< HEAD
-=======
             // <<< 3. INSERIR NA TABELA ENDERECO >>>
             const enderecoQuery = `
                 INSERT INTO ENDERECO (PESSOA_pessoa_id, CIDADE_cidade_id, rua, numero, bairro, cep, complemento, ativo)
@@ -249,7 +232,6 @@ export class PessoaMySQLRepository implements PessoaRepository {
             console.log(`[Repo Pessoa] Endereço inserido para Pessoa ID: ${insertedId}`);
             // ------------------------------------
 
->>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
             await connection.commit();
 
             // Busca a pessoa recém-criada completa
@@ -258,13 +240,6 @@ export class PessoaMySQLRepository implements PessoaRepository {
             return novaPessoa;
 
         } catch (error: any) {
-<<<<<<< HEAD
-            if (connection) await connection.rollback();
-            // Tratamento de erro DUP_ENTRY mantido...
-             if (error.code === 'ER_DUP_ENTRY') { /* ... tratamento mantido ... */ throw new AppError("Erro duplicado...", 409); }
-             console.error("[Repo] Erro ao criar pessoa:", error);
-             throw new AppError("Erro no banco de dados ao criar pessoa.", 500, false);
-=======
             if (connection) await connection.rollback(); // Rollback em caso de erro
             // Tratar erros de duplicação (ER_DUP_ENTRY) ou FK (ER_NO_REFERENCED_ROW_2)
             if (error.code === 'ER_DUP_ENTRY') {
@@ -282,7 +257,6 @@ export class PessoaMySQLRepository implements PessoaRepository {
              }
              console.error("[Repo Pessoa] Erro ao criar pessoa e endereço:", error);
              throw new AppError("Erro no banco de dados ao criar pessoa e endereço.", 500, false);
->>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
         } finally {
             if (connection) connection.release();
         }
@@ -346,31 +320,6 @@ export class PessoaMySQLRepository implements PessoaRepository {
          }
      }
 
-<<<<<<< HEAD
-     // Listar (Exemplo básico, sem paginação ou filtros complexos)
-     async listar(apenasAtivos = true): Promise<Pessoa[]> {
-        let query = ` SELECT p.*, f.pessoa_cpf, f.pessoa_documentoValidado, f.pessoa_fotoValidada, j.cnpj, j.fornecedor_num FROM PESSOA p LEFT JOIN FISICA f ON p.pessoa_id = f.PESSOA_pessoa_id AND p.pessoa_tipo = 'Fisica' LEFT JOIN JURIDICA j ON p.pessoa_id = j.PESSOA_pessoa_id AND p.pessoa_tipo = 'Juridica' `;
-        if (apenasAtivos) {
-            query += " WHERE p.pessoa_status = 1"; // Filtra por status ativo
-        }
-        query += " ORDER BY p.pessoa_nome";
-        try {
-            if (!pool) throw new AppError("Pool...", 500, false);
-            const [rows] = await pool.query<PessoaRow[]>(query);
-            // Mapeia removendo a senha
-            return rows.map(row => {
-                const pessoa = this.mapRowToPessoa(row);
-                delete pessoa.pessoa_senha;
-                return pessoa;
-            });
-        } catch (error: any) {
-             console.error("[Repo] Erro ao listar pessoas:", error);
-             throw new AppError("Erro DB ao listar pessoas.", 500, false);
-        }
-    }
-
-=======
->>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
      async atualizarCaminhosFotos(pessoaId: number, paths: { foto_selfie_path?: string; foto_documento_path?: string }): Promise<boolean> {
         const setParts: string[] = [];
         const values: any[] = [];

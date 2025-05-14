@@ -2,19 +2,12 @@ import { Produto } from "../../domain/entities/produto.entity";
 import { Categoria } from "../../domain/entities/categoria.entity";
 import { Marca } from "../../domain/entities/marca.entity";
 import { Tipo } from "../../domain/entities/tipo.entity";
-<<<<<<< HEAD
-import { ProdutoRepository, CreateProdutoData, UpdateProdutoData } from "../../domain/repositories/produto.repository";
-import { pool } from "../database/mysql.connection";
-import { AppError } from "../../common/errors/app-error";
-import { RowDataPacket, ResultSetHeader } from 'mysql2';
-=======
 import { ProdutoRepository, CreateProdutoData, UpdateProdutoData, PaginatedRepositoryResponse } from "../../domain/repositories/produto.repository";
 import { pool } from "../database/mysql.connection";
 import { AppError } from "../../common/errors/app-error";
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { ListarProdutosSelecaoQueryDto } from '../../interfaces/dtos/listar-produtos-selecao-query.dto';
 import { ListarProdutosQueryDto } from "../../interfaces/dtos/listar-produtos-query.dto";
->>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 
 // Interface para linha do DB com dados das tabelas relacionadas via JOIN
 // Usa alias para colunas de tabelas relacionadas para evitar ambiguidade
@@ -120,8 +113,6 @@ export class ProdutoMySQLRepository implements ProdutoRepository {
         }
     }
 
-<<<<<<< HEAD
-=======
     async listarParaSelecaoPromocao(
         filtros: ListarProdutosSelecaoQueryDto
     ): Promise<PaginatedRepositoryResponse<Pick<Produto, "produto_id" | "produto_nome" | "produto_imagem_url">>> {
@@ -197,7 +188,6 @@ export class ProdutoMySQLRepository implements ProdutoRepository {
         }
     }
 
->>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
     async criar(data: CreateProdutoData): Promise<Produto> {
         const {
             produto_nome, produto_medida, produto_precoOriginal, descricao,
@@ -229,45 +219,6 @@ export class ProdutoMySQLRepository implements ProdutoRepository {
         }
     }
 
-<<<<<<< HEAD
-    async listar(apenasAtivos = true, filtros: any = {}): Promise<Produto[]> {
-        let query = this.BASE_SELECT_QUERY;
-        const params: any[] = [];
-        const whereConditions: string[] = [];
-
-        if (apenasAtivos) {
-            whereConditions.push("p.ativo = TRUE");
-        }
-
-        if (filtros.nome) {
-             whereConditions.push("p.produto_nome LIKE ?");
-             params.push(`%${filtros.nome}%`);
-        }
-        if (filtros.categoriaId) {
-            whereConditions.push("p.CATEGORIA_PRODUTO_categoria_id = ?");
-            params.push(filtros.categoriaId);
-        }
-         if (filtros.status) {
-            whereConditions.push("p.produto_status = ?");
-            params.push(filtros.status);
-        }
-
-        if (whereConditions.length > 0) {
-            query += " WHERE " + whereConditions.join(" AND ");
-        }
-
-        query += " ORDER BY p.produto_nome";
-
-        try {
-            if (!pool) throw new AppError("Pool de conexão não definido!", 500, false);
-            const [rows] = await pool.query<ProdutoRow[]>(query, params);
-            return rows.map(this.mapRowToProduto);
-        } catch (error: any) {
-            console.error("[Repo] Erro ao listar produtos:", error);
-            throw new AppError("Erro no banco de dados ao listar produtos.", 500, false);
-        }
-    }
-=======
     async listar(filtros: ListarProdutosQueryDto): Promise<PaginatedRepositoryResponse<Produto>> {
         console.log("[Repo Produto] Listando produtos (geral) com filtros:", filtros);
     
@@ -356,7 +307,6 @@ export class ProdutoMySQLRepository implements ProdutoRepository {
             throw new AppError("Erro no banco de dados ao listar produtos.", 500, false);
         }
       }
->>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 
      async buscarPorId(id: number, incluirInativos = false): Promise<Produto | null> {
         let query = this.BASE_SELECT_QUERY + " WHERE p.produto_id = ?";

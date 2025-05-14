@@ -25,9 +25,6 @@ export interface Produto {
   categoria: Categoria | null;
   marca: Marca | null;         
   tipo: Tipo | null; 
-<<<<<<< HEAD
-=======
 
   produto_imagem_url?: string | null;
->>>>>>> ba4043b (feat: criacao do gerenciamento de lotes e promocoes, refatoramento da tela de inicio)
 }

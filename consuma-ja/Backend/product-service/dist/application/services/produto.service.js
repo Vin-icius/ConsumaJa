@@ -56,14 +56,14 @@ class ProdutoService {
         }
     }
     async listarProdutos(filtros) {
+        const page = filtros.page || 1;
+        const limit = filtros.limit || 10;
         try {
-            return await this.produtoRepository.listar(true, filtros);
+            const { data, total } = await this.produtoRepository.listar(filtros); // Repositório retorna {data, total}
+            return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
         }
-        catch (error) {
-            if (error instanceof app_error_1.AppError)
-                throw error;
-            console.error("[Service] Erro ao listar produtos:", error);
-            throw new app_error_1.AppError("Erro interno ao listar produtos.", 500, false);
+        catch (error) { /* ... */
+            throw new app_error_1.AppError("Erro interno...", 500, false);
         }
     }
     async buscarProdutoPorId(id) {
@@ -162,6 +162,20 @@ class ProdutoService {
                 throw error;
             console.error(`[Service] Erro ao rejeitar produto ${id}:`, error);
             throw new app_error_1.AppError(`Erro interno ao rejeitar produto ${id}.`, 500, false);
+        }
+    }
+    async listarParaSelecaoPromocao(filtros) {
+        console.log("[Service Produto] Listando produtos para seleção (paginado) com filtros:", filtros);
+        const page = filtros.page || 1;
+        const limit = filtros.limit || 10;
+        try {
+            const { data, total } = await this.produtoRepository.listarParaSelecaoPromocao(Object.assign(Object.assign({}, filtros), { page, limit }));
+            const totalPages = Math.ceil(total / limit);
+            console.log(`[Service Produto] Produtos para seleção: ${data.length} de ${total} total. Página ${page}/${totalPages}.`);
+            return { data, total, page, limit, totalPages };
+        }
+        catch (error) { /* ... */
+            throw new app_error_1.AppError("Erro interno...", 500, false);
         }
     }
 }

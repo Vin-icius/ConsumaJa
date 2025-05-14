@@ -35,6 +35,58 @@ class PessoaMySQLRepository {
         }
         return pessoa;
     }
+    async listar(filtros) {
+        console.log("[Repo Pessoa] Listando pessoas com filtros:", filtros);
+        let baseFromClause = `
+            FROM PESSOA p
+            LEFT JOIN FISICA f ON p.pessoa_id = f.PESSOA_pessoa_id AND p.pessoa_tipo = 'Fisica'
+            LEFT JOIN JURIDICA j ON p.pessoa_id = j.PESSOA_pessoa_id AND p.pessoa_tipo = 'Juridica'
+        `;
+        let countSelectQuery = `SELECT COUNT(DISTINCT p.pessoa_id) as total ${baseFromClause}`;
+        let dataSelectQuery = `SELECT p.*, f.pessoa_cpf, f.pessoa_documentoValidado, f.pessoa_fotoValidada, f.foto_selfie_path, f.foto_documento_path, j.cnpj, j.fornecedor_num ${baseFromClause}`;
+        const conditions = [];
+        const params = [];
+        if (filtros.nomeQuery && filtros.nomeQuery.trim() !== "") {
+            conditions.push("p.pessoa_nome LIKE ?");
+            params.push(`%${filtros.nomeQuery.trim()}%`);
+        }
+        if (filtros.pessoa_tipo) {
+            conditions.push("p.pessoa_tipo = ?");
+            params.push(filtros.pessoa_tipo);
+        }
+        if (filtros.pessoa_status !== undefined) {
+            conditions.push("p.pessoa_status = ?");
+            params.push(filtros.pessoa_status);
+        }
+        const whereClause = conditions.length > 0 ? " WHERE " + conditions.join(" AND ") : "";
+        countSelectQuery += whereClause;
+        dataSelectQuery += whereClause;
+        dataSelectQuery += " ORDER BY p.pessoa_nome ASC";
+        const page = filtros.page || 1;
+        const limit = filtros.limit || 10;
+        const offset = (page - 1) * limit;
+        dataSelectQuery += " LIMIT ? OFFSET ?";
+        const dataParams = [...params, limit, offset];
+        try {
+            if (!mysql_connection_1.pool)
+                throw new app_error_1.AppError("Pool de conexão não definido!", 500, false);
+            console.log("[Repo Pessoa] Count Query:", countSelectQuery.replace(/\s+/g, ' ').trim(), params);
+            const [countRows] = await mysql_connection_1.pool.query(countSelectQuery, params);
+            const total = countRows[0]?.total || 0;
+            console.log("[Repo Pessoa] Data Query:", dataSelectQuery.replace(/\s+/g, ' ').trim(), dataParams);
+            const [dataRows] = await mysql_connection_1.pool.query(dataSelectQuery, dataParams);
+            const data = dataRows.map(row => {
+                const pessoa = this.mapRowToPessoa(row);
+                delete pessoa.pessoa_senha; // Nunca retornar senha em listagens
+                return pessoa;
+            });
+            return { data, total };
+        }
+        catch (error) {
+            console.error("[Repo Pessoa] Erro ao listar pessoas:", error);
+            throw new app_error_1.AppError("Erro no banco de dados ao listar pessoas.", 500, false);
+        }
+    }
     // --- Métodos de Busca ---
     async findByLoginOrEmailOrDoc(identifier) {
         // <<< Incluir p.pessoa_senha na query de login >>>
@@ -107,7 +159,7 @@ class PessoaMySQLRepository {
     // Criar Pessoa (usando Transaction)
     async criar(data) {
         const { pessoa_nome, pessoa_email, pessoa_telefone, pessoa_tipo, pessoa_login, pessoa_senha, // Senha JÁ VEM HASHADA do Service
-        fisicaData, juridicaData } = data;
+        fisicaData, juridicaData, cep, rua, bairro, numero, complemento, CIDADE_cidade_id } = data;
         let connection;
         try {
             if (!mysql_connection_1.pool)
@@ -134,6 +186,17 @@ class PessoaMySQLRepository {
             else if (pessoa_tipo !== 'Admin') {
                 throw new app_error_1.AppError(`Dados incompletos para tipo de pessoa '${pessoa_tipo}'`, 400); // Erro se não for Admin e faltar dados
             }
+            // <<< 3. INSERIR NA TABELA ENDERECO >>>
+            const enderecoQuery = `
+                INSERT INTO ENDERECO (PESSOA_pessoa_id, CIDADE_cidade_id, rua, numero, bairro, cep, complemento, ativo)
+                VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)
+            `;
+            // O frontend já deve ter validado e obtido CIDADE_cidade_id
+            await connection.query(enderecoQuery, [
+                insertedId, CIDADE_cidade_id, rua, numero, bairro, cep, complemento
+            ]);
+            console.log(`[Repo Pessoa] Endereço inserido para Pessoa ID: ${insertedId}`);
+            // ------------------------------------
             await connection.commit();
             // Busca a pessoa recém-criada completa
             const novaPessoa = await this.findById(insertedId); // findById agora usa a pool padrão, não a connection
@@ -143,13 +206,29 @@ class PessoaMySQLRepository {
         }
         catch (error) {
             if (connection)
-                await connection.rollback();
-            // Tratamento de erro DUP_ENTRY mantido...
-            if (error.code === 'ER_DUP_ENTRY') { /* ... tratamento mantido ... */
-                throw new app_error_1.AppError("Erro duplicado...", 409);
+                await connection.rollback(); // Rollback em caso de erro
+            // Tratar erros de duplicação (ER_DUP_ENTRY) ou FK (ER_NO_REFERENCED_ROW_2)
+            if (error.code === 'ER_DUP_ENTRY') {
+                // Identificar qual campo causou a duplicação
+                if (error.message.includes('pessoa_email_UNIQUE'))
+                    throw new app_error_1.AppError(`O email "${pessoa_email}" já está em uso.`, 409);
+                if (error.message.includes('pessoa_login_UNIQUE'))
+                    throw new app_error_1.AppError(`O login/documento "${pessoa_login}" já está em uso.`, 409);
+                // Adicionar checagens para CPF/CNPJ se eles têm constraints UNIQUE separadas
+                if (fisicaData && error.message.includes(fisicaData.pessoa_cpf))
+                    throw new app_error_1.AppError(`O CPF "${fisicaData.pessoa_cpf}" já está em uso.`, 409);
+                if (juridicaData && error.message.includes(juridicaData.cnpj))
+                    throw new app_error_1.AppError(`O CNPJ "${juridicaData.cnpj}" já está em uso.`, 409);
+                throw new app_error_1.AppError("Erro de duplicação ao criar pessoa.", 409);
             }
-            console.error("[Repo] Erro ao criar pessoa:", error);
-            throw new app_error_1.AppError("Erro no banco de dados ao criar pessoa.", 500, false);
+            else if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+                // Verificar qual FK falhou (ex: CIDADE_cidade_id)
+                if (error.message.includes('fk_ENDERECO_CIDADE1'))
+                    throw new app_error_1.AppError(`Cidade com ID ${CIDADE_cidade_id} não encontrada. Verifique os dados de endereço.`, 400);
+                throw new app_error_1.AppError("Erro de referência: Cidade ou outro dado relacionado inválido.", 400);
+            }
+            console.error("[Repo Pessoa] Erro ao criar pessoa e endereço:", error);
+            throw new app_error_1.AppError("Erro no banco de dados ao criar pessoa e endereço.", 500, false);
         }
         finally {
             if (connection)
@@ -211,29 +290,6 @@ class PessoaMySQLRepository {
         catch (error) {
             console.error(`[Repo] Erro ao excluir logica pessoa ${id}:`, error);
             throw new app_error_1.AppError(`Erro no banco de dados ao excluir pessoa ${id}.`, 500, false);
-        }
-    }
-    // Listar (Exemplo básico, sem paginação ou filtros complexos)
-    async listar(apenasAtivos = true) {
-        let query = ` SELECT p.*, f.pessoa_cpf, f.pessoa_documentoValidado, f.pessoa_fotoValidada, j.cnpj, j.fornecedor_num FROM PESSOA p LEFT JOIN FISICA f ON p.pessoa_id = f.PESSOA_pessoa_id AND p.pessoa_tipo = 'Fisica' LEFT JOIN JURIDICA j ON p.pessoa_id = j.PESSOA_pessoa_id AND p.pessoa_tipo = 'Juridica' `;
-        if (apenasAtivos) {
-            query += " WHERE p.pessoa_status = 1"; // Filtra por status ativo
-        }
-        query += " ORDER BY p.pessoa_nome";
-        try {
-            if (!mysql_connection_1.pool)
-                throw new app_error_1.AppError("Pool...", 500, false);
-            const [rows] = await mysql_connection_1.pool.query(query);
-            // Mapeia removendo a senha
-            return rows.map(row => {
-                const pessoa = this.mapRowToPessoa(row);
-                delete pessoa.pessoa_senha;
-                return pessoa;
-            });
-        }
-        catch (error) {
-            console.error("[Repo] Erro ao listar pessoas:", error);
-            throw new app_error_1.AppError("Erro DB ao listar pessoas.", 500, false);
         }
     }
     async atualizarCaminhosFotos(pessoaId, paths) {
