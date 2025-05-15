@@ -13,14 +13,14 @@ import {
   Modal,
   FlatList,
   Image,
+  Keyboard, // Importação correta do Keyboard
 } from "react-native"
 import { Picker } from "@react-native-picker/picker"
 import DateTimePickerModal from "react-native-modal-datetime-picker"
 import { useNavigation, useRoute } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
-// Importação correta do Keyboard
-import Keyboard from "react-native/Libraries/Components/Keyboard/Keyboard"
-// Importação do serviço real
+// Removida a importação direta do Keyboard que causava o erro
+// import Keyboard from "react-native/Libraries/Components/Keyboard/Keyboard"
 import promocaoService from "../../services/promocaoService"
 
 // Tipos
@@ -358,6 +358,7 @@ const PromocaoFormScreen = () => {
     setShowFornecedores(false)
     setFornecedorQuery("")
     handleFornecedorChange(fornecedor.pessoa_id, true)
+    // Usando a API Keyboard padrão do React Native
     Keyboard.dismiss()
   }
 
@@ -673,6 +674,7 @@ const PromocaoFormScreen = () => {
 
   // Enviar formulário
   const enviarFormulario = async () => {
+    // Usando a API Keyboard padrão do React Native
     Keyboard.dismiss()
 
     if (!validarFormulario()) {
