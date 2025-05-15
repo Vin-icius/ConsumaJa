@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, Image, useWindowDimensions, Platform } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import MarqueeText from "./MarqueeText" // Importação corrigida para o mesmo diretório
 
 // Tipos
 interface PromocaoCardProps {
@@ -15,7 +16,7 @@ interface PromocaoCardProps {
 
 const PromocaoCard = ({ promocao_descricao, fornecedor, itens_preview, onPressDetalhes }: PromocaoCardProps) => {
   const { width } = useWindowDimensions()
-  const isMobile = width < 600
+  const isMobile = width < 768
 
   // Estado para controlar o item atual no carrossel
   const [currentItemIndex, setCurrentItemIndex] = useState(0)
@@ -27,123 +28,123 @@ const PromocaoCard = ({ promocao_descricao, fornecedor, itens_preview, onPressDe
   const currentItem = hasItems ? itens_preview[currentItemIndex] : null
 
   // Função para navegar para o próximo item
-  const nextItem = () => {
+  const nextItem = (e?: any) => {
+    if (e) e.stopPropagation()
     if (hasItems) {
       setCurrentItemIndex((prevIndex) => (prevIndex + 1) % itens_preview.length)
     }
   }
 
   // Função para navegar para o item anterior
-  const prevItem = () => {
+  const prevItem = (e?: any) => {
+    if (e) e.stopPropagation()
     if (hasItems) {
       setCurrentItemIndex((prevIndex) => (prevIndex - 1 + itens_preview.length) % itens_preview.length)
     }
   }
 
-  // Encontra o menor preço entre os itens
-  const menorPreco = itens_preview.reduce(
-    (min, item) => (item.itemPromocao_valor < min ? item.itemPromocao_valor : min),
-    itens_preview[0]?.itemPromocao_valor || 0,
-  )
+  // Encontra o menor preço entre os itens (com verificação de segurança)
+  const menorPreco = hasItems
+    ? itens_preview.reduce((min, item) => {
+        const valor = item.itemPromocao_valor !== undefined ? item.itemPromocao_valor : Number.POSITIVE_INFINITY
+        return valor < min ? valor : min
+      }, Number.POSITIVE_INFINITY)
+    : 0
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPressDetalhes} activeOpacity={0.7}>
-      {/* Cabeçalho do Card */}
-      <View style={styles.cardHeader}>
-        <Text style={styles.promocaoTitulo} numberOfLines={2}>
-          {promocao_descricao || "Promoção"}
-        </Text>
-      </View>
-
-      {/* Fornecedor */}
-      <View style={styles.fornecedorContainer}>
-        <Ionicons name="business-outline" size={16} color="#666" />
-        <Text style={styles.fornecedorNome} numberOfLines={1}>
-          {fornecedor.pessoa_nome}
-        </Text>
-      </View>
-
-      {/* Divider */}
-      <View style={styles.divider} />
-
-      {/* Carrossel de Itens */}
-      <View style={styles.carouselContainer}>
+      {/* Seção de Imagem com Carrossel */}
+      <View style={styles.imageSection}>
         {hasItems ? (
           <>
-            <TouchableOpacity
-              style={[styles.carouselButton, styles.carouselButtonLeft]}
-              onPress={prevItem}
-              disabled={itens_preview.length <= 1}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="chevron-back" size={20} color={itens_preview.length > 1 ? "#007bff" : "#ccc"} />
-            </TouchableOpacity>
-
-            <View style={styles.itemContainer}>
-              {currentItem?.imagem_url ? (
-                <Image source={{ uri: currentItem.imagem_url }} style={styles.itemImage} />
-              ) : (
-                <View style={styles.itemImagePlaceholder}>
-                  <Ionicons name="image-outline" size={24} color="#aaa" />
-                </View>
-              )}
-
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemNome} numberOfLines={2}>
-                  {currentItem?.produto_nome}
-                </Text>
-                <Text style={styles.itemPreco}>R$ {currentItem?.itemPromocao_valor.toFixed(2)}</Text>
+            {currentItem?.imagem_url ? (
+              <Image source={{ uri: currentItem.imagem_url }} style={styles.itemImage} resizeMode="cover" />
+            ) : (
+              <View style={styles.itemImagePlaceholder}>
+                <Ionicons name="image-outline" size={32} color="#aaa" />
               </View>
-            </View>
+            )}
 
-            <TouchableOpacity
-              style={[styles.carouselButton, styles.carouselButtonRight]}
-              onPress={nextItem}
-              disabled={itens_preview.length <= 1}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="chevron-forward" size={20} color={itens_preview.length > 1 ? "#007bff" : "#ccc"} />
-            </TouchableOpacity>
+            {/* Botões de navegação do carrossel */}
+            {itens_preview.length > 1 && (
+              <>
+                <TouchableOpacity
+                  style={[styles.carouselButton, styles.carouselButtonLeft]}
+                  onPress={prevItem}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="chevron-back" size={18} color="#fff" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.carouselButton, styles.carouselButtonRight]}
+                  onPress={nextItem}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="chevron-forward" size={18} color="#fff" />
+                </TouchableOpacity>
+              </>
+            )}
+
+            {/* Indicador de quantidade de itens */}
+            {itens_preview.length > 1 && (
+              <View style={styles.itemCountBadge}>
+                <Text style={styles.itemCountText}>
+                  {currentItemIndex + 1}/{itens_preview.length}
+                </Text>
+              </View>
+            )}
           </>
         ) : (
-          <View style={styles.noItemsContainer}>
-            <Ionicons name="alert-circle-outline" size={24} color="#aaa" />
-            <Text style={styles.noItemsText}>Nenhum item disponível</Text>
+          <View style={styles.itemImagePlaceholder}>
+            <Ionicons name="image-outline" size={32} color="#aaa" />
+            <Text style={styles.noItemsText}>Sem imagem</Text>
           </View>
         )}
       </View>
 
-      {/* Indicador de Página */}
-      {itens_preview.length > 1 && (
-        <View style={styles.paginationContainer}>
-          {itens_preview.map((_, index) => (
-            <View
-              key={index}
-              style={[styles.paginationDot, index === currentItemIndex && styles.paginationDotActive]}
-            />
-          ))}
-        </View>
-      )}
+      {/* Seção de Informações */}
+      <View style={styles.infoSection}>
+        {/* Título da Promoção com animação de marquee */}
+        <MarqueeText
+          text={promocao_descricao || "Promoção"}
+          style={styles.promocaoTitulo}
+          speed={0.03} // Velocidade mais rápida
+          delay={1000} // Pausa de 1 segundo antes de iniciar a animação
+        />
 
-      {/* Rodapé do Card */}
-      <View style={styles.cardFooter}>
-        <View style={styles.precoContainer}>
-          <Text style={styles.aPartirDe}>A partir de</Text>
-          <Text style={styles.precoDestaque}>R$ {menorPreco.toFixed(2)}</Text>
-        </View>
-        <TouchableOpacity style={styles.detalhesButton} onPress={onPressDetalhes}>
-          <Text style={styles.detalhesButtonText}>Ver Detalhes</Text>
-        </TouchableOpacity>
-      </View>
+        {/* Preço */}
+        <Text style={styles.precoDestaque}>
+          A partir de R$ {menorPreco !== Number.POSITIVE_INFINITY ? menorPreco.toFixed(2) : "0.00"}
+        </Text>
 
-      {/* Contador de Itens */}
-      {itens_preview.length > 0 && (
-        <View style={styles.itemCountContainer}>
-          <Text style={styles.itemCountText}>
-            {currentItemIndex + 1}/{itens_preview.length} itens
+        {/* Nome do Item Atual - limitado a 2 linhas com "..." */}
+        {currentItem && (
+          <Text style={styles.itemNome} numberOfLines={2} ellipsizeMode="tail">
+            {currentItem.produto_nome}
+          </Text>
+        )}
+
+        {/* Fornecedor - com espaço reduzido */}
+        <View style={styles.fornecedorContainer}>
+          <Ionicons name="business-outline" size={14} color="#666" />
+          <Text style={styles.fornecedorNome} numberOfLines={1} ellipsizeMode="tail">
+            {fornecedor.pessoa_nome}
           </Text>
         </View>
-      )}
+
+        {/* Indicador de Página (pontos) */}
+        {itens_preview.length > 1 && (
+          <View style={styles.paginationContainer}>
+            {itens_preview.map((_, index) => (
+              <View
+                key={index}
+                style={[styles.paginationDot, index === currentItemIndex && styles.paginationDotActive]}
+              />
+            ))}
+          </View>
+        )}
+      </View>
     </TouchableOpacity>
   )
 }
@@ -151,176 +152,126 @@ const PromocaoCard = ({ promocao_descricao, fornecedor, itens_preview, onPressDe
 const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
+    borderRadius: 8,
+    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
     width: "100%",
-    height: Platform.OS === "web" ? 320 : "auto", // Altura fixa para web, auto para mobile
+    height: Platform.OS === "web" ? 320 : 320, // Altura fixa para todos os dispositivos
+  },
+  imageSection: {
     position: "relative",
-  },
-  cardHeader: {
-    marginBottom: 8,
-  },
-  promocaoTitulo: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  fornecedorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  fornecedorNome: {
-    fontSize: 14,
-    color: "#666",
-    marginLeft: 6,
-    flex: 1,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#eee",
-    marginVertical: 8,
-  },
-  carouselContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    height: 120,
-    marginVertical: 10,
-    position: "relative",
-  },
-  carouselButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "#f0f0f0",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 2,
-  },
-  carouselButtonLeft: {
-    position: "absolute",
-    left: -5,
-    top: "50%",
-    marginTop: -15,
-  },
-  carouselButtonRight: {
-    position: "absolute",
-    right: -5,
-    top: "50%",
-    marginTop: -15,
-  },
-  itemContainer: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 30,
+    width: "100%",
+    height: 160, // Altura fixa para a seção de imagem
+    backgroundColor: "#f8f8f8",
   },
   itemImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    marginRight: 12,
+    width: "100%",
+    height: "100%",
   },
   itemImagePlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: "#f0f0f0",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  itemInfo: {
-    flex: 1,
-  },
-  itemNome: {
-    fontSize: 16,
-    color: "#333",
-    marginBottom: 6,
-  },
-  itemPreco: {
-    fontSize: 16,
-    color: "#28a745",
-    fontWeight: "500",
-  },
-  noItemsContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
   },
   noItemsText: {
     fontSize: 14,
     color: "#aaa",
     marginTop: 8,
   },
-  paginationContainer: {
-    flexDirection: "row",
+  carouselButton: {
+    position: "absolute",
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(0,0,0,0.3)",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 5,
-    marginBottom: 10,
+    top: "50%",
+    marginTop: -14,
+    zIndex: 2,
   },
-  paginationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#ddd",
-    marginHorizontal: 3,
+  carouselButtonLeft: {
+    left: 8,
   },
-  paginationDotActive: {
-    backgroundColor: "#007bff",
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  carouselButtonRight: {
+    right: 8,
   },
-  cardFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 8,
-  },
-  precoContainer: {
-    flexDirection: "column",
-  },
-  aPartirDe: {
-    fontSize: 12,
-    color: "#666",
-  },
-  precoDestaque: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#28a745",
-  },
-  detalhesButton: {
-    backgroundColor: "#007bff",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-  },
-  detalhesButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  itemCountContainer: {
+  itemCountBadge: {
     position: "absolute",
-    top: 16,
-    right: 16,
-    backgroundColor: "rgba(0,0,0,0.05)",
+    bottom: 8,
+    right: 8,
+    backgroundColor: "rgba(0,0,0,0.6)",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
   },
   itemCountText: {
     fontSize: 12,
+    color: "#fff",
+  },
+  infoSection: {
+    padding: 12,
+    height: 160, // Altura fixa para a seção de informações
+    justifyContent: "flex-start", // Alinha os itens no topo
+  },
+  promocaoTitulo: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#333",
+    marginBottom: 4,
+    height: 20, // Altura fixa para o título
+  },
+  precoDestaque: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#28a745",
+    marginBottom: 4, // Reduzido de 6 para 4
+  },
+  itemNome: {
+    fontSize: 13,
+    color: "#555",
+    marginBottom: 4, // Reduzido de 8 para 4
+    height: 32, // Altura fixa para o nome do item (2 linhas)
+  },
+  fornecedorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 2, // Reduzido de 4 para 2
+  },
+  fornecedorNome: {
+    fontSize: 12,
     color: "#666",
+    marginLeft: 4,
+    flex: 1,
+  },
+  paginationContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 6, // Reduzido de 8 para 6
+    position: "absolute",
+    bottom: 8,
+    left: 0,
+    right: 0,
+  },
+  paginationDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#ddd",
+    marginHorizontal: 2,
+  },
+  paginationDotActive: {
+    backgroundColor: "#007bff",
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
 })
 

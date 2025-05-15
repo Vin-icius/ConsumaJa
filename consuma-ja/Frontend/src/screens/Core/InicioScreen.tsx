@@ -41,22 +41,21 @@ const InicioScreen = () => {
   useEffect(() => {
     const updateLayout = () => {
       let columns = 1
-      if (width < 600) {
-        columns = 1 // Mobile
-      } else if (width < 900) {
-        columns = 2 // Tablet
-      } else if (width < 1200) {
-        columns = 3 // Desktop pequeno
+
+      // Ajuste do número de colunas com base na largura da tela
+      if (width < 768) {
+        columns = 2 // Todas as telas móveis terão 2 colunas
+      } else if (width < 1024) {
+        columns = 3 // Tablets e desktops pequenos
       } else {
-        columns = 3 // Limitamos a 3 mesmo em telas grandes
+        columns = 4 // Desktops maiores
       }
 
       setNumColumns(columns)
 
       // Calcula a largura do card com base no número de colunas
-      // Considera o padding horizontal (16px de cada lado) e o espaço entre os cards (16px)
       const containerPadding = 32 // 16px de cada lado
-      const gapBetweenCards = 16 * (columns - 1)
+      const gapBetweenCards = 12 * (columns - 1) // Espaço entre os cards
       const availableWidth = width - containerPadding - gapBetweenCards
 
       // Se for web e a tela for grande, limita a largura máxima do container
@@ -74,7 +73,6 @@ const InicioScreen = () => {
   }, [width])
 
   // --- Buscar Dados ---
-  // Modificar a função fetchPromocoes para não enviar categoriaId quando "Todas as Categorias" for selecionada
   const fetchPromocoes = useCallback(
     async (isRefreshing = false) => {
       if (!isRefreshing) setLoading(true)
@@ -103,11 +101,10 @@ const InicioScreen = () => {
     [searchQuery, searchType, selectedCategoriaId],
   )
 
-  // Modificar a função fetchCategoriasParaFiltro para não adicionar a categoria "Todas"
   const fetchCategoriasParaFiltro = async () => {
     try {
       const data = await categoriaService.listarCategorias()
-      setCategoriasFiltro(data || []) // Não adiciona mais a categoria "Todas"
+      setCategoriasFiltro(data || [])
     } catch (error) {
       console.error("Erro ao buscar categorias para filtro:", error)
       // Pode mostrar um alerta ou tratar silenciosamente
@@ -118,8 +115,7 @@ const InicioScreen = () => {
   useFocusEffect(
     useCallback(() => {
       fetchPromocoes()
-      if (categoriasFiltro.length <= 1) {
-        // Busca categorias só uma vez ou se estiver vazio (além do "Todas")
+      if (categoriasFiltro.length === 0) {
         fetchCategoriasParaFiltro()
       }
     }, []), // Executa apenas na primeira vez que foca, ou se dependências mudarem
@@ -181,7 +177,8 @@ const InicioScreen = () => {
     )
   }
 
-  if (loading) return <ActivityIndicator size="large" color="#007bff" style={styles.centered} />
+  if (loading && promocoes.length === 0)
+    return <ActivityIndicator size="large" color="#007bff" style={styles.centered} />
   if (error)
     return (
       <View style={styles.centered}>
@@ -192,6 +189,7 @@ const InicioScreen = () => {
       </View>
     )
 
+  // Certifique-se de que o FlatList esteja configurado corretamente
   return (
     <View style={styles.container}>
       <FlatList
@@ -217,6 +215,7 @@ const InicioScreen = () => {
         refreshing={loading && promocoes.length > 0} // Mostra indicador de refresh se carregando E já tem itens
       />
 
+      {/* Resto do código permanece igual... */}
       {/* Modal de Filtro */}
       <Modal
         animationType="slide"
@@ -257,22 +256,15 @@ const InicioScreen = () => {
 
             <Text style={styles.modalLabel}>Categoria:</Text>
             <View style={styles.pickerContainerModal}>
-              {/* Modificar a parte do Picker para tratar corretamente a opção "Todas as Categorias" */}
               <Picker
                 selectedValue={selectedCategoriaId}
                 onValueChange={(itemValue) => setSelectedCategoriaId(itemValue)}
                 style={styles.pickerStyle}
               >
                 <Picker.Item label="Todas as Categorias" value={undefined} />
-                {categoriasFiltro
-                  .filter((cat) => cat.categoria_id !== 0) // Remove a categoria "Todas" que adicionamos antes
-                  .map((cat) => (
-                    <Picker.Item
-                      key={cat.categoria_id.toString()}
-                      label={cat.categoria_nome}
-                      value={cat.categoria_id}
-                    />
-                  ))}
+                {categoriasFiltro.map((cat) => (
+                  <Picker.Item key={cat.categoria_id.toString()} label={cat.categoria_nome} value={cat.categoria_id} />
+                ))}
               </Picker>
             </View>
 
@@ -363,12 +355,14 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   columnWrapper: {
-    justifyContent: "flex-start", // Alinha os cards à esquerda
+    justifyContent: "space-between", // Distribui os cards uniformemente
     width: "100%",
-    gap: 16, // Espaço entre os cards
+    gap: 12, // Espaço entre os cards
   },
   cardWrapper: {
-    marginBottom: 16,
+    marginBottom: 12, // Espaço entre as linhas
+    flexGrow: 0, // Impede que o card cresça além do tamanho definido
+    flexShrink: 0, // Impede que o card encolha além do tamanho definido
   },
   emptyText: {
     textAlign: "center",
