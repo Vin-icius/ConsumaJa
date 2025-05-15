@@ -1,151 +1,327 @@
-// src/components/Promotions/PromocaoCard.tsx
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+"use client"
 
-// Tipos mantidos
-interface PromocaoPreviewItem {
-    produto_id: number;
-    produto_nome: string;
-    itemPromocao_valor: number;
-    produto_imagem_url?: string | null;
-}
+import { useState } from "react"
+import { View, Text, StyleSheet, TouchableOpacity, Image, useWindowDimensions, Platform } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
+
+// Tipos
 interface PromocaoCardProps {
-  promocao_id: number;
-  promocao_descricao?: string | null;
-  fornecedor: {
-    pessoa_id: number;
-    pessoa_nome: string;
-  };
-  itens_preview: PromocaoPreviewItem[];
-  onPressDetalhes: () => void;
+  promocao_id: number
+  promocao_descricao?: string
+  fornecedor: { pessoa_id: number; pessoa_nome: string }
+  itens_preview: Array<{ produto_id: number; produto_nome: string; itemPromocao_valor: number; imagem_url?: string }>
+  onPressDetalhes: () => void
 }
 
-// --- AJUSTES DE TAMANHO PARA LAYOUT EM GRADE ---
-const { width: screenWidth } = Dimensions.get('window');
-// Considerar padding da FlatList e espaço entre os cards
-const listHorizontalPadding = 10; // Padding da FlatList em cada lado
-const spaceBetweenCards = 10;    // Espaço entre os dois cards na mesma linha
-const cardWidth = (screenWidth - (listHorizontalPadding * 2) - spaceBetweenCards) / 2;
+const PromocaoCard = ({ promocao_descricao, fornecedor, itens_preview, onPressDetalhes }: PromocaoCardProps) => {
+  const { width } = useWindowDimensions()
+  const isMobile = width < 600
 
-// Ajustar o tamanho das imagens de preview DENTRO do card menor
-// Vamos tentar mostrar apenas UMA imagem de preview para simplificar no card menor.
-// Se quiser duas, o tamanho precisará ser ainda menor.
-const cardInternalPadding = 8;
-const productImageWidth = cardWidth - (cardInternalPadding * 2);
-const productImageHeight = productImageWidth * 0.75; // Proporção 4:3 para a imagem
+  // Estado para controlar o item atual no carrossel
+  const [currentItemIndex, setCurrentItemIndex] = useState(0)
 
-const PromocaoCard: React.FC<PromocaoCardProps> = ({ promocao_id, promocao_descricao, fornecedor, itens_preview, onPressDetalhes }) => {
-  const firstItemPreview = (itens_preview || [])[0]; // Pega o primeiro item para preview
+  // Verifica se há itens para exibir
+  const hasItems = itens_preview && itens_preview.length > 0
+
+  // Item atual a ser exibido no carrossel
+  const currentItem = hasItems ? itens_preview[currentItemIndex] : null
+
+  // Função para navegar para o próximo item
+  const nextItem = () => {
+    if (hasItems) {
+      setCurrentItemIndex((prevIndex) => (prevIndex + 1) % itens_preview.length)
+    }
+  }
+
+  // Função para navegar para o item anterior
+  const prevItem = () => {
+    if (hasItems) {
+      setCurrentItemIndex((prevIndex) => (prevIndex - 1 + itens_preview.length) % itens_preview.length)
+    }
+  }
+
+  // Encontra o menor preço entre os itens
+  const menorPreco = itens_preview.reduce(
+    (min, item) => (item.itemPromocao_valor < min ? item.itemPromocao_valor : min),
+    itens_preview[0]?.itemPromocao_valor || 0,
+  )
 
   return (
-    // Aplicar a nova largura calculada ao estilo do card
-    <TouchableOpacity style={[styles.card, { width: cardWidth }]} onPress={onPressDetalhes}>
-      {/* Mostra a imagem do primeiro item, se existir */}
-      {firstItemPreview && (
-        <Image
-          source={firstItemPreview.produto_imagem_url ? { uri: firstItemPreview.produto_imagem_url } : require('../../assets/placeholder.png')}
-          style={styles.mainProductImage}
-          resizeMode="contain"
-        />
-      )}
-      {!firstItemPreview && ( // Placeholder se não houver itens para preview
-          <View style={[styles.mainProductImage, styles.imagePlaceholderView]}>
-            <Ionicons name="images-outline" size={40} color="grey" />
-          </View>
-      )}
-
-      <View style={styles.cardContent}>
-        <Text style={styles.supplierName} numberOfLines={1}>{fornecedor.pessoa_nome}</Text>
-        {promocao_descricao && (
-            <Text style={styles.promotionTitle} numberOfLines={2}>{promocao_descricao}</Text>
-        )}
-
-        {/* Mostrar preço do primeiro item se existir */}
-        {firstItemPreview && (
-            <Text style={styles.productPrice}>R$ {Number(firstItemPreview.itemPromocao_valor).toFixed(2)}</Text>
-        )}
-        {/* Indicar se há mais itens */}
-        {(itens_preview || []).length > 1 && (
-            <Text style={styles.moreItemsTextSmall}>+{ (itens_preview || []).length -1 } outros itens</Text>
-        )}
-         {(itens_preview || []).length === 0 && (
-            <Text style={styles.moreItemsTextSmall}>Ver itens</Text>
-         )}
-
+    <TouchableOpacity style={styles.card} onPress={onPressDetalhes} activeOpacity={0.7}>
+      {/* Cabeçalho do Card */}
+      <View style={styles.cardHeader}>
+        <Text style={styles.promocaoTitulo} numberOfLines={2}>
+          {promocao_descricao || "Promoção"}
+        </Text>
       </View>
-      {/* Botão/Link "Ver Detalhes" pode ser removido se o card inteiro for clicável
-          ou estilizado de forma diferente */}
-      {/* <View style={styles.detailsButton}>
-        <Text style={styles.viewDetailsText}>Ver Detalhes</Text>
-        <Ionicons name="arrow-forward" size={16} color="#007bff" />
-      </View> */}
-    </TouchableOpacity>
-  );
-};
 
-// --- ESTILOS AJUSTADOS ---
+      {/* Fornecedor */}
+      <View style={styles.fornecedorContainer}>
+        <Ionicons name="business-outline" size={16} color="#666" />
+        <Text style={styles.fornecedorNome} numberOfLines={1}>
+          {fornecedor.pessoa_nome}
+        </Text>
+      </View>
+
+      {/* Divider */}
+      <View style={styles.divider} />
+
+      {/* Carrossel de Itens */}
+      <View style={styles.carouselContainer}>
+        {hasItems ? (
+          <>
+            <TouchableOpacity
+              style={[styles.carouselButton, styles.carouselButtonLeft]}
+              onPress={prevItem}
+              disabled={itens_preview.length <= 1}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chevron-back" size={20} color={itens_preview.length > 1 ? "#007bff" : "#ccc"} />
+            </TouchableOpacity>
+
+            <View style={styles.itemContainer}>
+              {currentItem?.imagem_url ? (
+                <Image source={{ uri: currentItem.imagem_url }} style={styles.itemImage} />
+              ) : (
+                <View style={styles.itemImagePlaceholder}>
+                  <Ionicons name="image-outline" size={24} color="#aaa" />
+                </View>
+              )}
+
+              <View style={styles.itemInfo}>
+                <Text style={styles.itemNome} numberOfLines={2}>
+                  {currentItem?.produto_nome}
+                </Text>
+                <Text style={styles.itemPreco}>R$ {currentItem?.itemPromocao_valor.toFixed(2)}</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.carouselButton, styles.carouselButtonRight]}
+              onPress={nextItem}
+              disabled={itens_preview.length <= 1}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chevron-forward" size={20} color={itens_preview.length > 1 ? "#007bff" : "#ccc"} />
+            </TouchableOpacity>
+          </>
+        ) : (
+          <View style={styles.noItemsContainer}>
+            <Ionicons name="alert-circle-outline" size={24} color="#aaa" />
+            <Text style={styles.noItemsText}>Nenhum item disponível</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Indicador de Página */}
+      {itens_preview.length > 1 && (
+        <View style={styles.paginationContainer}>
+          {itens_preview.map((_, index) => (
+            <View
+              key={index}
+              style={[styles.paginationDot, index === currentItemIndex && styles.paginationDotActive]}
+            />
+          ))}
+        </View>
+      )}
+
+      {/* Rodapé do Card */}
+      <View style={styles.cardFooter}>
+        <View style={styles.precoContainer}>
+          <Text style={styles.aPartirDe}>A partir de</Text>
+          <Text style={styles.precoDestaque}>R$ {menorPreco.toFixed(2)}</Text>
+        </View>
+        <TouchableOpacity style={styles.detalhesButton} onPress={onPressDetalhes}>
+          <Text style={styles.detalhesButtonText}>Ver Detalhes</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Contador de Itens */}
+      {itens_preview.length > 0 && (
+        <View style={styles.itemCountContainer}>
+          <Text style={styles.itemCountText}>
+            {currentItemIndex + 1}/{itens_preview.length} itens
+          </Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  )
+}
+
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    // paddingHorizontal e paddingVertical agora são menores
-    // A largura é definida dinamicamente
-    marginBottom: spaceBetweenCards, // Espaço abaixo do card
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
-    // MarginHorizontal é controlada pelo columnWrapperStyle da FlatList ou pelo espaçamento
-    // marginRight: spaceBetweenCards / 2, // Se for aplicar espaçamento individualmente
-    // marginLeft: spaceBetweenCards / 2,
+    shadowRadius: 4,
+    elevation: 3,
+    width: "100%",
+    height: Platform.OS === "web" ? 320 : "auto", // Altura fixa para web, auto para mobile
+    position: "relative",
   },
-  mainProductImage: {
-    width: '100%', // Ocupa toda a largura do card (menos padding interno se houver)
-    height: productImageHeight, // Altura calculada
-    borderTopLeftRadius: 8, // Arredonda cantos superiores se for a primeira coisa no card
-    borderTopRightRadius: 8,
-    backgroundColor: '#f8f8f8',
+  cardHeader: {
+    marginBottom: 8,
   },
-  imagePlaceholderView: {
-      justifyContent: 'center',
-      alignItems: 'center',
-      borderBottomWidth: 1,
-      borderBottomColor: '#eee',
+  promocaoTitulo: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
   },
-  cardContent: {
-    padding: cardInternalPadding, // Padding interno para o conteúdo
+  fornecedorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
   },
-  supplierName: {
-    fontSize: 14, // Reduzido
-    fontWeight: '600', // Um pouco menos bold
-    color: '#333',
-    marginBottom: 2,
+  fornecedorNome: {
+    fontSize: 14,
+    color: "#666",
+    marginLeft: 6,
+    flex: 1,
   },
-  promotionTitle: {
-    fontSize: 12, // Reduzido
-    color: '#555',
-    marginBottom: 4,
-    lineHeight: 16, // Ajustado
+  divider: {
+    height: 1,
+    backgroundColor: "#eee",
+    marginVertical: 8,
   },
-  productPrice: {
-    fontSize: 15, // Pode manter ou reduzir ligeiramente
-    fontWeight: 'bold',
-    color: '#27ae60',
-    marginTop: 4,
+  carouselContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    height: 120,
+    marginVertical: 10,
+    position: "relative",
   },
-  moreItemsTextSmall: {
-      fontSize: 11,
-      color: '#007bff',
-      marginTop: 3,
-      textAlign: 'right'
+  carouselButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#f0f0f0",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 2,
   },
-  // productPreviewContainer, productPreview, productNamePreview, moreItemsIndicator foram simplificados/removidos
-  // para um preview de apenas 1 imagem principal no card.
+  carouselButtonLeft: {
+    position: "absolute",
+    left: -5,
+    top: "50%",
+    marginTop: -15,
+  },
+  carouselButtonRight: {
+    position: "absolute",
+    right: -5,
+    top: "50%",
+    marginTop: -15,
+  },
+  itemContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 30,
+  },
+  itemImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  itemImagePlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: "#f0f0f0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  itemInfo: {
+    flex: 1,
+  },
+  itemNome: {
+    fontSize: 16,
+    color: "#333",
+    marginBottom: 6,
+  },
+  itemPreco: {
+    fontSize: 16,
+    color: "#28a745",
+    fontWeight: "500",
+  },
+  noItemsContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  noItemsText: {
+    fontSize: 14,
+    color: "#aaa",
+    marginTop: 8,
+  },
+  paginationContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 5,
+    marginBottom: 10,
+  },
+  paginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#ddd",
+    marginHorizontal: 3,
+  },
+  paginationDotActive: {
+    backgroundColor: "#007bff",
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  precoContainer: {
+    flexDirection: "column",
+  },
+  aPartirDe: {
+    fontSize: 12,
+    color: "#666",
+  },
+  precoDestaque: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#28a745",
+  },
+  detalhesButton: {
+    backgroundColor: "#007bff",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  detalhesButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  itemCountContainer: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    backgroundColor: "rgba(0,0,0,0.05)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  itemCountText: {
+    fontSize: 12,
+    color: "#666",
+  },
+})
 
-  // detailsButton e viewDetailsText podem ser removidos se o card inteiro for clicável
-  // ou precisarão de um design que caiba no card menor.
-});
-
-export default PromocaoCard;
+export default PromocaoCard
