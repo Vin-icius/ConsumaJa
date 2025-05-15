@@ -1,10 +1,21 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from "react-native"
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  Keyboard, // Importação correta do Keyboard
+} from "react-native"
 import { Picker } from "@react-native-picker/picker"
 import { useNavigation, useRoute } from "@react-navigation/native"
-import Keyboard from "react-native/Libraries/Components/Keyboard/Keyboard"
+// Removida a importação direta do Keyboard que causava o erro
+// import Keyboard from "react-native/Libraries/Components/Keyboard/Keyboard"
 import produtoService from "../../services/produtoService"
 import categoriaService from "../../services/categoriaService"
 import marcaService from "../../services/marcaService"
@@ -62,7 +73,7 @@ const ProductFormScreen = () => {
   // Estados de loading e erros
   const [loading, setLoading] = useState(false)
   const [loadingSubmit, setLoadingSubmit] = useState(false)
-  const [errors, setErrors] = useState<{ [key: string]: string }>({})
+  const [errors, setErrors] = useState<{ [key: string]: string | undefined }>({})
 
   // Carregar dados iniciais
   useEffect(() => {
@@ -165,6 +176,7 @@ const ProductFormScreen = () => {
 
   // Enviar formulário
   const handleSubmit = async () => {
+    // Usando a API Keyboard padrão do React Native
     Keyboard.dismiss()
 
     if (!validarFormulario()) {
