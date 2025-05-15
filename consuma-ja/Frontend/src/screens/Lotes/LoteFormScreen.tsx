@@ -11,13 +11,13 @@ import {
   Alert,
   ScrollView,
   Switch,
-  Platform,
+  Keyboard, // Importação correta do Keyboard
 } from "react-native"
-import { Picker } from "@react-native-picker/picker"
 import DateTimePickerModal from "react-native-modal-datetime-picker"
 import { useNavigation, useRoute } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
-import Keyboard from "react-native/Libraries/Components/Keyboard/Keyboard"
+// Removida a importação direta do Keyboard que causava o erro
+// import Keyboard from "react-native/Libraries/Components/Keyboard/Keyboard"
 import promocaoService from "../../services/promocaoService"
 
 // Tipos
@@ -141,21 +141,21 @@ const LoteFormScreen = () => {
         }
       } else {
         navigation.setOptions({ title: "Novo Lote" })
-        
+
         // Se um produto foi pré-selecionado (passado como parâmetro)
         if (produtoPreSelecionado) {
           try {
             // Buscar informações do produto pré-selecionado
-            const produtoInfo = await promocaoService.buscarProdutosParaSelecao({ 
-              produtoId: produtoPreSelecionado 
+            const produtoInfo = await promocaoService.buscarProdutosParaSelecao({
+              produtoId: produtoPreSelecionado,
             })
-            
+
             if (produtoInfo && produtoInfo.data && produtoInfo.data.length > 0) {
               const produto = produtoInfo.data[0]
               setProdutoSelecionado(produto)
-              setFormData(prev => ({
+              setFormData((prev) => ({
                 ...prev,
-                produto_id: produto.produto_id
+                produto_id: produto.produto_id,
               }))
             }
           } catch (error) {
@@ -178,10 +178,10 @@ const LoteFormScreen = () => {
 
     setLoadingFornecedores(true)
     try {
-      const params = { 
+      const params = {
         nomeQuery: fornecedorQuery.trim(),
         page: 1,
-        limit: ITEMS_PER_PAGE
+        limit: ITEMS_PER_PAGE,
       }
 
       const result = await promocaoService.listarFornecedoresAtivos(params)
@@ -255,6 +255,7 @@ const LoteFormScreen = () => {
     }))
     setShowFornecedores(false)
     setFornecedorQuery("")
+    // Usando a API Keyboard padrão do React Native
     Keyboard.dismiss()
   }
 
@@ -276,6 +277,7 @@ const LoteFormScreen = () => {
     }))
     setShowProdutos(false)
     setProdutoQuery("")
+    // Usando a API Keyboard padrão do React Native
     Keyboard.dismiss()
   }
 
@@ -374,6 +376,7 @@ const LoteFormScreen = () => {
 
   // Enviar formulário
   const enviarFormulario = async () => {
+    // Usando a API Keyboard padrão do React Native
     Keyboard.dismiss()
 
     if (!validarFormulario()) {
@@ -392,11 +395,9 @@ const LoteFormScreen = () => {
         resultado = await promocaoService.criarLote(dadosParaEnvio)
       }
 
-      Alert.alert(
-        "Sucesso", 
-        isEditing ? "Lote atualizado com sucesso!" : "Lote criado com sucesso!",
-        [{ text: "OK", onPress: () => navigation.goBack() }]
-      )
+      Alert.alert("Sucesso", isEditing ? "Lote atualizado com sucesso!" : "Lote criado com sucesso!", [
+        { text: "OK", onPress: () => navigation.goBack() },
+      ])
     } catch (error) {
       console.error("Erro ao salvar lote:", error)
       Alert.alert("Erro", "Ocorreu um erro ao salvar o lote.")
@@ -559,9 +560,7 @@ const LoteFormScreen = () => {
           placeholder="Ex: 100"
           editable={!isEditing} // Não permitir editar a quantidade inicial em modo de edição
         />
-        {errors.lote_quantidade_inicial ? (
-          <Text style={styles.errorText}>{errors.lote_quantidade_inicial}</Text>
-        ) : null}
+        {errors.lote_quantidade_inicial ? <Text style={styles.errorText}>{errors.lote_quantidade_inicial}</Text> : null}
       </View>
 
       {/* Quantidade Atual */}
@@ -580,8 +579,8 @@ const LoteFormScreen = () => {
       {/* Data de Entrada */}
       <View style={styles.formGroup}>
         <Text style={styles.label}>Data de Entrada:</Text>
-        <TouchableOpacity 
-          style={styles.dateInput} 
+        <TouchableOpacity
+          style={styles.dateInput}
           onPress={() => mostrarDatePicker("entrada")}
           disabled={isEditing} // Não permitir editar a data de entrada em modo de edição
         >
@@ -624,7 +623,7 @@ const LoteFormScreen = () => {
         mode="date"
         onConfirm={confirmarData}
         onCancel={() => setShowDatePicker(false)}
-        date={datePickerMode === "validade" ? (formData.lote_validade || new Date()) : formData.data_entrada}
+        date={datePickerMode === "validade" ? formData.lote_validade || new Date() : formData.data_entrada}
       />
     </ScrollView>
   )
