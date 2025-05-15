@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from "react"
 import {
+  Image,
   View,
   Text,
   TextInput,
@@ -205,7 +206,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         <View style={styles.logoContainer}>
           {/* Substitua pelo seu logo */}
           <View style={styles.logoPlaceholder}>
-            <Ionicons name="cart" size={50} color="#0066cc" />
+            <Image source={require('../../assets/logo.png')} style={styles.logoImage} />
           </View>
           <Text style={styles.title}>Bem-vindo</Text>
           <Text style={styles.subtitle}>Faça login para continuar</Text>
@@ -339,6 +340,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 const { width } = Dimensions.get("window")
 
 const styles = StyleSheet.create({
+  logoImage: {
+  width: 80,
+  height: 80,
+  resizeMode: 'contain',
+  },
   scrollContainer: {
     flexGrow: 1,
     backgroundColor: "#f0f0f0",
