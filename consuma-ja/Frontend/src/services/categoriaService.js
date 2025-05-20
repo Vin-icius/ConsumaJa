@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { productApiClient } from '../api/client';
 
-const API_URL_BASE = 'http://localhost:3000/api/product';
+const API_URL_BASE = PRODUCT_API_URL;
 
 // Funções auxiliares (pode importar de um utils)
 const handleRequest = async (requestPromise) => {

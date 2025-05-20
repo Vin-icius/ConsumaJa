@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { productApiClient } from '../api/client';
 
-const API_URL_BASE = 'http://localhost:3000/api/product'; // <<< CORRIGIDO: Termina antes do recurso específico
+const API_URL_BASE = PRODUCT_API_URL; // <<< CORRIGIDO: Termina antes do recurso específico
 
 // Funções auxiliares para tratamento de erro
 const handleRequest = async (requestPromise) => {

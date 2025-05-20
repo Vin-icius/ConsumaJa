@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`PESSOA` (
   UNIQUE INDEX `pessoa_email_UNIQUE` (`pessoa_email` ASC) VISIBLE,
   UNIQUE INDEX `pessoa_login_UNIQUE` (`pessoa_login` ASC) VISIBLE)
 ENGINE = InnoDB
-AUTO_INCREMENT = 15
+AUTO_INCREMENT = 1000
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -49,7 +49,6 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`ESTADO` (
   `estado_sigla` VARCHAR(3) NOT NULL,
   PRIMARY KEY (`estado_id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 4
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -67,9 +66,8 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`CIDADE` (
   INDEX `fk_CIDADE_ESTADO1_idx` (`ESTADO_estado_id` ASC) VISIBLE,
   CONSTRAINT `fk_CIDADE_ESTADO1`
     FOREIGN KEY (`ESTADO_estado_id`)
-    REFERENCES `ConsumaJaDB`.`estado` (`estado_id`))
+    REFERENCES `ConsumaJaDB`.`ESTADO` (`estado_id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 9
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -92,12 +90,11 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`ENDERECO` (
   INDEX `fk_ENDERECO_PESSOA1_idx` (`PESSOA_pessoa_id` ASC) VISIBLE,
   CONSTRAINT `fk_ENDERECO_CIDADE1`
     FOREIGN KEY (`CIDADE_cidade_id`)
-    REFERENCES `ConsumaJaDB`.`cidade` (`cidade_id`),
+    REFERENCES `ConsumaJaDB`.`CIDADE` (`cidade_id`),
   CONSTRAINT `fk_ENDERECO_PESSOA1`
     FOREIGN KEY (`PESSOA_pessoa_id`)
-    REFERENCES `ConsumaJaDB`.`pessoa` (`pessoa_id`))
+    REFERENCES `ConsumaJaDB`.`PESSOA` (`pessoa_id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 4
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -113,7 +110,7 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`JURIDICA` (
   UNIQUE INDEX `pessoa_cnpj_UNIQUE` (`cnpj` ASC) VISIBLE,
   CONSTRAINT `fk_JURIDICA_PESSOA1`
     FOREIGN KEY (`PESSOA_pessoa_id`)
-    REFERENCES `ConsumaJaDB`.`pessoa` (`pessoa_id`))
+    REFERENCES `ConsumaJaDB`.`PESSOA` (`pessoa_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
@@ -135,12 +132,11 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`PROMOCAO` (
   INDEX `fk_PROMOCAO_ENDERECO1_idx` (`endereco_id` ASC) VISIBLE,
   CONSTRAINT `fk_PROMOCAO_ENDERECO1`
     FOREIGN KEY (`endereco_id`)
-    REFERENCES `ConsumaJaDB`.`endereco` (`endereco_id`),
+    REFERENCES `ConsumaJaDB`.`ENDERECO` (`endereco_id`),
   CONSTRAINT `fk_PROMOCAO_JURIDICA1`
     FOREIGN KEY (`JURIDICA_PESSOA_pessoa_id`)
-    REFERENCES `ConsumaJaDB`.`juridica` (`PESSOA_pessoa_id`))
+    REFERENCES `ConsumaJaDB`.`JURIDICA` (`PESSOA_pessoa_id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 11
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -163,13 +159,13 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`VENDA` (
   INDEX `fk_VENDA_ENDERECO1_idx` (`ENDERECO_endereco_id` ASC) VISIBLE,
   CONSTRAINT `fk_VENDA_ENDERECO1`
     FOREIGN KEY (`ENDERECO_endereco_id`)
-    REFERENCES `ConsumaJaDB`.`endereco` (`endereco_id`),
+    REFERENCES `ConsumaJaDB`.`ENDERECO` (`endereco_id`),
   CONSTRAINT `fk_VENDA_PESSOA1`
     FOREIGN KEY (`PESSOA_pessoa_id`)
-    REFERENCES `ConsumaJaDB`.`pessoa` (`pessoa_id`),
+    REFERENCES `ConsumaJaDB`.`PESSOA` (`pessoa_id`),
   CONSTRAINT `fk_VENDA_PROMOCAO1`
     FOREIGN KEY (`PROMOCAO_promocao_id`)
-    REFERENCES `ConsumaJaDB`.`promocao` (`promocao_id`))
+    REFERENCES `ConsumaJaDB`.`PROMOCAO` (`promocao_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
@@ -192,13 +188,13 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`AVALIACAO` (
   INDEX `fk_AVALIACAO_VENDA1_idx` (`VENDA_venda_id` ASC) VISIBLE,
   CONSTRAINT `fk_AVALIACAO_PESSOA1`
     FOREIGN KEY (`PESSOA_pessoa_id`)
-    REFERENCES `ConsumaJaDB`.`pessoa` (`pessoa_id`),
+    REFERENCES `ConsumaJaDB`.`PESSOA` (`pessoa_id`),
   CONSTRAINT `fk_AVALIACAO_PROMOCAO1`
     FOREIGN KEY (`PROMOCAO_promocao_id`)
-    REFERENCES `ConsumaJaDB`.`promocao` (`promocao_id`),
+    REFERENCES `ConsumaJaDB`.`PROMOCAO` (`promocao_id`),
   CONSTRAINT `fk_AVALIACAO_VENDA1`
     FOREIGN KEY (`VENDA_venda_id`)
-    REFERENCES `ConsumaJaDB`.`venda` (`venda_id`))
+    REFERENCES `ConsumaJaDB`.`VENDA` (`venda_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
@@ -214,7 +210,6 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`CATEGORIA_PRODUTO` (
   PRIMARY KEY (`categoria_id`),
   UNIQUE INDEX `categoria_nome_UNIQUE` (`categoria_nome` ASC) VISIBLE)
 ENGINE = InnoDB
-AUTO_INCREMENT = 6
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -233,7 +228,7 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`DEVOLUCAO` (
   INDEX `fk_DEVOLUCAO_VENDA1_idx` (`VENDA_venda_id` ASC) VISIBLE,
   CONSTRAINT `fk_DEVOLUCAO_VENDA1`
     FOREIGN KEY (`VENDA_venda_id`)
-    REFERENCES `ConsumaJaDB`.`venda` (`venda_id`))
+    REFERENCES `ConsumaJaDB`.`VENDA` (`venda_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
@@ -253,7 +248,7 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`FISICA` (
   UNIQUE INDEX `pessoa_cpf_UNIQUE` (`pessoa_cpf` ASC) VISIBLE,
   CONSTRAINT `fk_FISICA_PESSOA1`
     FOREIGN KEY (`PESSOA_pessoa_id`)
-    REFERENCES `ConsumaJaDB`.`pessoa` (`pessoa_id`))
+    REFERENCES `ConsumaJaDB`.`PESSOA` (`pessoa_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
@@ -269,7 +264,6 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`MARCA_PRODUTO` (
   PRIMARY KEY (`marca_id`),
   UNIQUE INDEX `marca_nome_UNIQUE` (`marca_nome` ASC) VISIBLE)
 ENGINE = InnoDB
-AUTO_INCREMENT = 8
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -284,7 +278,6 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`TIPO_PRODUTO` (
   PRIMARY KEY (`tipo_id`),
   UNIQUE INDEX `tipo_nome_UNIQUE` (`tipo_nome` ASC) VISIBLE)
 ENGINE = InnoDB
-AUTO_INCREMENT = 7
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -315,15 +308,14 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`PRODUTO` (
   INDEX `fk_PRODUTO_CATEGORIA_PRODUTO1_idx` (`CATEGORIA_PRODUTO_categoria_id` ASC) VISIBLE,
   CONSTRAINT `fk_PRODUTO_CATEGORIA_PRODUTO1`
     FOREIGN KEY (`CATEGORIA_PRODUTO_categoria_id`)
-    REFERENCES `ConsumaJaDB`.`categoria_produto` (`categoria_id`),
+    REFERENCES `ConsumaJaDB`.`CATEGORIA_PRODUTO` (`categoria_id`),
   CONSTRAINT `fk_PRODUTO_MARCA_PRODUTO1`
     FOREIGN KEY (`MARCA_PRODUTO_marca_id`)
-    REFERENCES `ConsumaJaDB`.`marca_produto` (`marca_id`),
+    REFERENCES `ConsumaJaDB`.`MARCA_PRODUTO` (`marca_id`),
   CONSTRAINT `fk_PRODUTO_TIPO_PRODUTO1`
     FOREIGN KEY (`TIPO_PRODUTO_tipo_id`)
-    REFERENCES `ConsumaJaDB`.`tipo_produto` (`tipo_id`))
+    REFERENCES `ConsumaJaDB`.`TIPO_PRODUTO` (`tipo_id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 9
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -345,9 +337,8 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`LOTEPROD` (
   INDEX `fk_LOTEPROD_PRODUTO1_idx` (`produto_id` ASC) VISIBLE,
   CONSTRAINT `fk_LOTEPROD_PRODUTO1`
     FOREIGN KEY (`produto_id`)
-    REFERENCES `ConsumaJaDB`.`produto` (`produto_id`))
+    REFERENCES `ConsumaJaDB`.`PRODUTO` (`produto_id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 6
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -364,10 +355,10 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`ITEM_DEVOLUCAO` (
   INDEX `fk_ITEM_DEVOLUCAO_LOTEPROD1_idx` (`LOTEPROD_lote_id` ASC) VISIBLE,
   CONSTRAINT `fk_ITEM_DEVOLUCAO_DEVOLUCAO1`
     FOREIGN KEY (`DEVOLUCAO_devolucao_id`)
-    REFERENCES `ConsumaJaDB`.`devolucao` (`devolucao_id`),
+    REFERENCES `ConsumaJaDB`.`DEVOLUCAO` (`devolucao_id`),
   CONSTRAINT `fk_ITEM_DEVOLUCAO_LOTEPROD1`
     FOREIGN KEY (`LOTEPROD_lote_id`)
-    REFERENCES `ConsumaJaDB`.`loteprod` (`lote_id`))
+    REFERENCES `ConsumaJaDB`.`LOTEPROD` (`lote_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
@@ -385,10 +376,10 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`ITEM_PROMOCAO` (
   INDEX `fk_ITEM_PROMOCAO_LOTEPROD1_idx` (`LOTEPROD_lote_id` ASC) VISIBLE,
   CONSTRAINT `fk_ITEM_PROMOCAO_LOTEPROD1`
     FOREIGN KEY (`LOTEPROD_lote_id`)
-    REFERENCES `ConsumaJaDB`.`loteprod` (`lote_id`),
+    REFERENCES `ConsumaJaDB`.`LOTEPROD` (`lote_id`),
   CONSTRAINT `fk_ITEM_PROMOCAO_PROMOCAO1`
     FOREIGN KEY (`PROMOCAO_promocao_id`)
-    REFERENCES `ConsumaJaDB`.`promocao` (`promocao_id`))
+    REFERENCES `ConsumaJaDB`.`PROMOCAO` (`promocao_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
@@ -407,10 +398,10 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`ITEM_VENDA` (
   INDEX `fk_ITEM_VENDA_VENDA1_idx` (`VENDA_venda_id` ASC) VISIBLE,
   CONSTRAINT `fk_ITEM_VENDA_LOTEPROD1`
     FOREIGN KEY (`LOTEPROD_lote_id`)
-    REFERENCES `ConsumaJaDB`.`loteprod` (`lote_id`),
+    REFERENCES `ConsumaJaDB`.`LOTEPROD` (`lote_id`),
   CONSTRAINT `fk_ITEM_VENDA_VENDA1`
     FOREIGN KEY (`VENDA_venda_id`)
-    REFERENCES `ConsumaJaDB`.`venda` (`venda_id`))
+    REFERENCES `ConsumaJaDB`.`VENDA` (`venda_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
@@ -442,10 +433,10 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`NOTA_AVALIACAO` (
   INDEX `fk_AVALIACAO_has_PERGUNTAS_AVALIACAO1_idx` (`AVALIACAO_avaliacao_id` ASC) VISIBLE,
   CONSTRAINT `fk_AVALIACAO_has_PERGUNTAS_AVALIACAO1`
     FOREIGN KEY (`AVALIACAO_avaliacao_id`)
-    REFERENCES `ConsumaJaDB`.`avaliacao` (`avaliacao_id`),
+    REFERENCES `ConsumaJaDB`.`AVALIACAO` (`avaliacao_id`),
   CONSTRAINT `fk_AVALIACAO_has_PERGUNTAS_PERGUNTAS1`
     FOREIGN KEY (`PERGUNTAS_perguntas_id`)
-    REFERENCES `ConsumaJaDB`.`perguntas` (`perguntas_id`))
+    REFERENCES `ConsumaJaDB`.`PERGUNTAS` (`perguntas_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;

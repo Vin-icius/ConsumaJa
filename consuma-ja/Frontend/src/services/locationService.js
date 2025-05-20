@@ -1,8 +1,9 @@
 import axios from 'axios'; // Importa o axios diretamente
+import { locationApiClient } from '../api/client';
 
 // !!!!! SUBSTITUA 'SEU_IP_LOCAL_AQUI' PELO SEU IP LOCAL REAL !!!!!
 // !!!!! CONFIRME SE A PORTA 3001 ESTÁ CORRETA PARA ESTE SERVIÇO !!!!!
-const API_URL_BASE = 'http://localhost:3001/api/location';
+const API_URL_BASE = LOCATION_API_URL;
 
 // --- Funções do Serviço ---
 

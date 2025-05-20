@@ -1,10 +1,11 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { pessoaApiClient } from '../api/client';
 
 // !!!!! SUBSTITUA 'SEU_IP_LOCAL_AQUI' PELO SEU IP LOCAL REAL !!!!!
 // !!!!! CONFIRME SE A PORTA 3002 (ou outra) ESTÁ CORRETA PARA O pessoa-service !!!!!
 // !!!!! CONFIRME SE O CAMINHO BASE '/api' ESTÁ CORRETO (conforme main.ts do pessoa-service) !!!!!
-const API_URL_BASE = 'http://localhost:3002/api'; // Base da API do Pessoa Service
+const API_URL_BASE = PERSON_API_URL; // Base da API do Pessoa Service
 
 // Função auxiliar para tratar requests que esperam dados de volta
 const handleRequest = async (requestPromise) => {
