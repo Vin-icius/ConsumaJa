@@ -36,6 +36,8 @@ import PessoaFormScreen from "../screens/User/PessoaFormScreen"
 import PromocaoListScreen from '../screens/Promotions/PromocaoListScreen'
 import PromocaoDetailScreen from '../screens/Promotions/PromocaoDetailScreen'
 import PromocaoFormScreen from '../screens/Promotions/PromocaoFormScreen'
+import LoteFormScreen from "../screens/Lotes/LoteFormScreen"
+import LoteListScreen from "../screens/Lotes/LoteListScreen"
 
 // --- Navegadores ---
 const Stack = createNativeStackNavigator()
@@ -128,6 +130,14 @@ const CustomDrawerContent = (props: any) => {
           name: "PromocaoList",
           component: PromocaoListScreen,
           title: 'Gerenciar Promoções', 
+          icon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
+          roles: ["Admin", "Fornecedor"],
+       },
+        {
+          key: "LoteList",
+          name: "LoteList",
+          component: LoteListScreen,
+          title: 'Gerenciar Lotes', 
           icon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
           roles: ["Admin", "Fornecedor"],
        },
@@ -348,6 +358,24 @@ const MainAppDrawer = () => {
       component={PromocaoDetailScreen} 
       options={{ 
         title:'Detalhes das Promoções', 
+        drawerIcon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
+       }} 
+    />,
+    <Drawer.Screen 
+      key="LoteList" 
+      name="LoteList" 
+      component={LoteListScreen} 
+      options={{ 
+        title:'Listagem de lotes', 
+        drawerIcon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
+       }} 
+    />,
+    <Drawer.Screen 
+      key="LoteForm" 
+      name="LoteForm" 
+      component={LoteFormScreen} 
+      options={{ 
+        title:'Formulário de lotes', 
         drawerIcon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
        }} 
     />,

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import {
   View,
   Text,
@@ -13,14 +13,13 @@ import {
   Modal,
   FlatList,
   Image,
-  Keyboard, // Importação correta do Keyboard
+  Keyboard,
+  Platform,
 } from "react-native"
 import { Picker } from "@react-native-picker/picker"
 import DateTimePickerModal from "react-native-modal-datetime-picker"
 import { useNavigation, useRoute } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
-// Removida a importação direta do Keyboard que causava o erro
-// import Keyboard from "react-native/Libraries/Components/Keyboard/Keyboard"
 import promocaoService from "../../services/promocaoService"
 
 // Tipos
@@ -86,6 +85,7 @@ const PromocaoFormScreen = () => {
   const route = useRoute<any>()
   const promocaoIdParaEditar = route.params?.promocaoId
   const isEditing = !!promocaoIdParaEditar
+  const dateInputRefValidade = useRef<TextInput>(null)
 
   // Estado principal do formulário
   const [formData, setFormData] = useState<PromocaoForm>({
@@ -132,6 +132,17 @@ const PromocaoFormScreen = () => {
   const [itemQuantidade, setItemQuantidade] = useState("1")
   const [itemValor, setItemValor] = useState("")
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
+
+  // Estado para criação de lote
+  const [createBatchMode, setCreateBatchMode] = useState(false)
+  const [batchFormData, setBatchFormData] = useState({
+    lote_codigo: "",
+    lote_validade: null as Date | null,
+    lote_quantidade_inicial: "1",
+    lote_quantidade_atual: "1",
+  })
+  const [showBatchDatePicker, setShowBatchDatePicker] = useState(false)
+  const [batchValidadeInput, setBatchValidadeInput] = useState("")
 
   // Estado de loading geral
   const [loading, setLoading] = useState(false)
@@ -428,6 +439,16 @@ const PromocaoFormScreen = () => {
       setProdutoSelecionado(produto)
       setLotesDoProduto([])
       setLoteSelecionado(null)
+      setCreateBatchMode(false) // Reset to select mode
+
+      // Reset batch form data
+      setBatchFormData({
+        lote_codigo: "",
+        lote_validade: null as Date | null,
+        lote_quantidade_inicial: "1",
+        lote_quantidade_atual: "1",
+      })
+      setBatchValidadeInput("")
 
       if (editar && itemId) {
         const item = formData.itens.find((i) => i.id === itemId)
@@ -454,7 +475,6 @@ const PromocaoFormScreen = () => {
         if (lotes && Array.isArray(lotes) && lotes.length > 0) {
           // Filtrar apenas lotes que correspondem ao produto_id selecionado
           const lotesFiltrados = lotes.filter((lote) => lote.produto_id === produto.produto_id)
-
           setLotesDoProduto(lotesFiltrados)
 
           // Se estiver editando, tenta selecionar o lote atual
@@ -471,36 +491,162 @@ const PromocaoFormScreen = () => {
           } else if (lotesFiltrados.length > 0) {
             // Para novo item, seleciona o primeiro lote
             setLoteSelecionado(lotesFiltrados[0])
+            setCreateBatchMode(false) // Ensure we're in select mode
           }
 
           if (lotesFiltrados.length === 0) {
-            Alert.alert("Atenção", "Não há lotes disponíveis para este produto.")
-            setLoading(false)
-            return
+            // Automatically switch to batch creation mode if no batches are found
+            setCreateBatchMode(true)
           }
         } else {
-          Alert.alert("Atenção", "Não há lotes disponíveis para este produto.")
-          setLoading(false)
-          return
+          // No batches available, switch to batch creation mode
+          setLotesDoProduto([])
+          setLoteSelecionado(null)
+          setCreateBatchMode(true)
         }
       } catch (error) {
         console.error("Erro ao buscar lotes:", error)
-        Alert.alert("Erro", "Não foi possível carregar lotes do produto.")
-        setLoading(false)
-        return
+        // Even if there's an error, allow the user to create a batch
+        setLotesDoProduto([])
+        setLoteSelecionado(null)
+        setCreateBatchMode(true)
       } finally {
         setLoading(false)
       }
 
+      // The modal will always be shown, regardless of whether there are batches or not
       setModalVisible(true)
       setShowProdutos(false)
     },
     [formData.JURIDICA_PESSOA_pessoa_id, formData.itens],
   )
 
+  // Função para lidar com a entrada de data no formato DD/MM/YYYY
+  const handleBatchValidadeInput = (text: string) => {
+    setBatchValidadeInput(text)
+
+    // Tentar converter a data digitada para um objeto Date
+    if (text.length === 10) {
+      // Formato completo DD/MM/YYYY
+      const parts = text.split("/")
+      if (parts.length === 3) {
+        const day = Number.parseInt(parts[0], 10)
+        const month = Number.parseInt(parts[1], 10) - 1 // Meses em JS são 0-11
+        const year = Number.parseInt(parts[2], 10)
+
+        const date = new Date(year, month, day)
+
+        // Verificar se a data é válida
+        if (!isNaN(date.getTime())) {
+          setBatchFormData((prev) => ({
+            ...prev,
+            lote_validade: date,
+          }))
+        }
+      }
+    }
+  }
+
+  // Criar novo lote
+  const criarNovoLote = async () => {
+    if (!produtoSelecionado || !formData.JURIDICA_PESSOA_pessoa_id) {
+      Alert.alert("Erro", "Produto ou fornecedor não selecionado.")
+      return
+    }
+
+    // Validação básica
+    if (!batchFormData.lote_codigo.trim()) {
+      Alert.alert("Erro", "Código do lote é obrigatório.")
+      return
+    }
+
+    if (!batchFormData.lote_validade) {
+      Alert.alert("Erro", "Data de validade é obrigatória.")
+      return
+    }
+
+    const qtdInicial = Number.parseFloat(batchFormData.lote_quantidade_inicial.replace(",", "."))
+    if (isNaN(qtdInicial) || qtdInicial <= 0) {
+      Alert.alert("Erro", "Quantidade inicial deve ser um número positivo.")
+      return
+    }
+
+    const qtdAtual = Number.parseFloat(batchFormData.lote_quantidade_atual.replace(",", "."))
+    if (isNaN(qtdAtual) || qtdAtual < 0) {
+      Alert.alert("Erro", "Quantidade atual deve ser um número não negativo.")
+      return
+    }
+
+    if (qtdAtual > qtdInicial) {
+      Alert.alert("Erro", "Quantidade atual não pode ser maior que a inicial.")
+      return
+    }
+
+    setLoading(true)
+    try {
+      // Preparar dados para envio
+      const dadosLote = {
+        produto_id: produtoSelecionado.produto_id,
+        lote_codigo: batchFormData.lote_codigo,
+        lote_validade: batchFormData.lote_validade ? batchFormData.lote_validade.toISOString() : null,
+        lote_quantidade_inicial: Number.parseFloat(batchFormData.lote_quantidade_inicial.replace(",", ".")),
+        lote_quantidade_atual: Number.parseFloat(batchFormData.lote_quantidade_atual.replace(",", ".")),
+        data_entrada: new Date().toISOString(),
+        ativo: true,
+      }
+
+      // Criar lote
+      const resultado = await promocaoService.criarLote(dadosLote)
+
+      if (resultado && resultado.lote_id) {
+        // Buscar detalhes do lote criado
+        const loteDetalhes = await promocaoService.buscarLotePorId(resultado.lote_id)
+
+        // Criar objeto de lote para seleção
+        const novoLote: LoteDisponivel = {
+          lote_id: loteDetalhes.lote_id,
+          lote_codigo: loteDetalhes.lote_codigo,
+          produto_id: produtoSelecionado.produto_id,
+          produto_nome: produtoSelecionado.produto_nome,
+          lote_quantidade_atual: loteDetalhes.lote_quantidade_atual,
+          lote_validade: loteDetalhes.lote_validade,
+        }
+
+        // Adicionar à lista de lotes e selecionar
+        setLotesDoProduto([novoLote, ...lotesDoProduto])
+        setLoteSelecionado(novoLote)
+        setCreateBatchMode(false)
+
+        Alert.alert("Sucesso", "Lote criado com sucesso!")
+      } else {
+        throw new Error("Falha ao criar lote.")
+      }
+    } catch (error) {
+      console.error("Erro ao criar lote:", error)
+      Alert.alert("Erro", "Ocorreu um erro ao criar o lote.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Confirmar data de validade do lote
+  const confirmarDataLote = (date: Date) => {
+    setShowBatchDatePicker(false)
+    setBatchFormData((prev) => ({
+      ...prev,
+      lote_validade: date,
+    }))
+    setBatchValidadeInput(date.toLocaleDateString("pt-BR"))
+  }
+
   // Adicionar ou editar item
   const adicionarOuEditarItem = () => {
-    if (!produtoSelecionado || !loteSelecionado) {
+    if (createBatchMode) {
+      criarNovoLote()
+      return
+    }
+
+    if (!produtoSelecionado || (!createBatchMode && !loteSelecionado)) {
       Alert.alert("Erro", "Selecione um produto e um lote.")
       return
     }
@@ -526,28 +672,37 @@ const PromocaoFormScreen = () => {
     }
 
     // Validar estoque disponível
-    if (qtd > loteSelecionado.lote_quantidade_atual) {
+    if (!createBatchMode && loteSelecionado && qtd > loteSelecionado.lote_quantidade_atual) {
       Alert.alert("Erro", `Quantidade excede o estoque disponível (${loteSelecionado.lote_quantidade_atual}).`)
       return
     }
 
-    const loteDisplayNome = `${loteSelecionado.lote_codigo} (Val: ${
-      loteSelecionado.lote_validade ? new Date(loteSelecionado.lote_validade).toLocaleDateString() : "N/A"
-    })`
+    // Só precisamos do loteDisplayNome se não estivermos no modo de criação de lote
+    let loteDisplayNome = ""
+    if (!createBatchMode && loteSelecionado) {
+      loteDisplayNome = `${loteSelecionado.lote_codigo} (Val: ${
+        loteSelecionado.lote_validade ? new Date(loteSelecionado.lote_validade).toLocaleDateString() : "N/A"
+      })`
+    }
 
     if (editingItemId) {
       // Editar item existente
+      if (!loteSelecionado && createBatchMode) {
+        Alert.alert("Erro", "Crie um lote primeiro antes de adicionar o produto.")
+        return
+      }
+
       setFormData((prev) => ({
         ...prev,
         itens: prev.itens.map((item) =>
           item.id === editingItemId
             ? {
                 ...item,
-                LOTEPROD_lote_id: loteSelecionado.lote_id,
+                LOTEPROD_lote_id: loteSelecionado!.lote_id,
                 itemPromocao_qtde: itemQuantidade,
                 itemPromocao_valor: itemValor,
                 lote_display_nome: loteDisplayNome,
-                lote_estoque_disponivel: loteSelecionado.lote_quantidade_atual,
+                lote_estoque_disponivel: loteSelecionado!.lote_quantidade_atual,
               }
             : item,
         ),
@@ -566,17 +721,29 @@ const PromocaoFormScreen = () => {
         return
       }
 
+      // Verificar se temos um lote selecionado
+      if (!loteSelecionado && !createBatchMode) {
+        Alert.alert("Erro", "Selecione um lote para o produto.")
+        return
+      }
+
+      // Se estamos no modo de criação de lote, precisamos criar o lote primeiro
+      if (createBatchMode) {
+        Alert.alert("Ação necessária", "Crie um lote primeiro antes de adicionar o produto.")
+        return
+      }
+
       // Adicionar novo item
       const novoItem: ItemPromocao = {
         id: generateTempId(),
         produto_id: produtoSelecionado.produto_id,
         produto_nome: produtoSelecionado.produto_nome,
-        LOTEPROD_lote_id: loteSelecionado.lote_id,
+        LOTEPROD_lote_id: loteSelecionado!.lote_id,
         itemPromocao_qtde: itemQuantidade,
         itemPromocao_valor: itemValor,
         produto_imagem_url: produtoSelecionado.produto_imagem_url,
         lote_display_nome: loteDisplayNome,
-        lote_estoque_disponivel: loteSelecionado.lote_quantidade_atual,
+        lote_estoque_disponivel: loteSelecionado!.lote_quantidade_atual,
       }
 
       setFormData((prev) => ({
@@ -702,6 +869,19 @@ const PromocaoFormScreen = () => {
       Alert.alert("Erro", "Ocorreu um erro ao salvar a promoção.")
     } finally {
       setLoadingSubmit(false)
+    }
+  }
+
+  // Função para abrir o seletor de data nativo no web
+  const handleOpenDatePicker = () => {
+    if (Platform.OS === "web") {
+      // No web, vamos focar no input de data
+      if (dateInputRefValidade.current) {
+        dateInputRefValidade.current.focus()
+      }
+    } else {
+      // No mobile, usamos o DateTimePickerModal
+      setShowBatchDatePicker(true)
     }
   }
 
@@ -1023,46 +1203,154 @@ const PromocaoFormScreen = () => {
               </View>
             )}
 
-            {lotesDoProduto.length > 0 && (
-              <View style={styles.modalForm}>
-                <Text style={styles.modalLabel}>Lote:</Text>
-                <View style={styles.loteSelector}>
-                  <FlatList
-                    data={lotesDoProduto}
-                    keyExtractor={(item) => item.lote_id.toString()}
-                    renderItem={({ item }) => (
-                      <TouchableOpacity
-                        style={[styles.loteItem, loteSelecionado?.lote_id === item.lote_id && styles.loteSelecionado]}
-                        onPress={() => setLoteSelecionado(item)}
-                      >
-                        <Text style={styles.loteItemText}>
-                          {item.lote_codigo} - Estoque: {item.lote_quantidade_atual}
-                          {item.lote_validade && ` - Val: ${new Date(item.lote_validade).toLocaleDateString()}`}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                    style={styles.loteList}
-                    nestedScrollEnabled={true}
+            {/* Add batch mode toggle */}
+            <View style={styles.batchModeToggle}>
+              <TouchableOpacity
+                style={[styles.batchModeButton, !createBatchMode && styles.batchModeButtonActive]}
+                onPress={() => setCreateBatchMode(false)}
+              >
+                <Text style={[styles.batchModeButtonText, !createBatchMode && styles.batchModeButtonTextActive]}>
+                  Selecionar Lote
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.batchModeButton, createBatchMode && styles.batchModeButtonActive]}
+                onPress={() => setCreateBatchMode(true)}
+              >
+                <Text style={[styles.batchModeButtonText, createBatchMode && styles.batchModeButtonTextActive]}>
+                  Criar Lote
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {!createBatchMode ? (
+              // Existing lote selection UI - only show if there are batches
+              lotesDoProduto.length > 0 ? (
+                <View style={styles.modalForm}>
+                  <Text style={styles.modalLabel}>Lote:</Text>
+                  <View style={styles.loteSelector}>
+                    <FlatList
+                      data={lotesDoProduto}
+                      keyExtractor={(item) => item.lote_id.toString()}
+                      renderItem={({ item }) => (
+                        <TouchableOpacity
+                          style={[styles.loteItem, loteSelecionado?.lote_id === item.lote_id && styles.loteSelecionado]}
+                          onPress={() => setLoteSelecionado(item)}
+                        >
+                          <Text style={styles.loteItemText}>
+                            {item.lote_codigo} - Estoque: {item.lote_quantidade_atual}
+                            {item.lote_validade && ` - Val: ${new Date(item.lote_validade).toLocaleDateString()}`}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                      style={styles.loteList}
+                      nestedScrollEnabled={true}
+                    />
+                  </View>
+
+                  <Text style={styles.modalLabel}>Quantidade:</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    value={itemQuantidade}
+                    onChangeText={setItemQuantidade}
+                    keyboardType="numeric"
+                    placeholder="Quantidade"
+                  />
+
+                  <Text style={styles.modalLabel}>Valor Promocional (R$):</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    value={itemValor}
+                    onChangeText={setItemValor}
+                    keyboardType="numeric"
+                    placeholder="Valor"
                   />
                 </View>
-
-                <Text style={styles.modalLabel}>Quantidade:</Text>
+              ) : (
+                // No batches available - show a message and automatically switch to create mode
+                <View style={styles.modalForm}>
+                  <Text style={styles.infoText}>Não há lotes disponíveis para este produto.</Text>
+                  <TouchableOpacity style={styles.createBatchButton} onPress={() => setCreateBatchMode(true)}>
+                    <Text style={styles.createBatchButtonText}>Criar um novo lote</Text>
+                  </TouchableOpacity>
+                </View>
+              )
+            ) : (
+              // Batch creation form - no changes here
+              <View style={styles.modalForm}>
+                {/* Existing batch creation form */}
+                <Text style={styles.modalLabel}>Código do Lote:</Text>
                 <TextInput
                   style={styles.modalInput}
-                  value={itemQuantidade}
-                  onChangeText={setItemQuantidade}
-                  keyboardType="numeric"
-                  placeholder="Quantidade"
+                  value={batchFormData.lote_codigo}
+                  onChangeText={(text) => setBatchFormData((prev) => ({ ...prev, lote_codigo: text }))}
+                  placeholder="LOT-2025-000"
+                  placeholderTextColor="rgba(0,0,0,0.3)"
                 />
 
-                <Text style={styles.modalLabel}>Valor Promocional (R$):</Text>
+                <Text style={styles.modalLabel}>Data de Validade:</Text>
+                {Platform.OS === "web" ? (
+                  // Para web, usamos um input de texto com máscara DD/MM/YYYY
+                  <TextInput
+                    ref={dateInputRefValidade}
+                    style={styles.modalInput}
+                    value={batchValidadeInput}
+                    onChangeText={handleBatchValidadeInput}
+                    placeholder="DD/MM/AAAA"
+                    keyboardType="numeric"
+                    maxLength={10}
+                  />
+                ) : (
+                  // Para mobile, mantemos o TouchableOpacity que abre o DateTimePickerModal
+                  <TouchableOpacity style={styles.dateInput} onPress={() => setShowBatchDatePicker(true)}>
+                    <Text>
+                      {batchFormData.lote_validade
+                        ? batchFormData.lote_validade.toLocaleDateString("pt-BR")
+                        : "Selecione a data de validade"}
+                    </Text>
+                    <Ionicons name="calendar-outline" size={20} color="#555" />
+                  </TouchableOpacity>
+                )}
+
+                <Text style={styles.modalLabel}>Quantidade Inicial:</Text>
                 <TextInput
                   style={styles.modalInput}
-                  value={itemValor}
-                  onChangeText={setItemValor}
+                  value={batchFormData.lote_quantidade_inicial}
+                  onChangeText={(text) => setBatchFormData((prev) => ({ ...prev, lote_quantidade_inicial: text }))}
                   keyboardType="numeric"
-                  placeholder="Valor"
+                  placeholder="Ex: 100"
                 />
+
+                <Text style={styles.modalLabel}>Quantidade Atual:</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={batchFormData.lote_quantidade_atual}
+                  onChangeText={(text) => setBatchFormData((prev) => ({ ...prev, lote_quantidade_atual: text }))}
+                  keyboardType="numeric"
+                  placeholder="Ex: 100"
+                />
+
+                {createBatchMode && (
+                  <>
+                    <Text style={styles.modalLabel}>Quantidade para Promoção:</Text>
+                    <TextInput
+                      style={styles.modalInput}
+                      value={itemQuantidade}
+                      onChangeText={setItemQuantidade}
+                      keyboardType="numeric"
+                      placeholder="Quantidade"
+                    />
+
+                    <Text style={styles.modalLabel}>Valor Promocional (R$):</Text>
+                    <TextInput
+                      style={styles.modalInput}
+                      value={itemValor}
+                      onChangeText={setItemValor}
+                      keyboardType="numeric"
+                      placeholder="Valor"
+                    />
+                  </>
+                )}
               </View>
             )}
 
@@ -1077,7 +1365,7 @@ const PromocaoFormScreen = () => {
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalConfirmButton]}
                 onPress={adicionarOuEditarItem}
-                disabled={!loteSelecionado}
+                disabled={!createBatchMode && !loteSelecionado}
               >
                 <Text style={styles.modalButtonText}>Confirmar</Text>
               </TouchableOpacity>
@@ -1094,6 +1382,17 @@ const PromocaoFormScreen = () => {
         onCancel={() => setShowDatePicker(false)}
         date={datePickerMode === "inicio" ? formData.inicio : formData.fim}
       />
+
+      {/* DateTimePicker for batch - only for mobile */}
+      {Platform.OS !== "web" && (
+        <DateTimePickerModal
+          isVisible={showBatchDatePicker}
+          mode="date"
+          onConfirm={confirmarDataLote}
+          onCancel={() => setShowBatchDatePicker(false)}
+          date={batchFormData.lote_validade || new Date()}
+        />
+      )}
     </ScrollView>
   )
 }
@@ -1455,6 +1754,42 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   modalButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  batchModeToggle: {
+    flexDirection: "row",
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#ced4da",
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  batchModeButton: {
+    flex: 1,
+    padding: 10,
+    alignItems: "center",
+    backgroundColor: "#f8f9fa",
+  },
+  batchModeButtonActive: {
+    backgroundColor: "#007bff",
+  },
+  batchModeButtonText: {
+    color: "#495057",
+    fontWeight: "500",
+  },
+  batchModeButtonTextActive: {
+    color: "#fff",
+  },
+  createBatchButton: {
+    backgroundColor: "#007bff",
+    padding: 12,
+    borderRadius: 4,
+    alignItems: "center",
+    marginTop: 12,
+  },
+  createBatchButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "500",

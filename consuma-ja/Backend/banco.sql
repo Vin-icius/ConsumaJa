@@ -8,19 +8,19 @@ SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,N
 -- Schema mydb
 -- -----------------------------------------------------
 -- -----------------------------------------------------
--- Schema consumajadb
+-- Schema ConsumaJaDB
 -- -----------------------------------------------------
 
 -- -----------------------------------------------------
--- Schema consumajadb
+-- Schema ConsumaJaDB
 -- -----------------------------------------------------
-CREATE SCHEMA IF NOT EXISTS `consumajadb` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci ;
-USE `consumajadb` ;
+CREATE SCHEMA IF NOT EXISTS `ConsumaJaDB` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci ;
+USE `ConsumaJaDB` ;
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`pessoa`
+-- Table `ConsumaJaDB`.`pessoa`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`pessoa` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`PESSOA` (
   `pessoa_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `pessoa_nome` VARCHAR(255) NOT NULL,
   `pessoa_email` VARCHAR(255) NOT NULL,
@@ -35,29 +35,28 @@ CREATE TABLE IF NOT EXISTS `consumajadb`.`pessoa` (
   UNIQUE INDEX `pessoa_email_UNIQUE` (`pessoa_email` ASC) VISIBLE,
   UNIQUE INDEX `pessoa_login_UNIQUE` (`pessoa_login` ASC) VISIBLE)
 ENGINE = InnoDB
-AUTO_INCREMENT = 15
+AUTO_INCREMENT = 1000
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`estado`
+-- Table `ConsumaJaDB`.`estado`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`estado` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`ESTADO` (
   `estado_id` INT NOT NULL AUTO_INCREMENT,
   `estado_nome` VARCHAR(45) NOT NULL,
   `estado_sigla` VARCHAR(3) NOT NULL,
   PRIMARY KEY (`estado_id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 4
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`cidade`
+-- Table `ConsumaJaDB`.`cidade`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`cidade` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`CIDADE` (
   `cidade_id` INT NOT NULL AUTO_INCREMENT,
   `cidade_nome` VARCHAR(45) NULL DEFAULT NULL,
   `regiao_ddd` VARCHAR(4) NOT NULL,
@@ -67,17 +66,16 @@ CREATE TABLE IF NOT EXISTS `consumajadb`.`cidade` (
   INDEX `fk_CIDADE_ESTADO1_idx` (`ESTADO_estado_id` ASC) VISIBLE,
   CONSTRAINT `fk_CIDADE_ESTADO1`
     FOREIGN KEY (`ESTADO_estado_id`)
-    REFERENCES `consumajadb`.`estado` (`estado_id`))
+    REFERENCES `ConsumaJaDB`.`ESTADO` (`estado_id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 9
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`endereco`
+-- Table `ConsumaJaDB`.`endereco`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`endereco` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`ENDERECO` (
   `endereco_id` INT NOT NULL AUTO_INCREMENT,
   `rua` VARCHAR(60) NOT NULL,
   `bairro` VARCHAR(45) NOT NULL,
@@ -92,20 +90,19 @@ CREATE TABLE IF NOT EXISTS `consumajadb`.`endereco` (
   INDEX `fk_ENDERECO_PESSOA1_idx` (`PESSOA_pessoa_id` ASC) VISIBLE,
   CONSTRAINT `fk_ENDERECO_CIDADE1`
     FOREIGN KEY (`CIDADE_cidade_id`)
-    REFERENCES `consumajadb`.`cidade` (`cidade_id`),
+    REFERENCES `ConsumaJaDB`.`CIDADE` (`cidade_id`),
   CONSTRAINT `fk_ENDERECO_PESSOA1`
     FOREIGN KEY (`PESSOA_pessoa_id`)
-    REFERENCES `consumajadb`.`pessoa` (`pessoa_id`))
+    REFERENCES `ConsumaJaDB`.`PESSOA` (`pessoa_id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 4
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`juridica`
+-- Table `ConsumaJaDB`.`juridica`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`juridica` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`JURIDICA` (
   `cnpj` VARCHAR(18) NOT NULL,
   `fornecedor_num` INT NULL DEFAULT NULL,
   `PESSOA_pessoa_id` INT UNSIGNED NOT NULL,
@@ -113,16 +110,16 @@ CREATE TABLE IF NOT EXISTS `consumajadb`.`juridica` (
   UNIQUE INDEX `pessoa_cnpj_UNIQUE` (`cnpj` ASC) VISIBLE,
   CONSTRAINT `fk_JURIDICA_PESSOA1`
     FOREIGN KEY (`PESSOA_pessoa_id`)
-    REFERENCES `consumajadb`.`pessoa` (`pessoa_id`))
+    REFERENCES `ConsumaJaDB`.`PESSOA` (`pessoa_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`promocao`
+-- Table `ConsumaJaDB`.`promocao`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`promocao` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`PROMOCAO` (
   `promocao_id` INT NOT NULL AUTO_INCREMENT,
   `promocao_descricao` VARCHAR(255) NOT NULL,
   `inicio` DATETIME NOT NULL,
@@ -135,20 +132,19 @@ CREATE TABLE IF NOT EXISTS `consumajadb`.`promocao` (
   INDEX `fk_PROMOCAO_ENDERECO1_idx` (`endereco_id` ASC) VISIBLE,
   CONSTRAINT `fk_PROMOCAO_ENDERECO1`
     FOREIGN KEY (`endereco_id`)
-    REFERENCES `consumajadb`.`endereco` (`endereco_id`),
+    REFERENCES `ConsumaJaDB`.`ENDERECO` (`endereco_id`),
   CONSTRAINT `fk_PROMOCAO_JURIDICA1`
     FOREIGN KEY (`JURIDICA_PESSOA_pessoa_id`)
-    REFERENCES `consumajadb`.`juridica` (`PESSOA_pessoa_id`))
+    REFERENCES `ConsumaJaDB`.`JURIDICA` (`PESSOA_pessoa_id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 11
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`venda`
+-- Table `ConsumaJaDB`.`venda`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`venda` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`VENDA` (
   `venda_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `venda_data` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `venda_total` DECIMAL(10,2) NOT NULL,
@@ -163,22 +159,22 @@ CREATE TABLE IF NOT EXISTS `consumajadb`.`venda` (
   INDEX `fk_VENDA_ENDERECO1_idx` (`ENDERECO_endereco_id` ASC) VISIBLE,
   CONSTRAINT `fk_VENDA_ENDERECO1`
     FOREIGN KEY (`ENDERECO_endereco_id`)
-    REFERENCES `consumajadb`.`endereco` (`endereco_id`),
+    REFERENCES `ConsumaJaDB`.`ENDERECO` (`endereco_id`),
   CONSTRAINT `fk_VENDA_PESSOA1`
     FOREIGN KEY (`PESSOA_pessoa_id`)
-    REFERENCES `consumajadb`.`pessoa` (`pessoa_id`),
+    REFERENCES `ConsumaJaDB`.`PESSOA` (`pessoa_id`),
   CONSTRAINT `fk_VENDA_PROMOCAO1`
     FOREIGN KEY (`PROMOCAO_promocao_id`)
-    REFERENCES `consumajadb`.`promocao` (`promocao_id`))
+    REFERENCES `ConsumaJaDB`.`PROMOCAO` (`promocao_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`avaliacao`
+-- Table `ConsumaJaDB`.`avaliacao`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`avaliacao` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`AVALIACAO` (
   `avaliacao_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `avaliacao_descricao` TEXT NULL DEFAULT NULL,
   `PROMOCAO_promocao_id` INT NULL DEFAULT NULL,
@@ -192,37 +188,36 @@ CREATE TABLE IF NOT EXISTS `consumajadb`.`avaliacao` (
   INDEX `fk_AVALIACAO_VENDA1_idx` (`VENDA_venda_id` ASC) VISIBLE,
   CONSTRAINT `fk_AVALIACAO_PESSOA1`
     FOREIGN KEY (`PESSOA_pessoa_id`)
-    REFERENCES `consumajadb`.`pessoa` (`pessoa_id`),
+    REFERENCES `ConsumaJaDB`.`PESSOA` (`pessoa_id`),
   CONSTRAINT `fk_AVALIACAO_PROMOCAO1`
     FOREIGN KEY (`PROMOCAO_promocao_id`)
-    REFERENCES `consumajadb`.`promocao` (`promocao_id`),
+    REFERENCES `ConsumaJaDB`.`PROMOCAO` (`promocao_id`),
   CONSTRAINT `fk_AVALIACAO_VENDA1`
     FOREIGN KEY (`VENDA_venda_id`)
-    REFERENCES `consumajadb`.`venda` (`venda_id`))
+    REFERENCES `ConsumaJaDB`.`VENDA` (`venda_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`categoria_produto`
+-- Table `ConsumaJaDB`.`categoria_produto`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`categoria_produto` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`CATEGORIA_PRODUTO` (
   `categoria_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `categoria_nome` VARCHAR(255) NOT NULL,
   `ativo` TINYINT(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`categoria_id`),
   UNIQUE INDEX `categoria_nome_UNIQUE` (`categoria_nome` ASC) VISIBLE)
 ENGINE = InnoDB
-AUTO_INCREMENT = 6
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`devolucao`
+-- Table `ConsumaJaDB`.`devolucao`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`devolucao` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`DEVOLUCAO` (
   `devolucao_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `devolucao_data` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `devolucao_motivo` TEXT NOT NULL,
@@ -233,16 +228,16 @@ CREATE TABLE IF NOT EXISTS `consumajadb`.`devolucao` (
   INDEX `fk_DEVOLUCAO_VENDA1_idx` (`VENDA_venda_id` ASC) VISIBLE,
   CONSTRAINT `fk_DEVOLUCAO_VENDA1`
     FOREIGN KEY (`VENDA_venda_id`)
-    REFERENCES `consumajadb`.`venda` (`venda_id`))
+    REFERENCES `ConsumaJaDB`.`VENDA` (`venda_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`fisica`
+-- Table `ConsumaJaDB`.`fisica`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`fisica` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`FISICA` (
   `pessoa_cpf` VARCHAR(14) NOT NULL,
   `pessoa_documentoValidado` TINYINT NOT NULL DEFAULT '0',
   `pessoa_fotoValidada` TINYINT NOT NULL DEFAULT '0',
@@ -253,46 +248,44 @@ CREATE TABLE IF NOT EXISTS `consumajadb`.`fisica` (
   UNIQUE INDEX `pessoa_cpf_UNIQUE` (`pessoa_cpf` ASC) VISIBLE,
   CONSTRAINT `fk_FISICA_PESSOA1`
     FOREIGN KEY (`PESSOA_pessoa_id`)
-    REFERENCES `consumajadb`.`pessoa` (`pessoa_id`))
+    REFERENCES `ConsumaJaDB`.`PESSOA` (`pessoa_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`marca_produto`
+-- Table `ConsumaJaDB`.`marca_produto`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`marca_produto` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`MARCA_PRODUTO` (
   `marca_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `marca_nome` VARCHAR(255) NOT NULL,
   `ativo` TINYINT(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`marca_id`),
   UNIQUE INDEX `marca_nome_UNIQUE` (`marca_nome` ASC) VISIBLE)
 ENGINE = InnoDB
-AUTO_INCREMENT = 8
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`tipo_produto`
+-- Table `ConsumaJaDB`.`tipo_produto`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`tipo_produto` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`TIPO_PRODUTO` (
   `tipo_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `tipo_nome` VARCHAR(255) NOT NULL,
   `ativo` TINYINT(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`tipo_id`),
   UNIQUE INDEX `tipo_nome_UNIQUE` (`tipo_nome` ASC) VISIBLE)
 ENGINE = InnoDB
-AUTO_INCREMENT = 7
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`produto`
+-- Table `ConsumaJaDB`.`produto`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`produto` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`PRODUTO` (
   `produto_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `MARCA_PRODUTO_marca_id` INT UNSIGNED NOT NULL,
   `TIPO_PRODUTO_tipo_id` INT UNSIGNED NOT NULL,
@@ -315,23 +308,22 @@ CREATE TABLE IF NOT EXISTS `consumajadb`.`produto` (
   INDEX `fk_PRODUTO_CATEGORIA_PRODUTO1_idx` (`CATEGORIA_PRODUTO_categoria_id` ASC) VISIBLE,
   CONSTRAINT `fk_PRODUTO_CATEGORIA_PRODUTO1`
     FOREIGN KEY (`CATEGORIA_PRODUTO_categoria_id`)
-    REFERENCES `consumajadb`.`categoria_produto` (`categoria_id`),
+    REFERENCES `ConsumaJaDB`.`CATEGORIA_PRODUTO` (`categoria_id`),
   CONSTRAINT `fk_PRODUTO_MARCA_PRODUTO1`
     FOREIGN KEY (`MARCA_PRODUTO_marca_id`)
-    REFERENCES `consumajadb`.`marca_produto` (`marca_id`),
+    REFERENCES `ConsumaJaDB`.`MARCA_PRODUTO` (`marca_id`),
   CONSTRAINT `fk_PRODUTO_TIPO_PRODUTO1`
     FOREIGN KEY (`TIPO_PRODUTO_tipo_id`)
-    REFERENCES `consumajadb`.`tipo_produto` (`tipo_id`))
+    REFERENCES `ConsumaJaDB`.`TIPO_PRODUTO` (`tipo_id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 9
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`loteprod`
+-- Table `ConsumaJaDB`.`loteprod`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`loteprod` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`LOTEPROD` (
   `lote_id` INT NOT NULL AUTO_INCREMENT,
   `produto_id` INT UNSIGNED NOT NULL,
   `lote_codigo` VARCHAR(100) NOT NULL,
@@ -345,17 +337,16 @@ CREATE TABLE IF NOT EXISTS `consumajadb`.`loteprod` (
   INDEX `fk_LOTEPROD_PRODUTO1_idx` (`produto_id` ASC) VISIBLE,
   CONSTRAINT `fk_LOTEPROD_PRODUTO1`
     FOREIGN KEY (`produto_id`)
-    REFERENCES `consumajadb`.`produto` (`produto_id`))
+    REFERENCES `ConsumaJaDB`.`PRODUTO` (`produto_id`))
 ENGINE = InnoDB
-AUTO_INCREMENT = 6
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`item_devolucao`
+-- Table `ConsumaJaDB`.`item_devolucao`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`item_devolucao` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`ITEM_DEVOLUCAO` (
   `DEVOLUCAO_devolucao_id` INT UNSIGNED NOT NULL,
   `LOTEPROD_lote_id` INT NOT NULL,
   `itemDevolucao_qtde` INT NOT NULL,
@@ -364,19 +355,19 @@ CREATE TABLE IF NOT EXISTS `consumajadb`.`item_devolucao` (
   INDEX `fk_ITEM_DEVOLUCAO_LOTEPROD1_idx` (`LOTEPROD_lote_id` ASC) VISIBLE,
   CONSTRAINT `fk_ITEM_DEVOLUCAO_DEVOLUCAO1`
     FOREIGN KEY (`DEVOLUCAO_devolucao_id`)
-    REFERENCES `consumajadb`.`devolucao` (`devolucao_id`),
+    REFERENCES `ConsumaJaDB`.`DEVOLUCAO` (`devolucao_id`),
   CONSTRAINT `fk_ITEM_DEVOLUCAO_LOTEPROD1`
     FOREIGN KEY (`LOTEPROD_lote_id`)
-    REFERENCES `consumajadb`.`loteprod` (`lote_id`))
+    REFERENCES `ConsumaJaDB`.`LOTEPROD` (`lote_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`item_promocao`
+-- Table `ConsumaJaDB`.`item_promocao`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`item_promocao` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`ITEM_PROMOCAO` (
   `PROMOCAO_promocao_id` INT NOT NULL,
   `LOTEPROD_lote_id` INT NOT NULL,
   `itemPromocao_qtde` INT NOT NULL,
@@ -385,19 +376,19 @@ CREATE TABLE IF NOT EXISTS `consumajadb`.`item_promocao` (
   INDEX `fk_ITEM_PROMOCAO_LOTEPROD1_idx` (`LOTEPROD_lote_id` ASC) VISIBLE,
   CONSTRAINT `fk_ITEM_PROMOCAO_LOTEPROD1`
     FOREIGN KEY (`LOTEPROD_lote_id`)
-    REFERENCES `consumajadb`.`loteprod` (`lote_id`),
+    REFERENCES `ConsumaJaDB`.`LOTEPROD` (`lote_id`),
   CONSTRAINT `fk_ITEM_PROMOCAO_PROMOCAO1`
     FOREIGN KEY (`PROMOCAO_promocao_id`)
-    REFERENCES `consumajadb`.`promocao` (`promocao_id`))
+    REFERENCES `ConsumaJaDB`.`PROMOCAO` (`promocao_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`item_venda`
+-- Table `ConsumaJaDB`.`item_venda`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`item_venda` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`ITEM_VENDA` (
   `itemVenda_qtde` INT NOT NULL,
   `itemVenda_preco` DECIMAL(10,2) NOT NULL,
   `LOTEPROD_lote_id` INT NOT NULL,
@@ -407,19 +398,19 @@ CREATE TABLE IF NOT EXISTS `consumajadb`.`item_venda` (
   INDEX `fk_ITEM_VENDA_VENDA1_idx` (`VENDA_venda_id` ASC) VISIBLE,
   CONSTRAINT `fk_ITEM_VENDA_LOTEPROD1`
     FOREIGN KEY (`LOTEPROD_lote_id`)
-    REFERENCES `consumajadb`.`loteprod` (`lote_id`),
+    REFERENCES `ConsumaJaDB`.`LOTEPROD` (`lote_id`),
   CONSTRAINT `fk_ITEM_VENDA_VENDA1`
     FOREIGN KEY (`VENDA_venda_id`)
-    REFERENCES `consumajadb`.`venda` (`venda_id`))
+    REFERENCES `ConsumaJaDB`.`VENDA` (`venda_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`perguntas`
+-- Table `ConsumaJaDB`.`perguntas`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`perguntas` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`PERGUNTAS` (
   `perguntas_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `perguntas_descricao` TEXT NOT NULL,
   `ativo` TINYINT(1) NOT NULL DEFAULT '1',
@@ -431,9 +422,9 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `consumajadb`.`nota_avaliacao`
+-- Table `ConsumaJaDB`.`nota_avaliacao`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `consumajadb`.`nota_avaliacao` (
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`NOTA_AVALIACAO` (
   `AVALIACAO_avaliacao_id` INT UNSIGNED NOT NULL,
   `PERGUNTAS_perguntas_id` INT UNSIGNED NOT NULL,
   `avaliacao_nota` TINYINT NOT NULL,
@@ -442,10 +433,10 @@ CREATE TABLE IF NOT EXISTS `consumajadb`.`nota_avaliacao` (
   INDEX `fk_AVALIACAO_has_PERGUNTAS_AVALIACAO1_idx` (`AVALIACAO_avaliacao_id` ASC) VISIBLE,
   CONSTRAINT `fk_AVALIACAO_has_PERGUNTAS_AVALIACAO1`
     FOREIGN KEY (`AVALIACAO_avaliacao_id`)
-    REFERENCES `consumajadb`.`avaliacao` (`avaliacao_id`),
+    REFERENCES `ConsumaJaDB`.`AVALIACAO` (`avaliacao_id`),
   CONSTRAINT `fk_AVALIACAO_has_PERGUNTAS_PERGUNTAS1`
     FOREIGN KEY (`PERGUNTAS_perguntas_id`)
-    REFERENCES `consumajadb`.`perguntas` (`perguntas_id`))
+    REFERENCES `ConsumaJaDB`.`PERGUNTAS` (`perguntas_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
