@@ -6,13 +6,14 @@ import { useState, useEffect } from "react"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { createDrawerNavigator } from "@react-navigation/drawer"
 import { Ionicons } from "@expo/vector-icons"
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import { SafeAreaView, SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import LoginScreen from "../screens/Auth/LoginScreen"
 import CadastroScreen from "../screens/Auth/CadastroScreen"
 import LogoutScreen from "../screens/Auth/LogoutScreen"
-import InicioScreen from "../screens/Core/inicioScreen"
+import InicioScreen from "../screens/Core/InicioScreen"
 import ConfigScreen from "../screens/Core/configScreen"
 import RelatoriosScreen from "../screens/Reports/relatoriosScreen"
 import EstadoListScreen from "../screens/Location/EstadoListScreen"
@@ -32,9 +33,11 @@ import AprovacaoDetailScreen from "../screens/Product/AprovacaoDetailScreen"
 import PessoaListScreen from "../screens/User/PessoaListScreen"
 import PessoaFormScreen from "../screens/User/PessoaFormScreen"
 
-import PromocaoListScreen from '../screens/Promotions/PromocaoListScreen'; // Para Gerenciar Promoções (Admin)
-import PromocaoDetailScreen from '../screens/Promotions/PromocaoDetailScreen';
-import PromocaoFormScreen from '../screens/Promotions/PromocaoFormScreen';
+import PromocaoListScreen from '../screens/Promotions/PromocaoListScreen'
+import PromocaoDetailScreen from '../screens/Promotions/PromocaoDetailScreen'
+import PromocaoFormScreen from '../screens/Promotions/PromocaoFormScreen'
+import LoteFormScreen from "../screens/Lotes/LoteFormScreen"
+import LoteListScreen from "../screens/Lotes/LoteListScreen"
 
 // --- Navegadores ---
 const Stack = createNativeStackNavigator()
@@ -130,6 +133,14 @@ const CustomDrawerContent = (props: any) => {
           icon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
           roles: ["Admin", "Fornecedor"],
        },
+        {
+          key: "LoteList",
+          name: "LoteList",
+          component: LoteListScreen,
+          title: 'Gerenciar Lotes', 
+          icon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
+          roles: ["Admin", "Fornecedor"],
+       },
       ],
       roles: ["Admin", "Fornecedor"],
     },
@@ -222,9 +233,10 @@ const CustomDrawerContent = (props: any) => {
 
   // Filtrar seções com base no papel do usuário
   const filteredSections = menuSections.filter((section) => section.roles.includes(userRole))
-
+  const insets = useSafeAreaInsets();
   return (
-    <View style={styles.drawerContainer}>
+    
+    <SafeAreaView style={[styles.drawerContainer, { paddingBottom: insets.bottom }]}>
       <View style={styles.drawerHeader}>
         <Text style={styles.drawerTitle}>ConsumaJá!</Text>
         <TouchableOpacity onPress={() => props.navigation.closeDrawer()}>
@@ -287,11 +299,13 @@ const CustomDrawerContent = (props: any) => {
         ))}
       </ScrollView>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={() => props.navigation.navigate("Sair")}>
-        <Ionicons name="log-out-outline" size={24} color="white" />
-        <Text style={styles.logoutText}>Sair</Text>
-      </TouchableOpacity>
-    </View>
+      <View style={styles.logoutButtonContainer}>
+        <TouchableOpacity style={styles.logoutButton} onPress={() => props.navigation.navigate("Sair")}>
+          <Ionicons name="log-out-outline" size={24} color="white" />
+          <Text style={styles.logoutText}>Sair</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   )
 }
 
@@ -326,6 +340,42 @@ const MainAppDrawer = () => {
       component={PromocaoListScreen} 
       options={{ 
         title:'Gerenciar Promoções', 
+        drawerIcon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
+       }} 
+    />,
+    <Drawer.Screen 
+      key="PromocaoForm" 
+      name="PromocaoForm" 
+      component={PromocaoFormScreen} 
+      options={{ 
+        title:'Gerenciar Promoções', 
+        drawerIcon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
+       }} 
+    />,
+    <Drawer.Screen 
+      key="PromocaoDetail" 
+      name="PromocaoDetail" 
+      component={PromocaoDetailScreen} 
+      options={{ 
+        title:'Detalhes das Promoções', 
+        drawerIcon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
+       }} 
+    />,
+    <Drawer.Screen 
+      key="LoteList" 
+      name="LoteList" 
+      component={LoteListScreen} 
+      options={{ 
+        title:'Listagem de lotes', 
+        drawerIcon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
+       }} 
+    />,
+    <Drawer.Screen 
+      key="LoteForm" 
+      name="LoteForm" 
+      component={LoteFormScreen} 
+      options={{ 
+        title:'Formulário de lotes', 
         drawerIcon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
        }} 
     />,
@@ -443,32 +493,34 @@ const MainAppDrawer = () => {
 // --- Navegador Principal da Aplicação ---
 const AppNavigator = () => {
   return (
-    <Stack.Navigator initialRouteName="Login">
-      {/* Telas fora do Drawer */}
-      <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="Cadastro" component={CadastroScreen} options={{ title: "Criar Conta" }} />
+    <SafeAreaProvider>
+      <Stack.Navigator initialRouteName="Login">
+        {/* Telas fora do Drawer */}
+        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Cadastro" component={CadastroScreen} options={{ title: "Criar Conta" }} />
 
-      {/* Tela que contém o Drawer */}
-      <Stack.Screen name="Dashboard" component={MainAppDrawer} options={{ headerShown: false }} />
+        {/* Tela que contém o Drawer */}
+        <Stack.Screen name="Dashboard" component={MainAppDrawer} options={{ headerShown: false }} />
 
-      {/* Telas de Formulário/Detalhe chamadas de dentro do Drawer */}
-      <Stack.Screen name="EstadoForm" component={EstadoFormScreen} options={{ title: "Formulário de Estado" }} />
-      <Stack.Screen name="CidadeForm" component={CidadeFormScreen} options={{ title: "Formulário de Cidade" }} />
-      <Stack.Screen
-        name="CategoriaForm"
-        component={CategoriaFormScreen}
-        options={{ title: "Formulário de Categoria" }}
-      />
-      <Stack.Screen name="MarcaForm" component={MarcaFormScreen} options={{ title: "Formulário de Marca" }} />
-      <Stack.Screen name="TipoForm" component={TipoFormScreen} options={{ title: "Formulário de Tipo" }} />
-      <Stack.Screen name="ProductForm" component={ProductFormScreen} options={{ title: "Formulário de Produto" }} />
-      <Stack.Screen
-        name="AprovacaoDetail"
-        component={AprovacaoDetailScreen}
-        options={{ title: "Aprovar/Rejeitar Produto" }}
-      />
-      <Stack.Screen name="PessoaForm" component={PessoaFormScreen} options={{ title: "Editar Usuário" }} />
-    </Stack.Navigator>
+        {/* Telas de Formulário/Detalhe chamadas de dentro do Drawer */}
+        <Stack.Screen name="EstadoForm" component={EstadoFormScreen} options={{ title: "Formulário de Estado" }} />
+        <Stack.Screen name="CidadeForm" component={CidadeFormScreen} options={{ title: "Formulário de Cidade" }} />
+        <Stack.Screen
+          name="CategoriaForm"
+          component={CategoriaFormScreen}
+          options={{ title: "Formulário de Categoria" }}
+        />
+        <Stack.Screen name="MarcaForm" component={MarcaFormScreen} options={{ title: "Formulário de Marca" }} />
+        <Stack.Screen name="TipoForm" component={TipoFormScreen} options={{ title: "Formulário de Tipo" }} />
+        <Stack.Screen name="ProductForm" component={ProductFormScreen} options={{ title: "Formulário de Produto" }} />
+        <Stack.Screen
+          name="AprovacaoDetail"
+          component={AprovacaoDetailScreen}
+          options={{ title: "Aprovar/Rejeitar Produto" }}
+        />
+        <Stack.Screen name="PessoaForm" component={PessoaFormScreen} options={{ title: "Editar Usuário" }} />
+      </Stack.Navigator>
+    </SafeAreaProvider>
   )
 }
 
@@ -484,6 +536,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     padding: 16,
+    paddingTop: Platform.OS === 'android' ? 40 : 16, // Aumenta o padding no Android
     backgroundColor: "#4CAF50",
   },
   drawerTitle: {
@@ -537,6 +590,9 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     marginHorizontal: 16,
   },
+  logoutButtonContainer: {
+    paddingBottom: Platform.OS === 'android' ? 20 : 10, // Adiciona padding extra no Android
+  },
   logoutButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -556,11 +612,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(255, 255, 255, 0.8)",
-  },
-  logoutText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: "#555",
+    paddingTop: 16,
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+    marginBottom: 8
   },
 })
 

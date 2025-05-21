@@ -2,7 +2,6 @@
 
 import React, { useState, useRef } from "react"
 import {
-  Image,
   View,
   Text,
   TextInput,
@@ -17,7 +16,7 @@ import {
 } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { Ionicons } from "@expo/vector-icons"
-import { StackNavigationProp } from "@react-navigation/stack"
+import type { StackNavigationProp } from "@react-navigation/stack"
 import authService from "../../services/authService"
 
 // Definindo tipos para navegação
@@ -77,48 +76,61 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   // Funções de formatação CPF/CNPJ
   const formatCPF = (value: string): string => {
-    value = value.slice(0, 11)
-    if (value.length <= 3) return value
-    if (value.length <= 6) return value.replace(/(\d{3})(\d{1,})/, "$1.$2")
-    if (value.length <= 9) return value.replace(/(\d{3})(\d{3})(\d{1,})/, "$1.$2.$3")
-    return value.replace(/(\d{3})(\d{3})(\d{3})(\d{1,})/, "$1.$2.$3-$4")
+    // Remove todos os caracteres não numéricos
+    const cleaned = value.replace(/\D/g, "")
+
+    // Limita a 11 dígitos (CPF)
+    const cpf = cleaned.slice(0, 11)
+
+    // Aplica a máscara de CPF
+    if (cpf.length <= 3) return cpf
+    if (cpf.length <= 6) return `${cpf.slice(0, 3)}.${cpf.slice(3)}`
+    if (cpf.length <= 9) return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6)}`
+    return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9)}`
   }
 
   const formatCNPJ = (value: string): string => {
-    value = value.slice(0, 14)
-    if (value.length <= 2) return value
-    if (value.length <= 5) return value.replace(/(\d{2})(\d{1,})/, "$1.$2")
-    if (value.length <= 8) return value.replace(/(\d{2})(\d{3})(\d{1,})/, "$1.$2.$3")
-    if (value.length <= 12) return value.replace(/(\d{2})(\d{3})(\d{3})(\d{1,})/, "$1.$2.$3/$4")
-    return value.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,})/, "$1.$2.$3/$4-$5")
+    // Remove todos os caracteres não numéricos
+    const cleaned = value.replace(/\D/g, "")
+
+    // Limita a 14 dígitos (CNPJ)
+    const cnpj = cleaned.slice(0, 14)
+
+    // Aplica a máscara de CNPJ
+    if (cnpj.length <= 2) return cnpj
+    if (cnpj.length <= 5) return `${cnpj.slice(0, 2)}.${cnpj.slice(2)}`
+    if (cnpj.length <= 8) return `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5)}`
+    if (cnpj.length <= 12) return `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8)}`
+    return `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8, 12)}-${cnpj.slice(12)}`
   }
 
-  const formatInput = (text: string) => {
-    // Remove caracteres não numéricos para verificação
-    const cleaned = text.replace(/\D/g, "")
+  // Função para determinar se é um CPF ou CNPJ e aplicar a formatação correta
+  const formatDocument = (value: string): string => {
+    // Remove todos os caracteres não numéricos
+    const cleaned = value.replace(/\D/g, "")
 
-    // Verifica se é um número e aplica a formatação apropriada
-    if (/^\d+$/.test(text)) {
-      if (cleaned.length <= 3) {
-        return cleaned // Admin ID
-      } else if (cleaned.length <= 11) {
-        return formatCPF(cleaned) // CPF
-      } else if (cleaned.length <= 14) {
-        return formatCNPJ(cleaned) // CNPJ
-      }
-    }
+    // Se for um número de ID curto (até 3 dígitos), retorna sem formatação
+    if (cleaned.length <= 3) return cleaned
 
-    // Se não for numérico ou for email, retorna o texto como está
-    return text
+    // Se tiver até 11 dígitos, formata como CPF
+    if (cleaned.length <= 11) return formatCPF(cleaned)
+
+    // Se tiver mais de 11 dígitos, formata como CNPJ
+    return formatCNPJ(cleaned)
   }
 
   // Atualiza state e aplica formatação
   const handleIdentifierChange = (text: string) => {
-    if (text.includes("@") || !/^\d{1,14}$/.test(text.replace(/\D/g, ""))) {
-      setIdentifier(text)
-    } else {
-      setIdentifier(formatInput(text))
+    // Remove todos os caracteres não numéricos do texto inserido
+    const onlyNumbers = text.replace(/\D/g, "")
+
+    // Se o usuário tentar inserir algo não numérico, ignoramos
+    if (text !== onlyNumbers && !text.includes(".") && !text.includes("-") && !text.includes("/")) {
+      return
     }
+
+    // Aplicamos a formatação adequada baseada no número de dígitos
+    setIdentifier(formatDocument(onlyNumbers))
   }
 
   // Função para focar no próximo input
@@ -148,10 +160,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
     try {
       console.log(`[LoginScreen] Tentando login com: ${loginToSend}`)
-      const response = await authService.login({
+      const response = (await authService.login({
         login: loginToSend,
         senha: senha,
-      }) as LoginResponse
+      })) as LoginResponse
 
       console.log("[LoginScreen] Login bem-sucedido:", response)
 
@@ -206,7 +218,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         <View style={styles.logoContainer}>
           {/* Substitua pelo seu logo */}
           <View style={styles.logoPlaceholder}>
-            <Image source={require('../../assets/logo.png')} style={styles.logoImage} />
+            <Ionicons name="cart" size={50} color="#0066cc" />
           </View>
           <Text style={styles.title}>Bem-vindo</Text>
           <Text style={styles.subtitle}>Faça login para continuar</Text>
@@ -220,10 +232,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Digite seu identificador"
+                placeholder="Digite seu CPF/CNPJ"
                 value={identifier}
                 onChangeText={handleIdentifierChange}
-                maxLength={50}
+                maxLength={18} // Tamanho máximo para CNPJ formatado
+                keyboardType="numeric"
                 autoCapitalize="none"
                 autoComplete="username"
                 returnKeyType="next"
@@ -340,11 +353,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 const { width } = Dimensions.get("window")
 
 const styles = StyleSheet.create({
-  logoImage: {
-  width: 80,
-  height: 80,
-  resizeMode: 'contain',
-  },
   scrollContainer: {
     flexGrow: 1,
     backgroundColor: "#f0f0f0",

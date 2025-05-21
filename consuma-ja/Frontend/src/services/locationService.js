@@ -1,81 +1,41 @@
-import axios from 'axios'; // Importa o axios diretamente
-import { locationApiClient } from '../api/client';
+import { locationApiClient } from '../api/client'
 
-// !!!!! SUBSTITUA 'SEU_IP_LOCAL_AQUI' PELO SEU IP LOCAL REAL !!!!!
-// !!!!! CONFIRME SE A PORTA 3001 ESTÁ CORRETA PARA ESTE SERVIÇO !!!!!
-const API_URL_BASE = LOCATION_API_URL;
+const handleRequest = async (requestPromise) => {
+  try { return (await requestPromise).data }
+  catch (error) {
+    console.error('[LocationService]', error.response?.data || error.message || error)
+    throw error
+  }
+}
+const handleRequestNoData = async (requestPromise) => {
+  try { await requestPromise }
+  catch (error) {
+    console.error('[LocationService]', error.response?.data || error.message || error)
+    throw error
+  }
+}
 
-// --- Funções do Serviço ---
-
-// == ESTADOS ==
-const getEstados = (params) => {
-  return axios.get(`${API_URL_BASE}/estados`, { params });
-};
-
-const getEstadoById = (id) => {
-  return axios.get(`${API_URL_BASE}/estados/${id}`);
-};
-
-const createEstado = (data) => {
-  return axios.post(`${API_URL_BASE}/estados`, data);
-};
-
-const updateEstado = (id, data) => {
-  return axios.put(`${API_URL_BASE}/estados/${id}`, data);
-};
-
-const deleteEstado = (id) => {
-  return axios.delete(`${API_URL_BASE}/estados/${id}`);
-};
-
-// == CIDADES ==
-const getCidades = (params) => {
-  return axios.get(`${API_URL_BASE}/cidades`, { params });
-};
-
-const getCidadeById = (id) => {
-  return axios.get(`${API_URL_BASE}/cidades/${id}`);
-};
-
-const getCidadesByEstado = (estadoId) => {
-  return axios.get(`${API_URL_BASE}/estados/${estadoId}/cidades`);
-};
-
-const createCidade = (data) => {
-  return axios.post(`${API_URL_BASE}/cidades`, data);
-};
-
-const updateCidade = (id, data) => {
-  return axios.put(`${API_URL_BASE}/cidades/${id}`, data);
-};
-
-const deleteCidade = (id) => {
-  return axios.delete(`${API_URL_BASE}/cidades/${id}`);
-};
-
-// == CEP ==
-const lookupCep = (cep) => {
-   const cleanedCep = String(cep).replace(/\D/g, '');
-   if (cleanedCep.length !== 8) {
-       return Promise.reject(new Error("Formato de CEP inválido. Use 8 dígitos."));
-   }
-   return axios.get(`${API_URL_BASE}/cep/${cleanedCep}`);
-};
-
-// Exportar um objeto com todas as funções
 const locationService = {
-    getEstados,
-    getEstadoById,
-    createEstado,
-    updateEstado,
-    deleteEstado,
-    getCidades,
-    getCidadeById,
-    getCidadesByEstado,
-    createCidade,
-    updateCidade,
-    deleteCidade,
-    lookupCep,
-};
+  getEstados: (params) => handleRequest(locationApiClient.get('/estados', { params })),
+  getEstadoById: (id) => handleRequest(locationApiClient.get(`/estados/${id}`)),
+  createEstado: (data) => handleRequest(locationApiClient.post('/estados', data)),
+  updateEstado: (id, data) => handleRequest(locationApiClient.put(`/estados/${id}`, data)),
+  deleteEstado: (id) => handleRequestNoData(locationApiClient.delete(`/estados/${id}`)),
 
-export default locationService;
+  getCidades: (params) => handleRequest(locationApiClient.get('/cidades', { params })),
+  getCidadeById: (id) => handleRequest(locationApiClient.get(`/cidades/${id}`)),
+  getCidadesByEstado: (estadoId) => handleRequest(locationApiClient.get(`/estados/${estadoId}/cidades`)),
+  createCidade: (data) => handleRequest(locationApiClient.post('/cidades', data)),
+  updateCidade: (id, data) => handleRequest(locationApiClient.put(`/cidades/${id}`, data)),
+  deleteCidade: (id) => handleRequestNoData(locationApiClient.delete(`/cidades/${id}`)),
+
+  lookupCep: (cep) => {
+    const cleanedCep = String(cep).replace(/\D/g, '')
+    if (cleanedCep.length !== 8) {
+      return Promise.reject(new Error("CEP inválido. Use 8 dígitos."))
+    }
+    return handleRequest(locationApiClient.get(`/cep/${cleanedCep}`))
+  }
+}
+
+export default locationService
