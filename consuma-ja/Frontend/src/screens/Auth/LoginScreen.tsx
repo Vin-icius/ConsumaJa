@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Animated,
+  Image,
   Dimensions,
 } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
@@ -216,10 +217,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
       <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
         <View style={styles.logoContainer}>
-          {/* Substitua pelo seu logo */}
-          <View style={styles.logoPlaceholder}>
-            <Ionicons name="cart" size={50} color="#0066cc" />
-          </View>
+          <Image source={require('/home/ubuntu/Frontend/src/assets/logo.png')} style={styles.logoImage} />
           <Text style={styles.title}>Bem-vindo</Text>
           <Text style={styles.subtitle}>Faça login para continuar</Text>
         </View>
@@ -356,6 +354,11 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     backgroundColor: "#f0f0f0",
+  },
+  logoImage: {
+    width: 80,
+    height: 80,
+    resizeMode: 'contain',
   },
   container: {
     flex: 1,
