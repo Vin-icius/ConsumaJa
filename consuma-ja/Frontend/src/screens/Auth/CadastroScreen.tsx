@@ -209,14 +209,16 @@ const CadastroScreen = () => {
     }))
     try {
       const response = await locationService.lookupCep(cep)
-      const address = response.data
+      console.log("Resposta completa:", JSON.stringify(response))
+      const address = response.data || response || {}
+      console.log("Dados do endereço:", address)
       setFormData((prev) => ({
         ...prev,
-        rua: address.logradouro || "",
-        bairro: address.bairro || "",
-        cidade: address.cidade || "",
-        estado: address.estado || "",
-        CIDADE_cidade_id: address.cidadeId || null,
+        rua: address?.logradouro || address?.rua || address?.endereco || "",
+        bairro: address?.bairro || "",
+        cidade: address?.cidade || "",
+        estado: address?.estado || "",
+        CIDADE_cidade_id: address?.cidadeId || null,
       }))
     } catch (error: any) {
       const msg = error.response?.data?.message || error.message || "CEP não encontrado."
