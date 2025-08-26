@@ -1,10 +1,7 @@
 # 🛒 Consuma Já! - Marketplace de Produtos Próximos à Validade  
 
-<img src="screenshot1.png" alt="Tela Inicial do App" width="400"/>  
-<img src="screenshot2.png" alt="Tela de Produtos" width="400"/>  
-
 ## 📖 Sobre o Projeto  
-**Consuma** é um aplicativo mobile desenvolvido em **React Native**, que conecta empresas e consumidores para vender produtos próximos do vencimento, evitando desperdícios e permitindo economia.  
+**Consuma** é um aplicativo mobile desenvolvido em **React Native e NodeJs**, que conecta empresas e consumidores para vender produtos próximos do vencimento, evitando desperdícios e permitindo economia.  
 
 🚀 Com **Consuma Já!**, empresas anunciam seus produtos, e consumidores podem buscar ofertas com filtros personalizados.  
 
@@ -22,15 +19,14 @@
 
 ## 🛠 **Tecnologias Utilizadas**
 - ⚛ **React Native** (Desenvolvimento Mobile)  
-- 💙 **React Navigation** (Navegação no app)  
-- 🖼 **React Native Paper** (Componentes visuais modernos)
-  
+- 💙 **React Navigation** (Navegação no app)
+
 ---
 
 ## 🚀 **Instalação e Execução**
 
 ### **Pré-requisitos**
 - Node.js instalado (`https://nodejs.org/`)  
-- Android Studio instalado e configurado  
+- Expo Go instalado e configurado  
 - Emulador ou dispositivo físico conectado
 
