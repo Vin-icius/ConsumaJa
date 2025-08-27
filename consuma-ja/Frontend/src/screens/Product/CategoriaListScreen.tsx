@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native'; // Importar hooks
 import categoriaService from '../../services/categoriaService'; // Serviço de categoria
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'; // Tipagem (opcional)
+import { categoriaListStyles } from '../../common/styles/Product/categoriaListScreen.styled';
 
 // Definir tipo para o item Categoria (espelhar backend)
 interface CategoriaItem {
@@ -22,16 +23,16 @@ interface CategoriaItem {
 
 // Componente Item da Lista (pode mover para /components)
 const CategoriaListItem = ({ item, onEdit, onDelete }: { item: CategoriaItem, onEdit: (item: CategoriaItem) => void, onDelete: (item: CategoriaItem) => void }) => (
-  <View style={styles.listItem}>
-    <View style={styles.listItemText}>
-        <Text style={styles.itemText}>{item.categoria_id} - {item.categoria_nome}</Text>
+  <View style={categoriaListStyles.listItem}>
+    <View style={categoriaListStyles.listItemText}>
+        <Text style={categoriaListStyles.itemText}>{item.categoria_id} - {item.categoria_nome}</Text>
     </View>
-    <View style={styles.listItemButtons}>
-        <TouchableOpacity onPress={() => onEdit(item)} style={[styles.button, styles.editButton]}>
-            <Text style={styles.buttonTextSmall}>Editar</Text>
+    <View style={categoriaListStyles.listItemButtons}>
+        <TouchableOpacity onPress={() => onEdit(item)} style={[categoriaListStyles.button, categoriaListStyles.editButton]}>
+            <Text style={categoriaListStyles.buttonTextSmall}>Editar</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => onDelete(item)} style={[styles.button, styles.deleteButton]}>
-             <Text style={styles.buttonTextSmall}>Excluir</Text>
+        <TouchableOpacity onPress={() => onDelete(item)} style={[categoriaListStyles.button, categoriaListStyles.deleteButton]}>
+             <Text style={categoriaListStyles.buttonTextSmall}>Excluir</Text>
         </TouchableOpacity>
     </View>
   </View>
@@ -110,13 +111,13 @@ const CategoriaListScreen = () => {
   const renderContent = () => {
     // Mostra ActivityIndicator só no load inicial ou delete
     if (loading && !refreshing) {
-      return <ActivityIndicator size="large" color="#0066cc" style={styles.centered}/>;
+      return <ActivityIndicator size="large" color="#0066cc" style={categoriaListStyles.centered}/>;
     }
     if (error) {
-      return <Text style={[styles.centered, styles.errorText]}>{error}</Text>;
+      return <Text style={[categoriaListStyles.centered, categoriaListStyles.errorText]}>{error}</Text>;
     }
      if (categorias.length === 0 && !loading) {
-         return <Text style={styles.centered}>Nenhuma categoria encontrada.</Text>;
+         return <Text style={categoriaListStyles.centered}>Nenhuma categoria encontrada.</Text>;
      }
 
     return (
@@ -126,7 +127,7 @@ const CategoriaListScreen = () => {
         renderItem={({ item }) => (
           <CategoriaListItem item={item} onEdit={handleEdit} onDelete={handleDelete} />
         )}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={categoriaListStyles.list}
         refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={["#0066cc"]}/>
         }
@@ -135,37 +136,18 @@ const CategoriaListScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={categoriaListStyles.container}>
        <TouchableOpacity
-         style={[styles.button, styles.addButton]}
+         style={[categoriaListStyles.button, categoriaListStyles.addButton]}
          onPress={() => navigation.navigate('CategoriaForm')} // Navega para form em modo criação
        >
-         <Text style={styles.buttonText}>Adicionar Nova Categoria</Text>
+         <Text style={categoriaListStyles.buttonText}>Adicionar Nova Categoria</Text>
        </TouchableOpacity>
       {renderContent()}
        {/* Overlay de Loading para Delete/Update */}
-       {loading && !refreshing && <View style={styles.loadingOverlay}><ActivityIndicator size="large" color="#FFF" /></View>}
+       {loading && !refreshing && <View style={categoriaListStyles.loadingOverlay}><ActivityIndicator size="large" color="#FFF" /></View>}
     </View>
   );
 };
-
-// Estilos (Similares aos de Estado/CidadeList)
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f0f0f0' },
-    list: { padding: 10, },
-    listItem: { backgroundColor: 'white', padding: 15, marginBottom: 10, borderRadius: 5, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 1.41 },
-    listItemText: { flex: 1, marginRight: 10 },
-    listItemButtons: { flexDirection: 'row' },
-    itemText: { fontSize: 16 },
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', textAlign: 'center', padding: 20 },
-    errorText: { color: 'red', fontSize: 16 },
-    button: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 5, marginLeft: 5, justifyContent: 'center', alignItems: 'center' },
-    editButton: { backgroundColor: '#ffc107' },
-    deleteButton: { backgroundColor: '#dc3545' },
-    addButton: { backgroundColor: '#28a745', margin: 10, padding: 15, alignSelf: 'stretch', alignItems: 'center' }, // Stretch button
-    buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-    buttonTextSmall: { color: 'white', fontSize: 12 },
-    loadingOverlay: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.3)' }
-});
 
 export default CategoriaListScreen;

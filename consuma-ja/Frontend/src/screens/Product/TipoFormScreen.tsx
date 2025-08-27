@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Keyboard, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, Keyboard, ScrollView } from 'react-native';
 import tipoService from '../../services/tipoService'; // Importar o serviço
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
+import { tipoFormStyles } from '../../common/styles/Product/tipoFormScreen.styled';
 
 // Definir tipos
 interface TipoItem {
@@ -92,48 +93,33 @@ const TipoFormScreen = () => {
   };
 
   return (
-     <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        <View style={styles.container}>
-            <Text style={styles.label}>Nome do Tipo:</Text>
+     <ScrollView contentContainerStyle={tipoFormStyles.scrollContainer} keyboardShouldPersistTaps="handled">
+        <View style={tipoFormStyles.container}>
+            <Text style={tipoFormStyles.label}>Nome do Tipo:</Text>
             <TextInput
-                style={[styles.input, errors.nome ? styles.inputError : null]}
+                style={[tipoFormStyles.input, errors.nome ? tipoFormStyles.inputError : null]}
                 value={nome}
                 onChangeText={setNome}
                 placeholder="Ex: Suco Natural, Refrigerante"
                 maxLength={255}
                 autoCapitalize="words"
             />
-            {errors.nome && <Text style={styles.errorText}>{errors.nome}</Text>}
+            {errors.nome && <Text style={tipoFormStyles.errorText}>{errors.nome}</Text>}
 
             <TouchableOpacity
-                style={[styles.button, styles.saveButton, loading && styles.buttonDisabled]}
+                style={[tipoFormStyles.button, tipoFormStyles.saveButton, loading && tipoFormStyles.buttonDisabled]}
                 onPress={handleSubmit}
                 disabled={loading}
             >
                 {loading ? (
                 <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                <Text style={styles.buttonText}>{isEditing ? 'Salvar Alterações' : 'Cadastrar Tipo'}</Text>
+                <Text style={tipoFormStyles.buttonText}>{isEditing ? 'Salvar Alterações' : 'Cadastrar Tipo'}</Text>
                 )}
             </TouchableOpacity>
         </View>
      </ScrollView>
   );
 };
-
-// Estilos (Copie/adapte de CategoriaFormScreen)
-const styles = StyleSheet.create({
-    scrollContainer: { flexGrow: 1 },
-    container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-    label: { fontSize: 16, marginBottom: 5, color: '#333', fontWeight: '500' },
-    input: { borderWidth: 1, borderColor: '#ccc', paddingVertical: 10, paddingHorizontal: 15, marginBottom: 5, borderRadius: 5, fontSize: 16, backgroundColor: '#f9f9f9' },
-    inputError: { borderColor: 'red' },
-    errorText: { color: 'red', fontSize: 12, marginBottom: 15, marginTop: -5 },
-    button: { padding: 15, borderRadius: 5, alignItems: 'center', marginTop: 20 },
-    saveButton: { backgroundColor: '#0066cc' },
-    buttonDisabled: { backgroundColor: '#a7c7e7' },
-    buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-});
-
 
 export default TipoFormScreen;

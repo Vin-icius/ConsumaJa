@@ -1,29 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
+import { View, Text, FlatList, Stylesheet, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import locationService from '../../services/locationService';
 import { useFocusEffect } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
+import { cityListStyles } from '../../common/styles/Location/cityListScreen.styled';
 
 // Componente Item da Lista (Pode mover para /components)
 const CidadeListItem = ({ item, onEdit, onDelete }) => (
-  <View style={styles.listItem}>
-    <View style={styles.listItemText}>
+  <View style={cityListStyles.listItem}>
+    <View style={cityListStyles.listItemText}>
       {/* Idealmente, mostrar o nome/sigla do estado também. A API /cidades precisa retornar isso ou fazer outra busca */}
-      <Text style={styles.itemText}>{item.cidade_id} - {item.cidade_nome}</Text>
-      <Text style={styles.itemSubText}>DDD: {item.regiao_ddd} (Estado ID: {item.estado_id})</Text>
+      <Text style={cityListStyles.itemText}>{item.cidade_id} - {item.cidade_nome}</Text>
+      <Text style={cityListStyles.itemSubText}>DDD: {item.regiao_ddd} (Estado ID: {item.estado_id})</Text>
     </View>
-    <View style={styles.listItemButtons}>
-      <TouchableOpacity onPress={() => onEdit(item)} style={[styles.button, styles.editButton]}>
-        <Text style={styles.buttonTextSmall}>Editar</Text>
+    <View style={cityListStyles.listItemButtons}>
+      <TouchableOpacity onPress={() => onEdit(item)} style={[cityListStyles.button, cityListStyles.editButton]}>
+        <Text style={cityListStyles.buttonTextSmall}>Editar</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => onDelete(item)} style={[styles.button, styles.deleteButton]}>
-        <Text style={styles.buttonTextSmall}>Excluir</Text>
+      <TouchableOpacity onPress={() => onDelete(item)} style={[cityListStyles.button, cityListStyles.deleteButton]}>
+        <Text style={cityListStyles.buttonTextSmall}>Excluir</Text>
       </TouchableOpacity>
     </View>
   </View>
 );
 
-const CidadeListScreen = ({ navigation }) => {
+const CityListScreen = ({ navigation }) => {
   const [cidades, setCidades] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -102,13 +103,13 @@ const CidadeListScreen = ({ navigation }) => {
 
   const renderContent = () => {
     if (loading && !refreshing) {
-      return <ActivityIndicator size="large" color="#0066cc" style={styles.centered}/>;
+      return <ActivityIndicator size="large" color="#0066cc" style={cityListStyles.centered}/>;
     }
     if (error) {
-      return <Text style={[styles.centered, styles.errorText]}>{error}</Text>;
+      return <Text style={[cityListStyles.centered, cityListStyles.errorText]}>{error}</Text>;
     }
      if (cidades.length === 0 && !loading) {
-         return <Text style={styles.centered}>Nenhuma cidade encontrada.</Text>;
+         return <Text style={cityListStyles.centered}>Nenhuma cidade encontrada.</Text>;
      }
 
     return (
@@ -118,7 +119,7 @@ const CidadeListScreen = ({ navigation }) => {
         renderItem={({ item }) => (
           <CidadeListItem item={item} onEdit={handleEdit} onDelete={handleDelete} />
         )}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={cityListStyles.list}
         refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={["#0066cc"]}/>
         }
@@ -127,13 +128,13 @@ const CidadeListScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={cityListStyles.container}>
        {
-       <View style={styles.pickerContainer}>
+       <View style={cityListStyles.pickerContainer}>
            <Picker
                selectedValue={selectedEstadoId}
                onValueChange={(itemValue, itemIndex) => setSelectedEstadoId(itemValue)}
-               style={styles.picker}
+               style={cityListStyles.picker}
                prompt="Filtrar por Estado"
            >
                <Picker.Item label="Todos os Estados" value={null} />
@@ -144,59 +145,15 @@ const CidadeListScreen = ({ navigation }) => {
        </View>
        }
        <TouchableOpacity
-         style={[styles.button, styles.addButton]}
+         style={[cityListStyles.button, cityListStyles.addButton]}
          onPress={() => navigation.navigate('CidadeForm')} // Modo criação
        >
-         <Text style={styles.buttonText}>Adicionar Nova Cidade</Text>
+         <Text style={cityListStyles.buttonText}>Adicionar Nova Cidade</Text>
        </TouchableOpacity>
       {renderContent()}
-       {loading && refreshing && <View style={styles.loadingOverlay}><ActivityIndicator size="large" color="#FFF" /></View>}
+       {loading && refreshing && <View style={cityListStyles.loadingOverlay}><ActivityIndicator size="large" color="#FFF" /></View>}
     </View>
   );
 };
 
-// --- Estilos --- (Similares aos de EstadoListScreen, ajuste se necessário)
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f0f0f0' },
-    list: { padding: 10, },
-    listItem: {
-      backgroundColor: 'white', padding: 15, marginBottom: 10, borderRadius: 5,
-      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-      elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.2, shadowRadius: 1.41,
-    },
-    listItemText: { flex: 1, marginRight: 10 },
-    listItemButtons: { flexDirection: 'row' },
-    itemText: { fontSize: 16, fontWeight: 'bold' },
-    itemSubText: { fontSize: 13, color: 'grey' },
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', textAlign: 'center', padding: 20 },
-    errorText: { color: 'red', fontSize: 16 },
-    button: {
-         paddingVertical: 8, paddingHorizontal: 12, borderRadius: 5, marginLeft: 5,
-         justifyContent: 'center', alignItems: 'center',
-     },
-     editButton: { backgroundColor: '#ffc107' },
-     deleteButton: { backgroundColor: '#dc3545' },
-     addButton: { backgroundColor: '#28a745', margin: 10, padding: 15 },
-     buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-     buttonTextSmall: { color: 'white', fontSize: 12 },
-     loadingOverlay: {
-         position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
-         alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.3)'
-     },
-     // Estilos para o Picker de filtro (opcional)
-     pickerContainer: {
-         marginHorizontal: 10,
-         marginTop: 10,
-         backgroundColor: 'white',
-         borderRadius: 5,
-         borderWidth: 1,
-         borderColor: '#ccc',
-     },
-     picker: {
-         height: 50,
-     },
-});
-
-
-export default CidadeListScreen;
+export default CityListScreen;

@@ -7,6 +7,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 // Tipo para o Produto completo (usar a interface do domain)
 import type { Produto } from '../../../../Backend/product-service/src/domain/entities/produto.entity'; // Ajuste o caminho
+import { aprovacaoDetailStyles } from '../../common/styles/Product/aprovacaoDetailScreen.styled';
 
 // Tipagem Navegação (opcional)
 // type ProductApprovalStackParamList = {
@@ -105,71 +106,71 @@ const AprovacaoDetailScreen = () => {
   };
 
   // --- Renderização ---
-  if (loading) { return <ActivityIndicator size="large" color="#0066cc" style={styles.centered}/>; }
-  if (error) { return <Text style={[styles.centered, styles.errorText]}>{error}</Text>; }
-  if (!produto) { return <Text style={styles.centered}>Dados do produto não disponíveis.</Text>; }
+  if (loading) { return <ActivityIndicator size="large" color="#0066cc" style={aprovacaoDetailStyles.centered}/>; }
+  if (error) { return <Text style={[aprovacaoDetailStyles.centered, aprovacaoDetailStyles.errorText]}>{error}</Text>; }
+  if (!produto) { return <Text style={aprovacaoDetailStyles.centered}>Dados do produto não disponíveis.</Text>; }
 
   return (
-     <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        <View style={styles.container}>
-            <Text style={styles.title}>Detalhes do Produto</Text>
+     <ScrollView contentContainerStyle={aprovacaoDetailStyles.scrollContainer} keyboardShouldPersistTaps="handled">
+        <View style={aprovacaoDetailStyles.container}>
+            <Text style={aprovacaoDetailStyles.title}>Detalhes do Produto</Text>
 
-            <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>ID:</Text>
-                <Text style={styles.detailValue}>{produto.produto_id}</Text>
+            <View style={aprovacaoDetailStyles.detailItem}>
+                <Text style={aprovacaoDetailStyles.detailLabel}>ID:</Text>
+                <Text style={aprovacaoDetailStyles.detailValue}>{produto.produto_id}</Text>
             </View>
-             <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Nome:</Text>
-                <Text style={styles.detailValue}>{produto.produto_nome}</Text>
+             <View style={aprovacaoDetailStyles.detailItem}>
+                <Text style={aprovacaoDetailStyles.detailLabel}>Nome:</Text>
+                <Text style={aprovacaoDetailStyles.detailValue}>{produto.produto_nome}</Text>
             </View>
-             <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Medida:</Text>
-                <Text style={styles.detailValue}>{produto.produto_medida}</Text>
+             <View style={aprovacaoDetailStyles.detailItem}>
+                <Text style={aprovacaoDetailStyles.detailLabel}>Medida:</Text>
+                <Text style={aprovacaoDetailStyles.detailValue}>{produto.produto_medida}</Text>
             </View>
-             <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Preço Original:</Text>
-                <Text style={styles.detailValue}>R$ {produto.produto_precoOriginal?.toFixed(2)}</Text>
+             <View style={aprovacaoDetailStyles.detailItem}>
+                <Text style={aprovacaoDetailStyles.detailLabel}>Preço Original:</Text>
+                <Text style={aprovacaoDetailStyles.detailValue}>R$ {produto.produto_precoOriginal?.toFixed(2)}</Text>
             </View>
-             <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Descrição:</Text>
-                <Text style={styles.detailValue}>{produto.descricao || '(Sem descrição)'}</Text>
+             <View style={aprovacaoDetailStyles.detailItem}>
+                <Text style={aprovacaoDetailStyles.detailLabel}>Descrição:</Text>
+                <Text style={aprovacaoDetailStyles.detailValue}>{produto.descricao || '(Sem descrição)'}</Text>
             </View>
-            <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Categoria:</Text>
-                <Text style={styles.detailValue}>{produto.categoria?.categoria_nome || '(Inválida/Inativa)'}</Text>
+            <View style={aprovacaoDetailStyles.detailItem}>
+                <Text style={aprovacaoDetailStyles.detailLabel}>Categoria:</Text>
+                <Text style={aprovacaoDetailStyles.detailValue}>{produto.categoria?.categoria_nome || '(Inválida/Inativa)'}</Text>
             </View>
-             <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Marca:</Text>
-                <Text style={styles.detailValue}>{produto.marca?.marca_nome || '(Inválida/Inativa)'}</Text>
+             <View style={aprovacaoDetailStyles.detailItem}>
+                <Text style={aprovacaoDetailStyles.detailLabel}>Marca:</Text>
+                <Text style={aprovacaoDetailStyles.detailValue}>{produto.marca?.marca_nome || '(Inválida/Inativa)'}</Text>
             </View>
-             <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Tipo:</Text>
-                <Text style={styles.detailValue}>{produto.tipo?.tipo_nome || '(Inválido/Inativo)'}</Text>
+             <View style={aprovacaoDetailStyles.detailItem}>
+                <Text style={aprovacaoDetailStyles.detailLabel}>Tipo:</Text>
+                <Text style={aprovacaoDetailStyles.detailValue}>{produto.tipo?.tipo_nome || '(Inválido/Inativo)'}</Text>
             </View>
-            <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Status Atual:</Text>
-                <Text style={styles.detailValue}>{produto.produto_status}</Text>
+            <View style={aprovacaoDetailStyles.detailItem}>
+                <Text style={aprovacaoDetailStyles.detailLabel}>Status Atual:</Text>
+                <Text style={aprovacaoDetailStyles.detailValue}>{produto.produto_status}</Text>
             </View>
-             <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Registrado em:</Text>
-                <Text style={styles.detailValue}>{new Date(produto.data_registro).toLocaleString()}</Text>
+             <View style={aprovacaoDetailStyles.detailItem}>
+                <Text style={aprovacaoDetailStyles.detailLabel}>Registrado em:</Text>
+                <Text style={aprovacaoDetailStyles.detailValue}>{new Date(produto.data_registro).toLocaleString()}</Text>
             </View>
 
 
-            <View style={styles.actionsContainer}>
+            <View style={aprovacaoDetailStyles.actionsContainer}>
                 {/* Botão Aprovar */}
                  <TouchableOpacity
-                    style={[styles.button, styles.approveButton, actionLoading && styles.buttonDisabled]}
+                    style={[aprovacaoDetailStyles.button, aprovacaoDetailStyles.approveButton, actionLoading && aprovacaoDetailStyles.buttonDisabled]}
                     onPress={handleAprovar}
                     disabled={actionLoading}
                  >
-                    {actionLoading ? <ActivityIndicator size="small" color="#fff"/> : <Text style={styles.buttonText}>Aprovar Produto</Text>}
+                    {actionLoading ? <ActivityIndicator size="small" color="#fff"/> : <Text style={aprovacaoDetailStyles.buttonText}>Aprovar Produto</Text>}
                 </TouchableOpacity>
 
                 {/* Seção Rejeitar */}
-                <Text style={styles.label}>Motivo da Rejeição (Obrigatório se for rejeitar):</Text>
+                <Text style={aprovacaoDetailStyles.label}>Motivo da Rejeição (Obrigatório se for rejeitar):</Text>
                 <TextInput
-                    style={[styles.input, styles.textArea]}
+                    style={[aprovacaoDetailStyles.input, aprovacaoDetailStyles.textArea]}
                     value={motivoRejeicao}
                     onChangeText={setMotivoRejeicao}
                     placeholder="Descreva por que o produto está sendo rejeitado..."
@@ -178,11 +179,11 @@ const AprovacaoDetailScreen = () => {
                     editable={!actionLoading} // Desabilita enquanto ação ocorre
                 />
                  <TouchableOpacity
-                     style={[styles.button, styles.rejectButton, actionLoading && styles.buttonDisabled]}
+                     style={[aprovacaoDetailStyles.button, aprovacaoDetailStyles.rejectButton, actionLoading && aprovacaoDetailStyles.buttonDisabled]}
                      onPress={handleRejeitar}
                      disabled={actionLoading}
                   >
-                     {actionLoading ? <ActivityIndicator size="small" color="#fff"/> : <Text style={styles.buttonText}>Rejeitar Produto</Text>}
+                     {actionLoading ? <ActivityIndicator size="small" color="#fff"/> : <Text style={aprovacaoDetailStyles.buttonText}>Rejeitar Produto</Text>}
                  </TouchableOpacity>
             </View>
 
@@ -190,26 +191,5 @@ const AprovacaoDetailScreen = () => {
      </ScrollView>
   );
 };
-
-// Estilos (Combine/adapte de outros forms)
-const styles = StyleSheet.create({
-    scrollContainer: { flexGrow: 1 },
-    container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    title: { fontSize: 22, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
-    detailItem: { flexDirection: 'row', marginBottom: 10, borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 10 },
-    detailLabel: { fontSize: 16, fontWeight: 'bold', color: '#333', width: 120 }, // Largura fixa para alinhar
-    detailValue: { fontSize: 16, color: '#555', flex: 1 }, // Ocupa resto do espaço
-    actionsContainer: { marginTop: 30, borderTopWidth: 1, borderTopColor: '#eee', paddingTop: 20 },
-    label: { fontSize: 16, marginBottom: 5, color: '#333', fontWeight: '500', marginTop: 15 },
-    input: { borderWidth: 1, borderColor: '#ccc', paddingVertical: 8, paddingHorizontal: 12, marginBottom: 15, borderRadius: 5, fontSize: 15, backgroundColor: '#f9f9f9' },
-    textArea: { height: 80, textAlignVertical: 'top' },
-    button: { padding: 15, borderRadius: 5, alignItems: 'center', marginBottom: 15 },
-    approveButton: { backgroundColor: '#28a745' }, // Verde
-    rejectButton: { backgroundColor: '#dc3545' }, // Vermelho
-    buttonDisabled: { backgroundColor: '#a7c7e7' },
-    buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-    errorText: { color: 'red', fontSize: 16, textAlign: 'center' },
-});
 
 export default AprovacaoDetailScreen;

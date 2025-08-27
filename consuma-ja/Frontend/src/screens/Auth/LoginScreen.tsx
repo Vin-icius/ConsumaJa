@@ -1,24 +1,20 @@
-"use client"
-
 import React, { useState, useRef } from "react"
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   Keyboard,
   ActivityIndicator,
   ScrollView,
   Animated,
-  Image,
-  Dimensions,
 } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { Ionicons } from "@expo/vector-icons"
 import type { StackNavigationProp } from "@react-navigation/stack"
 import authService from "../../services/authService"
+import { styles } from "../../common/styles/Auth/loginScreen.styled"
 
 // Definindo tipos para navegação
 type RootStackParamList = {
@@ -38,7 +34,7 @@ interface LoginResponse {
   token: string
   user: {
     tipo: string
-    [key: string]: any // Para outras propriedades do usuário
+    [key: string]: any
   }
 }
 
@@ -160,27 +156,21 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     setLoading(true)
 
     try {
-      console.log(`[LoginScreen] Tentando login com: ${loginToSend}`)
       const response = (await authService.login({
         login: loginToSend,
         senha: senha,
       })) as LoginResponse
 
-      console.log("[LoginScreen] Login bem-sucedido:", response)
-
       const { token, user } = response
       if (token && user?.tipo) {
         await AsyncStorage.setItem("userToken", token)
         await AsyncStorage.setItem("userType", user.tipo)
-        console.log("[LoginScreen] Token e userType salvos.")
 
         navigation.replace("Dashboard")
       } else {
-        console.error("[LoginScreen] Resposta da API de login inválida:", response)
         setErrorMessage("Erro inesperado na resposta do servidor.")
       }
     } catch (error: any) {
-      console.error("[LoginScreen] Erro no handleLogin:", error)
       const message =
         error.response?.data?.message ||
         error.message ||
@@ -217,7 +207,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
       <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
         <View style={styles.logoContainer}>
-          <Image source={require('/home/ubuntu/Frontend/src/assets/logo.png')} style={styles.logoImage} />
+          {/* <Image source={require('/home/Frontend/src/assets/logo.png')} style={styles.logoImage} /> */}
           <Text style={styles.title}>Bem-vindo</Text>
           <Text style={styles.subtitle}>Faça login para continuar</Text>
         </View>
@@ -347,220 +337,5 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     </ScrollView>
   )
 }
-
-const { width } = Dimensions.get("window")
-
-const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-    backgroundColor: "#f0f0f0",
-  },
-  logoImage: {
-    width: 80,
-    height: 80,
-    resizeMode: 'contain',
-  },
-  container: {
-    flex: 1,
-    padding: 20,
-    justifyContent: "center",
-  },
-  logoContainer: {
-    alignItems: "center",
-    marginBottom: 40,
-    marginTop: 40,
-  },
-  logoPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#e6f0ff",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 20,
-  },
-  formContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    marginBottom: 20,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#555",
-    marginBottom: 8,
-  },
-  inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    backgroundColor: "#f9f9f9",
-  },
-  inputIcon: {
-    padding: 10,
-  },
-  input: {
-    flex: 1,
-    height: 50,
-    paddingHorizontal: 10,
-    fontSize: 16,
-    color: "#333",
-  },
-  passwordToggle: {
-    padding: 10,
-  },
-  errorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-    backgroundColor: "#fdeaea",
-    padding: 10,
-    borderRadius: 5,
-  },
-  errorText: {
-    color: "#e74c3c",
-    marginLeft: 5,
-    fontSize: 14,
-    flex: 1,
-  },
-  forgotPasswordLink: {
-    alignSelf: "flex-end",
-    marginBottom: 20,
-  },
-  forgotPasswordText: {
-    color: "#0066cc",
-    fontSize: 14,
-  },
-  loginButton: {
-    backgroundColor: "#0066cc",
-    borderRadius: 8,
-    height: 50,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonIcon: {
-    marginRight: 8,
-  },
-  buttonDisabled: {
-    backgroundColor: "#a7c7e7",
-  },
-  loginButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  divider: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#ddd",
-  },
-  dividerText: {
-    marginHorizontal: 10,
-    color: "#666",
-  },
-  registerContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  registerText: {
-    fontSize: 14,
-    color: "#666",
-  },
-  registerLink: {
-    fontSize: 14,
-    color: "#0066cc",
-    fontWeight: "bold",
-    marginLeft: 5,
-  },
-  modalOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-  },
-  modalContent: {
-    backgroundColor: "white",
-    borderRadius: 10,
-    padding: 20,
-    width: width * 0.85,
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: "#333",
-    textAlign: "center",
-  },
-  modalDescription: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  modalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 20,
-  },
-  modalCancelButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    marginRight: 10,
-    alignItems: "center",
-  },
-  modalCancelButtonText: {
-    color: "#666",
-    fontWeight: "500",
-  },
-  modalConfirmButton: {
-    flex: 1,
-    backgroundColor: "#0066cc",
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  modalConfirmButtonText: {
-    color: "white",
-    fontWeight: "500",
-  },
-})
 
 export default LoginScreen

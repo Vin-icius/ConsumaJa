@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Keyboard, ScrollView } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import locationService from '../../services/locationService';
+import { cityStyles } from '../../common/styles/Location/cityFormScreen.styled';
 
 // Interface para o estado (opcional, mas bom para clareza)
 interface EstadoInfo {
@@ -11,7 +12,7 @@ interface EstadoInfo {
     estado_sigla: string;
 }
 
-const CidadeFormScreen = ({ route, navigation }) => {
+const CityFormScreen = ({ route, navigation }) => {
   const cidadeParaEditar = route.params?.cidadeParaEditar;
   const isEditing = !!cidadeParaEditar;
 
@@ -131,21 +132,21 @@ const CidadeFormScreen = ({ route, navigation }) => {
   };
 
   return (
-     <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        <View style={styles.container}>
+     <ScrollView contentContainerStyle={cityStyles.scrollContainer} keyboardShouldPersistTaps="handled">
+        <View style={cityStyles.container}>
             {/* Inputs Nome e DDD (mantidos) */}
-            <Text style={styles.label}>Nome da Cidade:</Text>
-            <TextInput value={nome} onChangeText={setNome} style={[styles.input, errors.nome ? styles.inputError : null]} placeholder="Ex: Presidente Prudente" maxLength={45}/>
-            {errors.nome && <Text style={styles.errorText}>{errors.nome}</Text>}
+            <Text style={cityStyles.label}>Nome da Cidade:</Text>
+            <TextInput value={nome} onChangeText={setNome} style={[cityStyles.input, errors.nome ? cityStyles.inputError : null]} placeholder="Ex: Presidente Prudente" maxLength={45}/>
+            {errors.nome && <Text style={cityStyles.errorText}>{errors.nome}</Text>}
 
-            <Text style={styles.label}>DDD:</Text>
-            <TextInput value={ddd} onChangeText={(text) => setDdd(text.replace(/\D/g, ''))} style={[styles.input, errors.ddd ? styles.inputError : null]} placeholder="Ex: 18" maxLength={4} keyboardType="numeric"/>
-            {errors.ddd && <Text style={styles.errorText}>{errors.ddd}</Text>}
+            <Text style={cityStyles.label}>DDD:</Text>
+            <TextInput value={ddd} onChangeText={(text) => setDdd(text.replace(/\D/g, ''))} style={[cityStyles.input, errors.ddd ? cityStyles.inputError : null]} placeholder="Ex: 18" maxLength={4} keyboardType="numeric"/>
+            {errors.ddd && <Text style={cityStyles.errorText}>{errors.ddd}</Text>}
 
 
-            <Text style={styles.label}>Estado:</Text>
+            <Text style={cityStyles.label}>Estado:</Text>
             {loadingEstados ? ( <ActivityIndicator size="small" color="#0066cc" style={{ height: 50, marginBottom: 15 }}/> ) : (
-                <View style={[ styles.pickerContainer, errors.estado ? styles.inputError : null, isEditing ? styles.pickerDisabledBackground : null ]}>
+                <View style={[ cityStyles.pickerContainer, errors.estado ? cityStyles.inputError : null, isEditing ? cityStyles.pickerDisabledBackground : null ]}>
                     <Picker
                         selectedValue={selectedEstadoId}
                         enabled={!isEditing}
@@ -156,12 +157,12 @@ const CidadeFormScreen = ({ route, navigation }) => {
                                 setSelectedEstadoId(numericValue);
                             }
                         }}
-                        style={[styles.picker, isEditing ? styles.pickerDisabledText : null]}
+                        style={[cityStyles.picker, isEditing ? cityStyles.pickerDisabledText : null]}
                         prompt="Selecione um Estado"
                     >
                          {/* Item placeholder */}
                          {/* Garantir que o value do placeholder seja algo não numérico ou claramente distinto se precisar diferenciar */}
-                         <Picker.Item label={isEditing ? (allEstados.find(e => e.estado_id === selectedEstadoId)?.estado_nome || '-- Carregando Estado --') : "-- Selecione um Estado --"} value={null} style={styles.pickerPlaceholder} enabled={!isEditing} />
+                         <Picker.Item label={isEditing ? (allEstados.find(e => e.estado_id === selectedEstadoId)?.estado_nome || '-- Carregando Estado --') : "-- Selecione um Estado --"} value={null} style={cityStyles.pickerPlaceholder} enabled={!isEditing} />
 
                          {/* Mapeia estados */}
                          {/* A key e o value DEVEM ser estado.estado_id (que é número) */}
@@ -176,38 +177,19 @@ const CidadeFormScreen = ({ route, navigation }) => {
                     </Picker>
                 </View>
             )}
-            {errors.estado && <Text style={styles.errorText}>{errors.estado}</Text>}
+            {errors.estado && <Text style={cityStyles.errorText}>{errors.estado}</Text>}
 
             {/* Botão Salvar (mantido) */}
             <TouchableOpacity
-                style={[styles.button, styles.saveButton, (loading || loadingEstados) && styles.buttonDisabled]}
+                style={[cityStyles.button, cityStyles.saveButton, (loading || loadingEstados) && cityStyles.buttonDisabled]}
                 onPress={handleSubmit}
                 disabled={loading || loadingEstados}
             >
-                {loading ? (<ActivityIndicator size="small" color="#fff" />) : (<Text style={styles.buttonText}>{isEditing ? 'Salvar Alterações' : 'Cadastrar Cidade'}</Text>)}
+                {loading ? (<ActivityIndicator size="small" color="#fff" />) : (<Text style={cityStyles.buttonText}>{isEditing ? 'Salvar Alterações' : 'Cadastrar Cidade'}</Text>)}
             </TouchableOpacity>
         </View>
      </ScrollView>
   );
 };
 
-// --- Estilos (mantidos) ---
-const styles = StyleSheet.create({
-    scrollContainer: { flexGrow: 1 },
-    container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-    label: { fontSize: 16, marginBottom: 5, color: '#333' },
-    input: { borderWidth: 1, borderColor: '#ccc', paddingVertical: 10, paddingHorizontal: 15, marginBottom: 15, borderRadius: 5, fontSize: 16, backgroundColor: '#f9f9f9' },
-    pickerContainer: { borderWidth: 1, borderColor: '#ccc', borderRadius: 5, marginBottom: 15, backgroundColor: '#f9f9f9' },
-    picker: { height: 50 },
-    pickerPlaceholder: { color: 'grey' },
-    pickerDisabledBackground: { backgroundColor: '#e9ecef' },
-    pickerDisabledText: { color: '#6c757d' },
-    inputError: { borderColor: 'red' },
-    errorText: { color: 'red', fontSize: 12, marginBottom: 10, marginTop: -10 },
-    button: { padding: 15, borderRadius: 5, alignItems: 'center', marginTop: 10 },
-    saveButton: { backgroundColor: '#0066cc' },
-    buttonDisabled: { backgroundColor: '#a7c7e7' },
-    buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-});
-
-export default CidadeFormScreen;
+export default CityFormScreen;

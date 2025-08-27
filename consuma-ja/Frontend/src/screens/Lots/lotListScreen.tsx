@@ -15,6 +15,7 @@ import {
 import { useNavigation, useFocusEffect } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import promocaoService from "../../services/promocaoService"
+import { lotListStyles } from "../../common/styles/Lots/lotListScreen.styled"
 
 // Tipos
 interface Lote {
@@ -34,7 +35,7 @@ interface Lote {
 
 const ITEMS_PER_PAGE = 15
 
-const LoteListScreen = () => {
+const LotListScreen = () => {
   const navigation = useNavigation<any>()
 
   // Estados
@@ -183,91 +184,91 @@ const LoteListScreen = () => {
 
   // Renderizar item da lista
   const renderItem = ({ item }: { item: Lote }) => (
-    <View style={[styles.loteCard, !item.ativo && styles.loteInativo]}>
-      <View style={styles.loteHeader}>
-        <Text style={styles.loteCodigo}>{item.lote_codigo}</Text>
-        <View style={styles.loteActions}>
-          <TouchableOpacity style={styles.actionButton} onPress={() => editarLote(item.lote_id)}>
+    <View style={[lotListStyles.loteCard, !item.ativo && lotListStyles.loteInativo]}>
+      <View style={lotListStyles.loteHeader}>
+        <Text style={lotListStyles.loteCodigo}>{item.lote_codigo}</Text>
+        <View style={lotListStyles.loteActions}>
+          <TouchableOpacity style={lotListStyles.actionButton} onPress={() => editarLote(item.lote_id)}>
             <Ionicons name="pencil-outline" size={20} color="#007bff" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={() => confirmarExclusao(item)}>
+          <TouchableOpacity style={lotListStyles.actionButton} onPress={() => confirmarExclusao(item)}>
             <Ionicons name="trash-outline" size={20} color="#dc3545" />
           </TouchableOpacity>
         </View>
       </View>
 
-      <View style={styles.loteInfo}>
-        <Text style={styles.loteProduto}>
-          <Text style={styles.infoLabel}>Produto: </Text>
+      <View style={lotListStyles.loteInfo}>
+        <Text style={lotListStyles.loteProduto}>
+          <Text style={lotListStyles.infoLabel}>Produto: </Text>
           {item.produto?.produto_nome || `ID: ${item.produto_id}`}
         </Text>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Validade: </Text>
+        <View style={lotListStyles.infoRow}>
+          <Text style={lotListStyles.infoItem}>
+            <Text style={lotListStyles.infoLabel}>Validade: </Text>
             {formatarData(item.lote_validade)}
           </Text>
-          <Text style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Entrada: </Text>
+          <Text style={lotListStyles.infoItem}>
+            <Text style={lotListStyles.infoLabel}>Entrada: </Text>
             {formatarData(item.data_entrada)}
           </Text>
         </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Qtd. Inicial: </Text>
+        <View style={lotListStyles.infoRow}>
+          <Text style={lotListStyles.infoItem}>
+            <Text style={lotListStyles.infoLabel}>Qtd. Inicial: </Text>
             {item.lote_quantidade_inicial}
           </Text>
-          <Text style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Qtd. Atual: </Text>
+          <Text style={lotListStyles.infoItem}>
+            <Text style={lotListStyles.infoLabel}>Qtd. Atual: </Text>
             {item.lote_quantidade_atual}
           </Text>
         </View>
-        <View style={styles.statusBadge}>
-          <Text style={styles.statusText}>{item.ativo ? "Ativo" : "Inativo"}</Text>
+        <View style={lotListStyles.statusBadge}>
+          <Text style={lotListStyles.statusText}>{item.ativo ? "Ativo" : "Inativo"}</Text>
         </View>
       </View>
     </View>
   )
 
   return (
-    <View style={styles.container}>
+    <View style={lotListStyles.container}>
       {/* Cabeçalho com título e botão de adicionar */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Lotes</Text>
-        <TouchableOpacity style={styles.addButton} onPress={criarNovoLote}>
+      <View style={lotListStyles.header}>
+        <Text style={lotListStyles.title}>Lotes</Text>
+        <TouchableOpacity style={lotListStyles.addButton} onPress={criarNovoLote}>
           <Ionicons name="add" size={24} color="#fff" />
-          <Text style={styles.addButtonText}>Novo Lote</Text>
+          <Text style={lotListStyles.addButtonText}>Novo Lote</Text>
         </TouchableOpacity>
       </View>
 
       {/* Filtros */}
-      <View style={styles.filtersContainer}>
-        <View style={styles.searchContainer}>
+      <View style={lotListStyles.filtersContainer}>
+        <View style={lotListStyles.searchContainer}>
           <TextInput
-            style={styles.searchInput}
+            style={lotListStyles.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Buscar por código ou produto..."
             onSubmitEditing={pesquisarLotes}
           />
-          <TouchableOpacity style={styles.searchButton} onPress={pesquisarLotes}>
+          <TouchableOpacity style={lotListStyles.searchButton} onPress={pesquisarLotes}>
             <Ionicons name="search" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.filterButtons}>
+        <View style={lotListStyles.filterButtons}>
           <TouchableOpacity
-            style={[styles.filterButton, filtroAtivo !== null && styles.filterButtonActive]}
+            style={[lotListStyles.filterButton, filtroAtivo !== null && lotListStyles.filterButtonActive]}
             onPress={alternarFiltroStatus}
           >
-            <Text style={styles.filterButtonText}>
+            <Text style={lotListStyles.filterButtonText}>
               {filtroAtivo === null ? "Todos" : filtroAtivo ? "Ativos" : "Inativos"}
             </Text>
           </TouchableOpacity>
 
           {(searchQuery || filtroAtivo !== null || filtroProdutoId) && (
-            <TouchableOpacity style={styles.clearFiltersButton} onPress={limparFiltros}>
+            <TouchableOpacity style={lotListStyles.clearFiltersButton} onPress={limparFiltros}>
               <Ionicons name="close-circle" size={20} color="#dc3545" />
-              <Text style={styles.clearFiltersText}>Limpar</Text>
+              <Text style={lotListStyles.clearFiltersText}>Limpar</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -278,202 +279,22 @@ const LoteListScreen = () => {
         data={lotes}
         renderItem={renderItem}
         keyExtractor={(item) => item.lote_id.toString()}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={lotListStyles.listContainer}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         onEndReached={carregarMaisLotes}
         onEndReachedThreshold={0.1}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
+          <View style={lotListStyles.emptyContainer}>
             <Ionicons name="cube-outline" size={60} color="#adb5bd" />
-            <Text style={styles.emptyText}>Nenhum lote encontrado</Text>
+            <Text style={lotListStyles.emptyText}>Nenhum lote encontrado</Text>
           </View>
         }
         ListFooterComponent={
-          loading && !refreshing ? <ActivityIndicator size="large" color="#007bff" style={styles.loader} /> : null
+          loading && !refreshing ? <ActivityIndicator size="large" color="#007bff" style={lotListStyles.loader} /> : null
         }
       />
     </View>
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e9ecef",
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#212529",
-  },
-  addButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#28a745",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 4,
-  },
-  addButtonText: {
-    color: "#fff",
-    fontWeight: "500",
-    marginLeft: 4,
-  },
-  filtersContainer: {
-    padding: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e9ecef",
-  },
-  searchContainer: {
-    flexDirection: "row",
-    marginBottom: 8,
-  },
-  searchInput: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-    borderWidth: 1,
-    borderColor: "#ced4da",
-    borderRadius: 4,
-    padding: 8,
-    fontSize: 16,
-  },
-  searchButton: {
-    backgroundColor: "#007bff",
-    padding: 8,
-    borderRadius: 4,
-    marginLeft: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    width: 40,
-  },
-  filterButtons: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  filterButton: {
-    backgroundColor: "#f8f9fa",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: "#ced4da",
-    marginRight: 8,
-  },
-  filterButtonActive: {
-    backgroundColor: "#e9ecef",
-    borderColor: "#adb5bd",
-  },
-  filterButtonText: {
-    color: "#495057",
-    fontSize: 14,
-  },
-  clearFiltersButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  clearFiltersText: {
-    color: "#dc3545",
-    marginLeft: 4,
-    fontSize: 14,
-  },
-  listContainer: {
-    padding: 16,
-  },
-  loteCard: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#dee2e6",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  loteInativo: {
-    opacity: 0.7,
-    borderStyle: "dashed",
-  },
-  loteHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  loteCodigo: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#212529",
-  },
-  loteActions: {
-    flexDirection: "row",
-  },
-  actionButton: {
-    padding: 6,
-    marginLeft: 8,
-  },
-  loteInfo: {
-    position: "relative",
-  },
-  loteProduto: {
-    fontSize: 16,
-    marginBottom: 8,
-    color: "#495057",
-  },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 4,
-  },
-  infoItem: {
-    fontSize: 14,
-    color: "#6c757d",
-  },
-  infoLabel: {
-    fontWeight: "500",
-    color: "#495057",
-  },
-  statusBadge: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    backgroundColor: "#e9ecef",
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 4,
-  },
-  statusText: {
-    fontSize: 12,
-    color: "#495057",
-  },
-  emptyContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 40,
-  },
-  emptyText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: "#6c757d",
-    textAlign: "center",
-  },
-  loader: {
-    marginVertical: 20,
-  },
-})
-
-export default LoteListScreen
+export default LotListScreen

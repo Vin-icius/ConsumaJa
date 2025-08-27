@@ -5,7 +5,6 @@ import {
   View,
   Text,
   TextInput,
-  StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
@@ -20,6 +19,7 @@ import produtoService from "../../services/produtoService"
 import categoriaService from "../../services/categoriaService"
 import marcaService from "../../services/marcaService"
 import tipoService from "../../services/tipoService"
+import { productFormStyles } from "../../common/styles/Product/productFormScreen.styled"
 
 // Tipos
 interface CategoriaItem {
@@ -225,13 +225,13 @@ const ProductFormScreen = () => {
     itemLabelProp: string,
   ) => {
     return (
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>{label}:</Text>
-        <View style={[styles.pickerContainer, errors[fieldName] ? styles.inputError : null]}>
+      <View style={productFormStyles.formGroup}>
+        <Text style={productFormStyles.label}>{label}:</Text>
+        <View style={[productFormStyles.pickerContainer, errors[fieldName] ? productFormStyles.inputError : null]}>
           <Picker
             selectedValue={selectedValue}
             onValueChange={(itemValue) => handlePickerChange(fieldName, itemValue)}
-            style={styles.picker}
+            style={productFormStyles.picker}
             enabled={!loading}
           >
             <Picker.Item label={`Selecione ${label}`} value={undefined} />
@@ -240,73 +240,73 @@ const ProductFormScreen = () => {
             ))}
           </Picker>
         </View>
-        {errors[fieldName] ? <Text style={styles.errorText}>{errors[fieldName]}</Text> : null}
+        {errors[fieldName] ? <Text style={productFormStyles.errorText}>{errors[fieldName]}</Text> : null}
       </View>
     )
   }
 
   if (loading && isEditing) {
-    return <ActivityIndicator size="large" style={styles.centered} />
+    return <ActivityIndicator size="large" style={productFormStyles.centered} />
   }
 
   if (errors.form) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>{errors.form}</Text>
+      <View style={productFormStyles.centered}>
+        <Text style={productFormStyles.errorText}>{errors.form}</Text>
       </View>
     )
   }
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+      style={productFormStyles.container}
+      contentContainerStyle={productFormStyles.contentContainer}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.title}>{isEditing ? "Editar Produto" : "Novo Produto"}</Text>
+      <Text style={productFormStyles.title}>{isEditing ? "Editar Produto" : "Novo Produto"}</Text>
 
       {/* Nome do Produto */}
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Nome do Produto:</Text>
+      <View style={productFormStyles.formGroup}>
+        <Text style={productFormStyles.label}>Nome do Produto:</Text>
         <TextInput
-          style={[styles.input, errors.produto_nome ? styles.inputError : null]}
+          style={[productFormStyles.input, errors.produto_nome ? productFormStyles.inputError : null]}
           value={formData.produto_nome}
           onChangeText={(text) => handleInputChange("produto_nome", text)}
           placeholder="Nome do Produto"
         />
-        {errors.produto_nome ? <Text style={styles.errorText}>{errors.produto_nome}</Text> : null}
+        {errors.produto_nome ? <Text style={productFormStyles.errorText}>{errors.produto_nome}</Text> : null}
       </View>
 
       {/* Medida */}
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Medida:</Text>
+      <View style={productFormStyles.formGroup}>
+        <Text style={productFormStyles.label}>Medida:</Text>
         <TextInput
-          style={[styles.input, errors.produto_medida ? styles.inputError : null]}
+          style={[productFormStyles.input, errors.produto_medida ? productFormStyles.inputError : null]}
           value={formData.produto_medida}
           onChangeText={(text) => handleInputChange("produto_medida", text)}
           placeholder="Ex: Kg, Lt, Un"
         />
-        {errors.produto_medida ? <Text style={styles.errorText}>{errors.produto_medida}</Text> : null}
+        {errors.produto_medida ? <Text style={productFormStyles.errorText}>{errors.produto_medida}</Text> : null}
       </View>
 
       {/* Preço Original */}
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Preço Original (R$):</Text>
+      <View style={productFormStyles.formGroup}>
+        <Text style={productFormStyles.label}>Preço Original (R$):</Text>
         <TextInput
-          style={[styles.input, errors.produto_precoOriginal ? styles.inputError : null]}
+          style={[productFormStyles.input, errors.produto_precoOriginal ? productFormStyles.inputError : null]}
           value={formData.produto_precoOriginal}
           onChangeText={(text) => handleInputChange("produto_precoOriginal", text.replace(/[^0-9.]/g, ""))}
           placeholder="Ex: 10.99"
           keyboardType="numeric"
         />
-        {errors.produto_precoOriginal ? <Text style={styles.errorText}>{errors.produto_precoOriginal}</Text> : null}
+        {errors.produto_precoOriginal ? <Text style={productFormStyles.errorText}>{errors.produto_precoOriginal}</Text> : null}
       </View>
 
       {/* Descrição */}
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Descrição:</Text>
+      <View style={productFormStyles.formGroup}>
+        <Text style={productFormStyles.label}>Descrição:</Text>
         <TextInput
-          style={[styles.input, styles.textArea]}
+          style={[productFormStyles.input, productFormStyles.textArea]}
           value={formData.descricao}
           onChangeText={(text) => handleInputChange("descricao", text)}
           placeholder="(Opcional)"
@@ -321,96 +321,18 @@ const ProductFormScreen = () => {
 
       {/* Botão Salvar */}
       <TouchableOpacity
-        style={[styles.submitButton, (loadingSubmit || loading) && styles.buttonDisabled]}
+        style={[productFormStyles.submitButton, (loadingSubmit || loading) && productFormStyles.buttonDisabled]}
         onPress={handleSubmit}
         disabled={loadingSubmit || loading}
       >
         {loadingSubmit ? (
           <ActivityIndicator size="small" color="#fff" />
         ) : (
-          <Text style={styles.submitButtonText}>{isEditing ? "Atualizar Produto" : "Salvar Produto"}</Text>
+          <Text style={productFormStyles.submitButtonText}>{isEditing ? "Atualizar Produto" : "Salvar Produto"}</Text>
         )}
       </TouchableOpacity>
     </ScrollView>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  contentContainer: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 20,
-    color: "#212529",
-    textAlign: "center",
-  },
-  formGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: "500",
-    marginBottom: 8,
-    color: "#495057",
-  },
-  input: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ced4da",
-    borderRadius: 4,
-    padding: 12,
-    fontSize: 16,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: "top",
-  },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: "#ced4da",
-    borderRadius: 4,
-    backgroundColor: "#fff",
-    marginBottom: 5,
-  },
-  picker: {
-    height: 50,
-  },
-  inputError: {
-    borderColor: "#dc3545",
-  },
-  errorText: {
-    color: "#dc3545",
-    fontSize: 12,
-    marginTop: 4,
-  },
-  submitButton: {
-    backgroundColor: "#28a745",
-    padding: 16,
-    borderRadius: 4,
-    alignItems: "center",
-    marginTop: 16,
-  },
-  buttonDisabled: {
-    backgroundColor: "#6c757d",
-  },
-  submitButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "500",
-  },
-})
 
 export default ProductFormScreen

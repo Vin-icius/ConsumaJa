@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import marcaService from '../../services/marcaService'; // Serviço de marca
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { marcaListStyles } from '../../common/styles/Product/marcaListScreen.styled';
 
 // Definir tipo para o item Marca
 interface MarcaItem {
@@ -22,16 +23,16 @@ interface MarcaItem {
 
 // Componente Item da Lista
 const MarcaListItem = ({ item, onEdit, onDelete }: { item: MarcaItem, onEdit: (item: MarcaItem) => void, onDelete: (item: MarcaItem) => void }) => (
-  <View style={styles.listItem}>
-    <View style={styles.listItemText}>
-        <Text style={styles.itemText}>{item.marca_id} - {item.marca_nome}</Text>
+  <View style={marcaListStyles.listItem}>
+    <View style={marcaListStyles.listItemText}>
+        <Text style={marcaListStyles.itemText}>{item.marca_id} - {item.marca_nome}</Text>
     </View>
-    <View style={styles.listItemButtons}>
-        <TouchableOpacity onPress={() => onEdit(item)} style={[styles.button, styles.editButton]}>
-            <Text style={styles.buttonTextSmall}>Editar</Text>
+    <View style={marcaListStyles.listItemButtons}>
+        <TouchableOpacity onPress={() => onEdit(item)} style={[marcaListStyles.button, marcaListStyles.editButton]}>
+            <Text style={marcaListStyles.buttonTextSmall}>Editar</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => onDelete(item)} style={[styles.button, styles.deleteButton]}>
-             <Text style={styles.buttonTextSmall}>Excluir</Text>
+        <TouchableOpacity onPress={() => onDelete(item)} style={[marcaListStyles.button, marcaListStyles.deleteButton]}>
+             <Text style={marcaListStyles.buttonTextSmall}>Excluir</Text>
         </TouchableOpacity>
     </View>
   </View>
@@ -104,13 +105,13 @@ const MarcaListScreen = () => {
 
   const renderContent = () => {
     if (loading && !refreshing) {
-      return <ActivityIndicator size="large" color="#0066cc" style={styles.centered}/>;
+      return <ActivityIndicator size="large" color="#0066cc" style={marcaListStyles.centered}/>;
     }
     if (error) {
-      return <Text style={[styles.centered, styles.errorText]}>{error}</Text>;
+      return <Text style={[marcaListStyles.centered, marcaListStyles.errorText]}>{error}</Text>;
     }
      if (marcas.length === 0 && !loading) {
-         return <Text style={styles.centered}>Nenhuma marca encontrada.</Text>;
+         return <Text style={marcaListStyles.centered}>Nenhuma marca encontrada.</Text>;
      }
 
     return (
@@ -120,7 +121,7 @@ const MarcaListScreen = () => {
         renderItem={({ item }) => (
           <MarcaListItem item={item} onEdit={handleEdit} onDelete={handleDelete} />
         )}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={marcaListStyles.list}
         refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={["#0066cc"]}/>
         }
@@ -129,36 +130,17 @@ const MarcaListScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={marcaListStyles.container}>
        <TouchableOpacity
-         style={[styles.button, styles.addButton]}
+         style={[marcaListStyles.button, marcaListStyles.addButton]}
          onPress={() => navigation.navigate('MarcaForm')} // Modo criação
        >
-         <Text style={styles.buttonText}>Adicionar Nova Marca</Text>
+         <Text style={marcaListStyles.buttonText}>Adicionar Nova Marca</Text>
        </TouchableOpacity>
       {renderContent()}
-       {loading && !refreshing && <View style={styles.loadingOverlay}><ActivityIndicator size="large" color="#FFF" /></View>}
+       {loading && !refreshing && <View style={marcaListStyles.loadingOverlay}><ActivityIndicator size="large" color="#FFF" /></View>}
     </View>
   );
 };
-
-// Estilos (Copie/adapte os estilos de CategoriaListScreen ou EstadoListScreen)
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f0f0f0' },
-    list: { padding: 10, },
-    listItem: { backgroundColor: 'white', padding: 15, marginBottom: 10, borderRadius: 5, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 1.41 },
-    listItemText: { flex: 1, marginRight: 10 },
-    listItemButtons: { flexDirection: 'row' },
-    itemText: { fontSize: 16 },
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', textAlign: 'center', padding: 20 },
-    errorText: { color: 'red', fontSize: 16 },
-    button: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 5, marginLeft: 5, justifyContent: 'center', alignItems: 'center' },
-    editButton: { backgroundColor: '#ffc107' },
-    deleteButton: { backgroundColor: '#dc3545' },
-    addButton: { backgroundColor: '#28a745', margin: 10, padding: 15, alignSelf: 'stretch', alignItems: 'center' }, // Stretch button
-    buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-    buttonTextSmall: { color: 'white', fontSize: 12 },
-    loadingOverlay: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.3)' }
-});
 
 export default MarcaListScreen;
