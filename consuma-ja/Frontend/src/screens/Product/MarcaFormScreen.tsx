@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Keyboard, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, Keyboard, ScrollView } from 'react-native';
 import marcaService from '../../services/marcaService'; // Importar o serviço
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
+import { marcaFormStyles } from '../../common/styles/Product/marcaFormScreen.styled';
 
 // Definir tipos
 interface MarcaItem {
@@ -93,47 +94,33 @@ const MarcaFormScreen = () => {
   };
 
   return (
-     <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        <View style={styles.container}>
-            <Text style={styles.label}>Nome da Marca:</Text>
+     <ScrollView contentContainerStyle={marcaFormStyles.scrollContainer} keyboardShouldPersistTaps="handled">
+        <View style={marcaFormStyles.container}>
+            <Text style={marcaFormStyles.label}>Nome da Marca:</Text>
             <TextInput
-                style={[styles.input, errors.nome ? styles.inputError : null]}
+                style={[marcaFormStyles.input, errors.nome ? marcaFormStyles.inputError : null]}
                 value={nome}
                 onChangeText={setNome}
                 placeholder="Ex: Nestlé, Coca-Cola"
                 maxLength={255} // Ajuste conforme DB/DTO
                 autoCapitalize="words"
             />
-            {errors.nome && <Text style={styles.errorText}>{errors.nome}</Text>}
+            {errors.nome && <Text style={marcaFormStyles.errorText}>{errors.nome}</Text>}
 
             <TouchableOpacity
-                style={[styles.button, styles.saveButton, loading && styles.buttonDisabled]}
+                style={[marcaFormStyles.button, marcaFormStyles.saveButton, loading && marcaFormStyles.buttonDisabled]}
                 onPress={handleSubmit}
                 disabled={loading}
             >
                 {loading ? (
                 <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                <Text style={styles.buttonText}>{isEditing ? 'Salvar Alterações' : 'Cadastrar Marca'}</Text>
+                <Text style={marcaFormStyles.buttonText}>{isEditing ? 'Salvar Alterações' : 'Cadastrar Marca'}</Text>
                 )}
             </TouchableOpacity>
         </View>
      </ScrollView>
   );
 };
-
-// Estilos (Copie/adapte de CategoriaFormScreen)
-const styles = StyleSheet.create({
-    scrollContainer: { flexGrow: 1 },
-    container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-    label: { fontSize: 16, marginBottom: 5, color: '#333', fontWeight: '500' },
-    input: { borderWidth: 1, borderColor: '#ccc', paddingVertical: 10, paddingHorizontal: 15, marginBottom: 5, borderRadius: 5, fontSize: 16, backgroundColor: '#f9f9f9' },
-    inputError: { borderColor: 'red' },
-    errorText: { color: 'red', fontSize: 12, marginBottom: 15, marginTop: -5 },
-    button: { padding: 15, borderRadius: 5, alignItems: 'center', marginTop: 20 },
-    saveButton: { backgroundColor: '#0066cc' },
-    buttonDisabled: { backgroundColor: '#a7c7e7' },
-    buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-});
 
 export default MarcaFormScreen;

@@ -2,15 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'; // Exemplo de tipo
-
-// Definir um tipo para sua pilha principal se ainda não tiver
-// type RootStackParamList = {
-//   Login: undefined;
-//   Dashboard: undefined;
-//   // ... outras rotas do Stack
-// };
-// type LogoutScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Sair'>;
+import { logoutStyles } from '../../common/styles/Auth/logoutScreen.styled';
 
 const LogoutScreen = () => {
   // Usar tipo específico se disponível, senão 'any'
@@ -43,21 +35,16 @@ const LogoutScreen = () => {
         { cancelable: false }
       );
     };
-    const timer = setTimeout(performLogout, 50); // Pequeno delay
+    const timer = setTimeout(performLogout, 50);
     return () => clearTimeout(timer);
   }, [navigation]);
 
   return (
-    <View style={styles.container}>
+    <View style={logoutStyles.container}>
       <ActivityIndicator size="large" color="#2F4F4F" />
-      <Text style={styles.text}>Saindo...</Text>
+      <Text style={logoutStyles.text}>Saindo...</Text>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.8)' },
-  text: { marginTop: 10, fontSize: 16, color: '#555' }
-});
 
 export default LogoutScreen;

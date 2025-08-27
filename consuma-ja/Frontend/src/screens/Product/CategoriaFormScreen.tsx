@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Keyboard, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, Keyboard, ScrollView } from 'react-native';
 import categoriaService from '../../services/categoriaService'; // Importar o serviço
 import { useNavigation, useRoute } from '@react-navigation/native'; // Importar hooks
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'; // Tipagem (opcional)
 import type { RouteProp } from '@react-navigation/native'; // Tipagem (opcional)
+import { categoriaFormStyles } from '../../common/styles/Product/categoriaFormSreen.styled';
 
 // Definir tipos para o item Categoria e parâmetros da rota
 interface CategoriaItem {
@@ -110,47 +111,33 @@ const CategoriaFormScreen = () => {
   };
 
   return (
-     <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        <View style={styles.container}>
-            <Text style={styles.label}>Nome da Categoria:</Text>
+     <ScrollView contentContainerStyle={categoriaFormStyles.scrollContainer} keyboardShouldPersistTaps="handled">
+        <View style={categoriaFormStyles.container}>
+            <Text style={categoriaFormStyles.label}>Nome da Categoria:</Text>
             <TextInput
-                style={[styles.input, errors.nome ? styles.inputError : null]}
+                style={[categoriaFormStyles.input, errors.nome ? categoriaFormStyles.inputError : null]}
                 value={nome}
                 onChangeText={setNome}
                 placeholder="Ex: Bebidas, Laticínios"
                 maxLength={255} // Definir MaxLength igual ao backend DTO
                 autoCapitalize="words"
             />
-            {errors.nome && <Text style={styles.errorText}>{errors.nome}</Text>}
+            {errors.nome && <Text style={categoriaFormStyles.errorText}>{errors.nome}</Text>}
 
             <TouchableOpacity
-                style={[styles.button, styles.saveButton, loading && styles.buttonDisabled]}
+                style={[categoriaFormStyles.button, categoriaFormStyles.saveButton, loading && categoriaFormStyles.buttonDisabled]}
                 onPress={handleSubmit}
                 disabled={loading}
             >
                 {loading ? (
                 <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                <Text style={styles.buttonText}>{isEditing ? 'Salvar Alterações' : 'Cadastrar Categoria'}</Text>
+                <Text style={categoriaFormStyles.buttonText}>{isEditing ? 'Salvar Alterações' : 'Cadastrar Categoria'}</Text>
                 )}
             </TouchableOpacity>
         </View>
      </ScrollView>
   );
 };
-
-// Estilos (Similares aos de EstadoFormScreen)
-const styles = StyleSheet.create({
-    scrollContainer: { flexGrow: 1 },
-    container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-    label: { fontSize: 16, marginBottom: 5, color: '#333', fontWeight: '500' },
-    input: { borderWidth: 1, borderColor: '#ccc', paddingVertical: 10, paddingHorizontal: 15, marginBottom: 5, borderRadius: 5, fontSize: 16, backgroundColor: '#f9f9f9' }, // Diminui margin Bottom
-    inputError: { borderColor: 'red' },
-    errorText: { color: 'red', fontSize: 12, marginBottom: 15, marginTop: -5 }, // Aumenta margin Bottom
-    button: { padding: 15, borderRadius: 5, alignItems: 'center', marginTop: 20 }, // Aumenta margin Top
-    saveButton: { backgroundColor: '#0066cc' },
-    buttonDisabled: { backgroundColor: '#a7c7e7' },
-    buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-});
 
 export default CategoriaFormScreen;

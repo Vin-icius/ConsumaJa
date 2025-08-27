@@ -1,6 +1,3 @@
-"use client"
-
-// src/navigation/AppNavigator.tsx
 import type React from "react"
 import { useState, useEffect } from "react"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
@@ -11,15 +8,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import { SafeAreaView, SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import LoginScreen from "../screens/Auth/LoginScreen"
-import CadastroScreen from "../screens/Auth/CadastroScreen"
+import CadastroScreen from "../screens/Auth/RegisterScreen"
 import LogoutScreen from "../screens/Auth/LogoutScreen"
-import InicioScreen from "../screens/Core/InicioScreen"
+import InicioScreen from "../screens/Core/homeScreen"
 import ConfigScreen from "../screens/Core/configScreen"
 import RelatoriosScreen from "../screens/Reports/relatoriosScreen"
 import EstadoListScreen from "../screens/Location/EstadoListScreen"
 import EstadoFormScreen from "../screens/Location/EstadoFormScreen"
-import CidadeListScreen from "../screens/Location/CidadeListScreen"
-import CidadeFormScreen from "../screens/Location/CidadeFormScreen"
+import CidadeListScreen from "../screens/Location/cityListScreen"
+import CityFormScreen from "../screens/Location/cityFormScreen"
 import CategoriaListScreen from "../screens/Product/CategoriaListScreen"
 import CategoriaFormScreen from "../screens/Product/CategoriaFormScreen"
 import MarcaListScreen from "../screens/Product/MarcaListScreen"
@@ -30,14 +27,14 @@ import ProductListScreen from "../screens/Product/ProductListScreen"
 import ProductFormScreen from "../screens/Product/ProductFormScreen"
 import AprovacaoListScreen from "../screens/Product/AprovacaoListScreen"
 import AprovacaoDetailScreen from "../screens/Product/AprovacaoDetailScreen"
-import PessoaListScreen from "../screens/User/PessoaListScreen"
-import PessoaFormScreen from "../screens/User/PessoaFormScreen"
+import UserListScreen from "../screens/User/userListScreen"
+import UserFormScreen from "../screens/User/userFormScreen"
 
-import PromocaoListScreen from '../screens/Promotions/PromocaoListScreen'
-import PromocaoDetailScreen from '../screens/Promotions/PromocaoDetailScreen'
-import PromocaoFormScreen from '../screens/Promotions/PromocaoFormScreen'
-import LoteFormScreen from "../screens/Lotes/LoteFormScreen"
-import LoteListScreen from "../screens/Lotes/LoteListScreen"
+import PromotionListItem from '../screens/Promotions/promotionListScreen'
+import PromotionDetailScreen from '../screens/Promotions/promotionDetailScreen'
+import PromotionFormScreen from '../screens/Promotions/promotionFormScreen'
+import LotFormScreen from "../screens/Lots/lotFormScreen"
+import LotListScreen from "../screens/Lots/lotListScreen"
 
 // --- Navegadores ---
 const Stack = createNativeStackNavigator()
@@ -128,7 +125,7 @@ const CustomDrawerContent = (props: any) => {
         {
           key: "PromocaoList",
           name: "PromocaoList",
-          component: PromocaoListScreen,
+          component: PromotionListItem,
           title: 'Gerenciar Promoções', 
           icon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
           roles: ["Admin", "Fornecedor"],
@@ -136,7 +133,7 @@ const CustomDrawerContent = (props: any) => {
         {
           key: "LoteList",
           name: "LoteList",
-          component: LoteListScreen,
+          component: LotListScreen,
           title: 'Gerenciar Lotes', 
           icon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
           roles: ["Admin", "Fornecedor"],
@@ -199,7 +196,7 @@ const CustomDrawerContent = (props: any) => {
         {
           key: "PessoaList",
           name: "PessoaList",
-          component: PessoaListScreen,
+          component: UserListScreen,
           title: "Gerenciar Usuários",
           icon: ({ color, size }) => <Ionicons name="people-outline" color={color} size={size} />,
           roles: ["Admin"],
@@ -337,7 +334,7 @@ const MainAppDrawer = () => {
     <Drawer.Screen 
       key="PromocaoList" 
       name="PromocaoList" 
-      component={PromocaoListScreen} 
+      component={PromotionListItem} 
       options={{ 
         title:'Gerenciar Promoções', 
         drawerIcon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
@@ -346,7 +343,7 @@ const MainAppDrawer = () => {
     <Drawer.Screen 
       key="PromocaoForm" 
       name="PromocaoForm" 
-      component={PromocaoFormScreen} 
+      component={PromotionFormScreen} 
       options={{ 
         title:'Gerenciar Promoções', 
         drawerIcon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
@@ -355,7 +352,7 @@ const MainAppDrawer = () => {
     <Drawer.Screen 
       key="PromocaoDetail" 
       name="PromocaoDetail" 
-      component={PromocaoDetailScreen} 
+      component={PromotionDetailScreen} 
       options={{ 
         title:'Detalhes das Promoções', 
         drawerIcon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
@@ -364,7 +361,7 @@ const MainAppDrawer = () => {
     <Drawer.Screen 
       key="LoteList" 
       name="LoteList" 
-      component={LoteListScreen} 
+      component={LotListScreen} 
       options={{ 
         title:'Listagem de lotes', 
         drawerIcon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
@@ -373,7 +370,7 @@ const MainAppDrawer = () => {
     <Drawer.Screen 
       key="LoteForm" 
       name="LoteForm" 
-      component={LoteFormScreen} 
+      component={LotFormScreen} 
       options={{ 
         title:'Formulário de lotes', 
         drawerIcon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
@@ -438,7 +435,7 @@ const MainAppDrawer = () => {
     <Drawer.Screen
       key="PessoaList"
       name="PessoaList"
-      component={PessoaListScreen}
+      component={UserListScreen}
       options={{
         title: "Gerenciar Usuários",
         drawerIcon: ({ color, size }) => <Ionicons name="people-outline" color={color} size={size} />,
@@ -504,7 +501,7 @@ const AppNavigator = () => {
 
         {/* Telas de Formulário/Detalhe chamadas de dentro do Drawer */}
         <Stack.Screen name="EstadoForm" component={EstadoFormScreen} options={{ title: "Formulário de Estado" }} />
-        <Stack.Screen name="CidadeForm" component={CidadeFormScreen} options={{ title: "Formulário de Cidade" }} />
+        <Stack.Screen name="CidadeForm" component={CityFormScreen} options={{ title: "Formulário de Cidade" }} />
         <Stack.Screen
           name="CategoriaForm"
           component={CategoriaFormScreen}
@@ -518,7 +515,7 @@ const AppNavigator = () => {
           component={AprovacaoDetailScreen}
           options={{ title: "Aprovar/Rejeitar Produto" }}
         />
-        <Stack.Screen name="PessoaForm" component={PessoaFormScreen} options={{ title: "Editar Usuário" }} />
+        <Stack.Screen name="PessoaForm" component={UserFormScreen} options={{ title: "Editar Usuário" }} />
       </Stack.Navigator>
     </SafeAreaProvider>
   )

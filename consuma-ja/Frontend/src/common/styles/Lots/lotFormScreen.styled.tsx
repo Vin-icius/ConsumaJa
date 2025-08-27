@@ -1,0 +1,155 @@
+import { StyleSheet } from "react-native";
+
+export const lotFormStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f8f9fa",
+  },
+  contentContainer: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 20,
+    color: "#212529",
+    textAlign: "center",
+  },
+  formGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "500",
+    marginBottom: 8,
+    color: "#495057",
+  },
+  input: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ced4da",
+    borderRadius: 4,
+    padding: 12,
+    fontSize: 16,
+  },
+  inputError: {
+    borderColor: "#dc3545",
+  },
+  errorText: {
+    color: "#dc3545",
+    fontSize: 12,
+    marginTop: 4,
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  searchInput: {
+    flex: 1,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ced4da",
+    borderRadius: 4,
+    padding: 12,
+    fontSize: 16,
+  },
+  searchButton: {
+    backgroundColor: "#007bff",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 4,
+    marginLeft: 8,
+    justifyContent: "center",
+    minWidth: 80,
+  },
+  searchButtonText: {
+    color: "#fff",
+    fontWeight: "500",
+    textAlign: "center",
+  },
+  resultsContainer: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#ced4da",
+    borderRadius: 4,
+    backgroundColor: "#fff",
+  },
+  resultsList: {
+    maxHeight: 200,
+  },
+  resultItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e9ecef",
+  },
+  resultItemText: {
+    fontSize: 14,
+    color: "#212529",
+  },
+  selectedItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#e9f7ef",
+    borderColor: "#d1e7dd",
+    borderWidth: 1,
+    borderRadius: 4,
+    padding: 12,
+  },
+  selectedItemText: {
+    fontSize: 16,
+    color: "#0f5132",
+  },
+  removeButton: {
+    padding: 4,
+  },
+  dateInput: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ced4da",
+    borderRadius: 4,
+    padding: 12,
+  },
+  switchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ced4da",
+    borderRadius: 4,
+    padding: 12,
+  },
+  switchLabel: {
+    fontSize: 16,
+    color: "#212529",
+  },
+  submitButton: {
+    backgroundColor: "#28a745",
+    padding: 16,
+    borderRadius: 4,
+    alignItems: "center",
+    marginTop: 16,
+  },
+  buttonDisabled: {
+    backgroundColor: "#6c757d",
+  },
+  submitButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "500",
+  },
+})

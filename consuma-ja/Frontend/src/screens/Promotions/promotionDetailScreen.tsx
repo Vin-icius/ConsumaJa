@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-// <<< Adicionar StyleSheet >>>
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView, Platform } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator, Alert, ScrollView, Platform } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import promocaoService from '../../services/promocaoService';
 import { Ionicons } from '@expo/vector-icons';
-
-// Tipos locais para esta tela (podem espelhar ou simplificar os do backend)
+import { promotionDetailStyles } from '../../common/styles/Promotions/promotionDetailScreen.styled';
 interface ProdutoInfoParaDetalhe {
     produto_id: number;
     produto_nome: string;
@@ -38,7 +36,7 @@ interface PromocaoDetalhada {
   fim: string | Date | null; // Adicionado
 }
 
-const PromocaoDetailScreen = () => {
+const PromotionDetailScreen = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>(); // Adicionado para setOptions
   const { promocaoId } = route.params;
@@ -81,45 +79,45 @@ const PromocaoDetailScreen = () => {
     const validadeString = item.lote.lote_validade ? new Date(item.lote.lote_validade).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'N/A';
 
     return (
-        <View style={styles.productItem}>
+        <View style={promotionDetailStyles.productItem}>
           <Image
             source={item.produto.produto_imagem_url ? { uri: item.produto.produto_imagem_url } : require('../../assets/placeholder.png')}
-            style={styles.productImage}
+            style={promotionDetailStyles.productImage}
             resizeMode="contain"
           />
-          <View style={styles.productInfo}>
-            <Text style={styles.productName}>{nomeCompleto}</Text>
-            <Text style={styles.productMeasure}>Medida: {item.produto.produto_medida || 'N/A'}</Text>
+          <View style={promotionDetailStyles.productInfo}>
+            <Text style={promotionDetailStyles.productName}>{nomeCompleto}</Text>
+            <Text style={promotionDetailStyles.productMeasure}>Medida: {item.produto.produto_medida || 'N/A'}</Text>
             {item.produto.produto_precoOriginal != null && (
-                <Text style={styles.originalPrice}>De: R$ {Number(item.produto.produto_precoOriginal).toFixed(2)}</Text>
+                <Text style={promotionDetailStyles.originalPrice}>De: R$ {Number(item.produto.produto_precoOriginal).toFixed(2)}</Text>
             )}
-            <Text style={styles.promoPrice}>Por: R$ {Number(item.itemPromocao_valor).toFixed(2)}</Text>
-            <Text style={styles.productStock}>Disponível (lote): {item.lote.lote_quantidade_atual} / Ofertado (promo): {item.itemPromocao_qtde}</Text>
-            <Text style={styles.productValidity}>Validade Lote: {validadeString}</Text>
+            <Text style={promotionDetailStyles.promoPrice}>Por: R$ {Number(item.itemPromocao_valor).toFixed(2)}</Text>
+            <Text style={promotionDetailStyles.productStock}>Disponível (lote): {item.lote.lote_quantidade_atual} / Ofertado (promo): {item.itemPromocao_qtde}</Text>
+            <Text style={promotionDetailStyles.productValidity}>Validade Lote: {validadeString}</Text>
           </View>
           <TouchableOpacity
-            style={[styles.addToCartButton, item.lote.lote_quantidade_atual <= 0 && styles.disabledButton]}
+            style={[promotionDetailStyles.addToCartButton, item.lote.lote_quantidade_atual <= 0 && promotionDetailStyles.disabledButton]}
             onPress={() => addToCart(item)}
             disabled={item.lote.lote_quantidade_atual <= 0}
           >
             <Ionicons name="cart-outline" size={20} color="white" />
-            <Text style={styles.addToCartButtonText}>Adicionar</Text>
+            <Text style={promotionDetailStyles.addToCartButtonText}>Adicionar</Text>
           </TouchableOpacity>
         </View>
     );
   };
 
-  if (loading) return <ActivityIndicator size="large" color="#007bff" style={styles.centered} />;
-  if (error) return <View style={styles.centered}><Text style={styles.errorText}>{error}</Text><TouchableOpacity onPress={fetchDetalhes}><Text style={styles.retryText}>Tentar Novamente</Text></TouchableOpacity></View>;
-  if (!promocao) return <Text style={styles.centered}>Promoção não encontrada ou dados inválidos.</Text>;
+  if (loading) return <ActivityIndicator size="large" color="#007bff" style={promotionDetailStyles.centered} />;
+  if (error) return <View style={promotionDetailStyles.centered}><Text style={promotionDetailStyles.errorText}>{error}</Text><TouchableOpacity onPress={fetchDetalhes}><Text style={promotionDetailStyles.retryText}>Tentar Novamente</Text></TouchableOpacity></View>;
+  if (!promocao) return <Text style={promotionDetailStyles.centered}>Promoção não encontrada ou dados inválidos.</Text>;
 
   return (
     <FlatList
         ListHeaderComponent={
-            <View style={styles.header}>
-                <Text style={styles.promotionTitle}>{promocao.promocao_descricao || 'Detalhes da Promoção'}</Text>
-                <Text style={styles.supplierName}>Oferecida por: {promocao.fornecedor.pessoa_nome}</Text>
-                <Text style={styles.dateInfo}>
+            <View style={promotionDetailStyles.header}>
+                <Text style={promotionDetailStyles.promotionTitle}>{promocao.promocao_descricao || 'Detalhes da Promoção'}</Text>
+                <Text style={promotionDetailStyles.supplierName}>Oferecida por: {promocao.fornecedor.pessoa_nome}</Text>
+                <Text style={promotionDetailStyles.dateInfo}>
                     Válida de: {new Date(promocao.inicio).toLocaleDateString('pt-BR')}
                     {promocao.fim ? ` até ${new Date(promocao.fim).toLocaleDateString('pt-BR')}` : ' (tempo indeterminado)'}
                 </Text>
@@ -132,39 +130,10 @@ const PromocaoDetailScreen = () => {
             const lId = item.lote?.lote_id ?? `l_idx_${index}`;
             return `${pId}-${lId}`;
         }}
-        contentContainerStyle={styles.container}
-        ListEmptyComponent={<Text style={styles.emptyText}>Nenhum produto nesta promoção.</Text>}
+        contentContainerStyle={promotionDetailStyles.container}
+        ListEmptyComponent={<Text style={promotionDetailStyles.emptyText}>Nenhum produto nesta promoção.</Text>}
     />
   );
 };
 
-// <<< DEFINIÇÃO COMPLETA DOS ESTILOS >>>
-const styles = StyleSheet.create({
-  container: { flexGrow: 1, backgroundColor: '#fff', paddingVertical: 10 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  errorText: { color: 'red', fontSize: 16, textAlign: 'center', marginBottom: 10 },
-  retryText: { color: '#007bff', fontSize: 16, marginTop: 10},
-  header: { paddingHorizontal: 15, marginBottom: 15, borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 15 },
-  promotionTitle: { fontSize: 22, fontWeight: 'bold', color: '#333', marginBottom: 5, textAlign: 'center' },
-  supplierName: { fontSize: 16, color: 'grey', textAlign: 'center', marginBottom: 5 },
-  dateInfo: { fontSize: 14, color: 'grey', textAlign: 'center', marginBottom: 10 },
-  productItem: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: '#f0f0f0',
-  },
-  productImage: { width: 80, height: 80, borderRadius: 6, marginRight: 15, backgroundColor: '#f0f0f0' },
-  productInfo: { flex: 1, justifyContent: 'center' },
-  productName: { fontSize: 15, fontWeight: '600', color: '#444', marginBottom: 4 },
-  productMeasure: { fontSize: 13, color: 'grey', marginBottom: 3 },
-  originalPrice: { fontSize: 12, textDecorationLine: 'line-through', color: '#aaa', marginBottom: 1 },
-  promoPrice: { fontSize: 16, fontWeight: 'bold', color: '#28a745', marginBottom: 4 },
-  productStock: { fontSize: 12, color: '#555', marginBottom: 2 },
-  productValidity: { fontSize: 12, color: '#555' },
-  addToCartButton: { flexDirection: 'row', backgroundColor: '#007bff', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 5, alignItems: 'center', justifyContent: 'center', minWidth: 100, alignSelf: 'flex-end' },
-  addToCartButtonText: { color: 'white', fontSize: 13, fontWeight: 'bold', marginLeft: 5 },
-  disabledButton: { backgroundColor: '#ced4da' },
-  emptyText: { textAlign: 'center', marginTop: 50, fontSize: 16, color: 'grey' },
-});
-// ---------------------------------------
-
-export default PromocaoDetailScreen;
+export default PromotionDetailScreen;

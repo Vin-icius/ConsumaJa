@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import tipoService from '../../services/tipoService'; // Serviço de tipo
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { tipoListStyles } from '../../common/styles/Product/tipoListScreen.styled';
 
 // Definir tipo para o item Tipo
 interface TipoItem {
@@ -22,16 +23,16 @@ interface TipoItem {
 
 // Componente Item da Lista
 const TipoListItem = ({ item, onEdit, onDelete }: { item: TipoItem, onEdit: (item: TipoItem) => void, onDelete: (item: TipoItem) => void }) => (
-  <View style={styles.listItem}>
-    <View style={styles.listItemText}>
-        <Text style={styles.itemText}>{item.tipo_id} - {item.tipo_nome}</Text>
+  <View style={tipoListStyles.listItem}>
+    <View style={tipoListStyles.listItemText}>
+        <Text style={tipoListStyles.itemText}>{item.tipo_id} - {item.tipo_nome}</Text>
     </View>
-    <View style={styles.listItemButtons}>
-        <TouchableOpacity onPress={() => onEdit(item)} style={[styles.button, styles.editButton]}>
-            <Text style={styles.buttonTextSmall}>Editar</Text>
+    <View style={tipoListStyles.listItemButtons}>
+        <TouchableOpacity onPress={() => onEdit(item)} style={[tipoListStyles.button, tipoListStyles.editButton]}>
+            <Text style={tipoListStyles.buttonTextSmall}>Editar</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => onDelete(item)} style={[styles.button, styles.deleteButton]}>
-             <Text style={styles.buttonTextSmall}>Excluir</Text>
+        <TouchableOpacity onPress={() => onDelete(item)} style={[tipoListStyles.button, tipoListStyles.deleteButton]}>
+             <Text style={tipoListStyles.buttonTextSmall}>Excluir</Text>
         </TouchableOpacity>
     </View>
   </View>
@@ -95,9 +96,9 @@ const TipoListScreen = () => {
   };
 
   const renderContent = () => {
-    if (loading && !refreshing) { return <ActivityIndicator size="large" color="#0066cc" style={styles.centered}/>; }
-    if (error) { return <Text style={[styles.centered, styles.errorText]}>{error}</Text>; }
-    if (tipos.length === 0 && !loading) { return <Text style={styles.centered}>Nenhum tipo encontrado.</Text>; }
+    if (loading && !refreshing) { return <ActivityIndicator size="large" color="#0066cc" style={tipoListStyles.centered}/>; }
+    if (error) { return <Text style={[tipoListStyles.centered, tipoListStyles.errorText]}>{error}</Text>; }
+    if (tipos.length === 0 && !loading) { return <Text style={tipoListStyles.centered}>Nenhum tipo encontrado.</Text>; }
 
     return (
       <FlatList
@@ -106,44 +107,24 @@ const TipoListScreen = () => {
         renderItem={({ item }) => (
           <TipoListItem item={item} onEdit={handleEdit} onDelete={handleDelete} />
         )}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={tipoListStyles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={["#0066cc"]}/>}
       />
     );
   };
 
   return (
-    <View style={styles.container}>
+    <View style={tipoListStyles.container}>
        <TouchableOpacity
-         style={[styles.button, styles.addButton]}
+         style={[tipoListStyles.button, tipoListStyles.addButton]}
          onPress={() => navigation.navigate('TipoForm')} // Modo criação
        >
-         <Text style={styles.buttonText}>Adicionar Novo Tipo</Text>
+         <Text style={tipoListStyles.buttonText}>Adicionar Novo Tipo</Text>
        </TouchableOpacity>
       {renderContent()}
-       {loading && !refreshing && <View style={styles.loadingOverlay}><ActivityIndicator size="large" color="#FFF" /></View>}
+       {loading && !refreshing && <View style={tipoListStyles.loadingOverlay}><ActivityIndicator size="large" color="#FFF" /></View>}
     </View>
   );
 };
-
-// Estilos (Copie/adapte de Categoria/MarcaListScreen)
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f0f0f0' },
-    list: { padding: 10, },
-    listItem: { backgroundColor: 'white', padding: 15, marginBottom: 10, borderRadius: 5, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 1.41 },
-    listItemText: { flex: 1, marginRight: 10 },
-    listItemButtons: { flexDirection: 'row' },
-    itemText: { fontSize: 16 },
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', textAlign: 'center', padding: 20 },
-    errorText: { color: 'red', fontSize: 16 },
-    button: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 5, marginLeft: 5, justifyContent: 'center', alignItems: 'center' },
-    editButton: { backgroundColor: '#ffc107' },
-    deleteButton: { backgroundColor: '#dc3545' },
-    addButton: { backgroundColor: '#28a745', margin: 10, padding: 15, alignSelf: 'stretch', alignItems: 'center' },
-    buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-    buttonTextSmall: { color: 'white', fontSize: 12 },
-    loadingOverlay: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.3)' }
-});
-
 
 export default TipoListScreen;
