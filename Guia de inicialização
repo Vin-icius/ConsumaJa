@@ -1,0 +1,105 @@
+Este documento descreve o passo a passo para configurar o projeto Consuma Já em sua máquina local e contribuir corretamente com novas alterações via Github.
+
+
+_Pré-requisitos_
+
+
+Antes de começar, certifique-se de instalar as seguintes ferramentas:
+
+-   Node.js
+-   VS Code
+-   Extensão obrigatória do VS Code: GitLens – Git supercharged (este é o nome de uma única extensão, apesar do “ – “).
+
+
+Clonando o projeto
+
+
+1.  Clone o repositório para sua máquina local:
+
+        git clone https://github.com/Vin-icius/ConsumaJa.git
+
+
+2.  No GitHub, crie uma Issue com o título representando a ação/tarefa
+    (inclua palavras-chave). Exemplo de título para Issue: Função fundamental (12) – Definir Entrega; Exemplo de descrição para a issue: “A funcionalidade Definir Entrega deve permitir ao administrador do sistema configurar diferentes opções de entrega para os produtos, como tipos de envio, custos e prazos. As opções de entrega devem ser associadas aos pedidos e permitir ao cliente escolher a opção mais conveniente para receber seus produtos.”. 
+
+ 
+Observação: depois de criar a issue e a branch, clique em “Development” e atribua a sua branch (isso é importante para posteriormente identificarmos o que foi feito nessa branch e como isso impactou o projeto).
+
+
+3.  Crie uma branch a partir da main:
+No VS Code, basta clicar em baixo no controle de branchs e depois, clicar em “Create new branch from” e selecionar a “main”:
+
+
+4.  Atribua a branch criada à Issue.
+
+
+Abrindo o projeto no VS Code
+
+1.  No menu do VS Code, clique em Open Folder e selecione a pasta
+    ConsumaJa (depois do clone).
+
+2.  Para subir algum servidor de micro-serviço, siga os exemplos:
+
+Backend
+
+    cd consuma-ja/backend/micro-serviço-que-voce-vai-subir
+    npm install
+    npm run build
+    npm run dev
+
+
+Frontend
+
+    cd consuma-ja/frontend
+    npm install
+    npm start --clear   # (--clear é opcional)
+
+ 
+Fazendo alterações
+
+
+1.  Após realizar as mudanças, vá até o Source Control no VS Code
+    (atalho: CTRL + SHIFT + G + G).
+
+
+2.  Revise todas as alterações:
+
+    -   Atenção: não confunda os arquivos de código com os arquivos JavaScript gerados pelo npm run build.
+    -   A pasta dist/ é criada automaticamente a partir do TypeScript, mas é ideal e necessário (OBRIGATÓRIO) rodar novamente o npm run build antes de subir as alterações.
+
+
+3.  Dê um commit diretamente na sua branch.
+
+
+4.  No GitLens, copie o SHA do commit (ícone de folhas de papel → Copy sha).
+ 
+ 
+Cherry-pick na branch main
+
+
+1.  Troque para a branch main.
+ 
+
+2.  No terminal do VS Code, rode:
+
+        git fetch --prune
+        git cherry-pick <SHA-do-seu-commit>
+
+      O <SHA-do-seu-commit> é o código que você copiou no passo anterior (copy sha).
+
+
+3.  Agora, no Source Control, o botão azul aparecerá como Sync changes. Clique nele para enviar seu commit como Pull Request.
+
+
+Finalizando no GitHub
+
+1.  Vá até o repositório do projeto no GitHub.
+
+
+2.  Procure pelo seu Pull Request.
+
+
+3.  Revise, teste e, caso esteja tudo certo, faça o merge para a main.
+
+
+4.  Dessa forma, suas alterações serão incorporadas ao projeto.
