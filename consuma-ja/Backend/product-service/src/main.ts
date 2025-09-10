@@ -4,6 +4,7 @@ import 'dotenv/config';
 import cors from 'cors';
 
 // Importar Rotas de cada módulo do product-service
+import avaliacaoRoutes from './interfaces/routes/avaliacao.routes';
 import categoriaRoutes from './interfaces/routes/categoria.routes';
 import marcaRoutes from './interfaces/routes/marca.routes';
 import tipoRoutes from './interfaces/routes/tipo.routes';
@@ -38,6 +39,7 @@ if (process.env.NODE_ENV !== 'test') {
 
 // --- Rotas da API para Product Service ---
 const apiRouter = express.Router();
+app.use('/api/product', avaliacaoRoutes);
 apiRouter.use('/categorias', categoriaRoutes);
 apiRouter.use('/marcas', marcaRoutes);
 apiRouter.use('/tipos', tipoRoutes);
