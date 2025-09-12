@@ -29,12 +29,29 @@ import AprovacaoListScreen from "../screens/Product/AprovacaoListScreen"
 import AprovacaoDetailScreen from "../screens/Product/AprovacaoDetailScreen"
 import UserListScreen from "../screens/User/userListScreen"
 import UserFormScreen from "../screens/User/userFormScreen"
+import AvaliacaoFormScreen from '../screens/Review/AvaliacaoFormScreen';
 
 import PromotionListItem from '../screens/Promotions/promotionListScreen'
 import PromotionDetailScreen from '../screens/Promotions/promotionDetailScreen'
 import PromotionFormScreen from '../screens/Promotions/promotionFormScreen'
 import LotFormScreen from "../screens/Lots/lotFormScreen"
 import LotListScreen from "../screens/Lots/lotListScreen"
+
+export type RootStackParamList = {
+  Login: undefined;
+  Cadastro: undefined;
+  Dashboard: undefined;
+  EstadoForm: { estadoId?: number };
+  CidadeForm: { cidadeId?: number };
+  CategoriaForm: { categoriaId?: number };
+  MarcaForm: { marcaId?: number };
+  TipoForm: { tipoId?: number };
+  ProductForm: { produtoId?: number };
+  AprovacaoDetail: { produto: any };
+  PessoaForm: { pessoaId?: number };
+  // --- Adicione a nova rota aqui ---
+  AvaliacaoQuestionario: { pedidoId: number };
+};
 
 // --- Navegadores ---
 const Stack = createNativeStackNavigator()
@@ -510,12 +527,15 @@ const AppNavigator = () => {
         <Stack.Screen name="MarcaForm" component={MarcaFormScreen} options={{ title: "Formulário de Marca" }} />
         <Stack.Screen name="TipoForm" component={TipoFormScreen} options={{ title: "Formulário de Tipo" }} />
         <Stack.Screen name="ProductForm" component={ProductFormScreen} options={{ title: "Formulário de Produto" }} />
+        <Stack.Screen name="AvaliacaoForm" component={AvaliacaoFormScreen} options={{ title: 'Avaliar Produto' }}
+      />
         <Stack.Screen
           name="AprovacaoDetail"
           component={AprovacaoDetailScreen}
           options={{ title: "Aprovar/Rejeitar Produto" }}
         />
         <Stack.Screen name="PessoaForm" component={UserFormScreen} options={{ title: "Editar Usuário" }} />
+        <Stack.Screen name="AvaliacaoQuestionario" component={AvaliacaoFormScreen} options={{ title: 'Avaliar Compra' }} />
       </Stack.Navigator>
     </SafeAreaProvider>
   )

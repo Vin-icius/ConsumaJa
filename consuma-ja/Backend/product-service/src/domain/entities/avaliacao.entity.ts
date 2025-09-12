@@ -1,18 +1,10 @@
-export enum NotaAvaliacaoEnum {
-  PESSIMO = 1,
-  RUIM = 2,
-  BOM = 3,
-  MUITO_BOM = 4,
-  EXCELENTE = 5
-}
+import { NotaAvaliacao } from "./nota-avaliacao.entity";
 
 export interface Avaliacao {
   avaliacao_id: number;
-  produto_id: number;
-  pessoa_id: number;
-  pedido_id: number;
-  nota: NotaAvaliacaoEnum;
-  comentario?: string;
-  data_criacao: Date;
-  data_atualizacao: Date;
+  VENDA_venda_id: number; // Corresponde ao pedido_id no frontend
+  PESSOA_pessoa_id: number;
+  avaliacao_data: Date;
+  avaliacao_descricao?: string; // Campo opcional para um comentário geral
+  notas?: NotaAvaliacao[]; // Array de respostas
 }
