@@ -54,6 +54,22 @@ export type RootStackParamList = {
   AvaliacaoQuestionario: { pedidoId: number };
 };
 
+export type RootStackParamList = {
+  Login: undefined;
+  Cadastro: undefined;
+  Dashboard: undefined;
+  EstadoForm: { estadoId?: number };
+  CidadeForm: { cidadeId?: number };
+  CategoriaForm: { categoriaId?: number };
+  MarcaForm: { marcaId?: number };
+  TipoForm: { tipoId?: number };
+  ProductForm: { produtoId?: number };
+  AprovacaoDetail: { produto: any };
+  PessoaForm: { pessoaId?: number };
+  // --- Adicione a nova rota aqui ---
+  AvaliacaoQuestionario: { pedidoId: number };
+};
+
 // --- Navegadores ---
 const Stack = createNativeStackNavigator()
 const Drawer = createDrawerNavigator()
