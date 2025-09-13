@@ -1,6 +1,4 @@
-"use client"
-
-import { useState, useCallback, useEffect } from "react"
+import React, { useState, useCallback, useEffect } from "react"
 import {
   View,
   Text,
@@ -191,6 +189,106 @@ const UserListScreen = () => {
     ])
   }
 
+  // Componente para Card Mobile
+  const MobileUserCard = React.memo(({ item }: { item: PessoaItem }) => (
+    <View style={userListStyles.mobileCard}>
+      <View style={userListStyles.mobileCardHeader}>
+        <Text style={userListStyles.mobileCardTitle}>{item.pessoa_nome}</Text>
+        <View style={[userListStyles.statusBadge, item.ativo ? userListStyles.statusActiveBadge : userListStyles.statusInactiveBadge]}>
+          <Text style={[userListStyles.statusText, item.ativo ? userListStyles.statusActiveText : userListStyles.statusInactiveText]}>
+            {item.ativo ? "Ativo" : "Inativo"}
+          </Text>
+        </View>
+      </View>
+
+      <View style={userListStyles.mobileCardContent}>
+        <Text style={userListStyles.mobileCardLabel}>ID:</Text>
+        <Text style={userListStyles.mobileCardValue}>{item.pessoa_id}</Text>
+      </View>
+
+      <View style={userListStyles.mobileCardContent}>
+        <Text style={userListStyles.mobileCardLabel}>Email:</Text>
+        <Text style={userListStyles.mobileCardValue}>{item.pessoa_email}</Text>
+      </View>
+
+      <View style={userListStyles.mobileCardContent}>
+        <Text style={userListStyles.mobileCardLabel}>Tipo:</Text>
+        <Text style={userListStyles.mobileCardValue}>{item.pessoa_tipo}</Text>
+      </View>
+
+      {item.pessoa_telefone && (
+        <View style={userListStyles.mobileCardContent}>
+          <Text style={userListStyles.mobileCardLabel}>Telefone:</Text>
+          <Text style={userListStyles.mobileCardValue}>{item.pessoa_telefone}</Text>
+        </View>
+      )}
+
+      <View style={userListStyles.mobileCardActions}>
+        <TouchableOpacity
+          style={[userListStyles.actionButton, userListStyles.editButton]}
+          onPress={() => handleEdit(item)}
+          accessibilityLabel={`Editar usuário ${item.pessoa_nome}`}
+        >
+          <Ionicons name="pencil-outline" size={16} color="#fff" />
+          <Text style={userListStyles.actionButtonText}>Editar</Text>
+        </TouchableOpacity>
+        {item.ativo && (
+          <TouchableOpacity
+            style={[userListStyles.actionButton, userListStyles.deleteButton]}
+            onPress={() => handleDelete(item)}
+            accessibilityLabel={`Desativar usuário ${item.pessoa_nome}`}
+          >
+            <Ionicons name="trash-outline" size={16} color="#fff" />
+            <Text style={userListStyles.actionButtonText}>Desativar</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  ))
+
+  // Componente para Linha da Tabela Desktop
+  const DesktopUserRow = React.memo(({ item }: { item: PessoaItem }) => (
+    <View style={userListStyles.tableRow}>
+      <Text style={[userListStyles.tableCellText, { flex: 0.5 }]}>{item.pessoa_id}</Text>
+      <Text style={[userListStyles.tableCellText, { flex: 2 }]} numberOfLines={1}>
+        {item.pessoa_nome}
+      </Text>
+      <Text style={[userListStyles.tableCellText, { flex: 2 }]} numberOfLines={1}>
+        {item.pessoa_email}
+      </Text>
+      <Text style={[userListStyles.tableCellText, { flex: 1 }]}>{item.pessoa_tipo}</Text>
+      <View style={[userListStyles.tableCellContainer, { flex: 0.8 }]}>
+        <View
+          style={[userListStyles.statusBadge, item.ativo ? userListStyles.statusActiveBadge : userListStyles.statusInactiveBadge]}
+        >
+          <Text style={[userListStyles.statusText, item.ativo ? userListStyles.statusActiveText : userListStyles.statusInactiveText]}>
+            {item.ativo ? "Ativo" : "Inativo"}
+          </Text>
+        </View>
+      </View>
+      <View style={[userListStyles.tableCellContainer, { flex: 1.5 }]}>
+        <View style={userListStyles.actionButtons}>
+          <TouchableOpacity
+            style={[userListStyles.actionButton, userListStyles.editButton]}
+            onPress={() => handleEdit(item)}
+            accessibilityLabel={`Editar usuário ${item.pessoa_nome}`}
+          >
+            <Ionicons name="pencil-outline" size={16} color="#fff" />
+          </TouchableOpacity>
+          {item.ativo && (
+            <TouchableOpacity
+              style={[userListStyles.actionButton, userListStyles.deleteButton]}
+              onPress={() => handleDelete(item)}
+              accessibilityLabel={`Desativar usuário ${item.pessoa_nome}`}
+            >
+              <Ionicons name="trash-outline" size={16} color="#fff" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    </View>
+  ))
+
   // Renderizar botões de paginação
   const renderPaginationButtons = () => {
     if (totalPages <= 1) return null
@@ -221,6 +319,7 @@ const UserListScreen = () => {
           style={[userListStyles.paginationButton, currentPage === 1 && userListStyles.paginationButtonDisabled]}
           onPress={() => currentPage > 1 && fetchPessoas(currentPage - 1)}
           disabled={currentPage === 1}
+          accessibilityLabel="Página anterior"
         >
           <Ionicons name="chevron-back" size={16} color={currentPage === 1 ? "#aaa" : "#fff"} />
         </TouchableOpacity>
@@ -231,6 +330,7 @@ const UserListScreen = () => {
             key={`page-${page}`}
             style={[userListStyles.paginationButton, currentPage === page && userListStyles.paginationButtonActive]}
             onPress={() => page !== currentPage && fetchPessoas(page)}
+            accessibilityLabel={`Ir para página ${page}`}
           >
             <Text style={[userListStyles.paginationButtonText, currentPage === page && userListStyles.paginationButtonTextActive]}>
               {page}
@@ -243,6 +343,7 @@ const UserListScreen = () => {
           style={[userListStyles.paginationButton, currentPage === totalPages && userListStyles.paginationButtonDisabled]}
           onPress={() => currentPage < totalPages && fetchPessoas(currentPage + 1)}
           disabled={currentPage === totalPages}
+          accessibilityLabel="Próxima página"
         >
           <Ionicons name="chevron-forward" size={16} color={currentPage === totalPages ? "#aaa" : "#fff"} />
         </TouchableOpacity>
@@ -281,56 +382,7 @@ const UserListScreen = () => {
         <FlatList
           data={pessoas}
           keyExtractor={(item) => item.pessoa_id.toString()}
-          renderItem={({ item }) => (
-            <View style={userListStyles.mobileCard}>
-              <View style={userListStyles.mobileCardHeader}>
-                <Text style={userListStyles.mobileCardTitle}>{item.pessoa_nome}</Text>
-                <View style={[userListStyles.statusBadge, item.ativo ? userListStyles.statusActiveBadge : userListStyles.statusInactiveBadge]}>
-                  <Text style={[userListStyles.statusText, item.ativo ? userListStyles.statusActiveText : userListStyles.statusInactiveText]}>
-                    {item.ativo ? "Ativo" : "Inativo"}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={userListStyles.mobileCardContent}>
-                <Text style={userListStyles.mobileCardLabel}>ID:</Text>
-                <Text style={userListStyles.mobileCardValue}>{item.pessoa_id}</Text>
-              </View>
-
-              <View style={userListStyles.mobileCardContent}>
-                <Text style={userListStyles.mobileCardLabel}>Email:</Text>
-                <Text style={userListStyles.mobileCardValue}>{item.pessoa_email}</Text>
-              </View>
-
-              <View style={userListStyles.mobileCardContent}>
-                <Text style={userListStyles.mobileCardLabel}>Tipo:</Text>
-                <Text style={userListStyles.mobileCardValue}>{item.pessoa_tipo}</Text>
-              </View>
-
-              {item.pessoa_telefone && (
-                <View style={userListStyles.mobileCardContent}>
-                  <Text style={userListStyles.mobileCardLabel}>Telefone:</Text>
-                  <Text style={userListStyles.mobileCardValue}>{item.pessoa_telefone}</Text>
-                </View>
-              )}
-
-              <View style={userListStyles.mobileCardActions}>
-                <TouchableOpacity style={[userListStyles.actionButton, userListStyles.editButton]} onPress={() => handleEdit(item)}>
-                  <Ionicons name="pencil-outline" size={16} color="#fff" />
-                  <Text style={userListStyles.actionButtonText}>Editar</Text>
-                </TouchableOpacity>
-                {item.ativo && (
-                  <TouchableOpacity
-                    style={[userListStyles.actionButton, userListStyles.deleteButton]}
-                    onPress={() => handleDelete(item)}
-                  >
-                    <Ionicons name="trash-outline" size={16} color="#fff" />
-                    <Text style={userListStyles.actionButtonText}>Desativar</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          )}
+          renderItem={({ item }) => <MobileUserCard item={item} />}
           contentContainerStyle={userListStyles.mobileList}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={["#28a745"]} />}
           ListEmptyComponent={
@@ -364,42 +416,7 @@ const UserListScreen = () => {
           <FlatList
             data={pessoas}
             keyExtractor={(item) => item.pessoa_id.toString()}
-            renderItem={({ item }) => (
-              <View style={userListStyles.tableRow}>
-                <Text style={[userListStyles.tableCellText, { flex: 0.5 }]}>{item.pessoa_id}</Text>
-                <Text style={[userListStyles.tableCellText, { flex: 2 }]} numberOfLines={1}>
-                  {item.pessoa_nome}
-                </Text>
-                <Text style={[userListStyles.tableCellText, { flex: 2 }]} numberOfLines={1}>
-                  {item.pessoa_email}
-                </Text>
-                <Text style={[userListStyles.tableCellText, { flex: 1 }]}>{item.pessoa_tipo}</Text>
-                <View style={[userListStyles.tableCellContainer, { flex: 0.8 }]}>
-                  <View
-                    style={[userListStyles.statusBadge, item.ativo ? userListStyles.statusActiveBadge : userListStyles.statusInactiveBadge]}
-                  >
-                    <Text style={[userListStyles.statusText, item.ativo ? userListStyles.statusActiveText : userListStyles.statusInactiveText]}>
-                      {item.ativo ? "Ativo" : "Inativo"}
-                    </Text>
-                  </View>
-                </View>
-                <View style={[userListStyles.tableCellContainer, { flex: 1.5 }]}>
-                  <View style={userListStyles.actionButtons}>
-                    <TouchableOpacity style={[userListStyles.actionButton, userListStyles.editButton]} onPress={() => handleEdit(item)}>
-                      <Ionicons name="pencil-outline" size={16} color="#fff" />
-                    </TouchableOpacity>
-                    {item.ativo && (
-                      <TouchableOpacity
-                        style={[userListStyles.actionButton, userListStyles.deleteButton]}
-                        onPress={() => handleDelete(item)}
-                      >
-                        <Ionicons name="trash-outline" size={16} color="#fff" />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-              </View>
-            )}
+            renderItem={({ item }) => <DesktopUserRow item={item} />}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={["#28a745"]} />}
           />
         )}
@@ -448,7 +465,7 @@ const UserListScreen = () => {
             </View>
 
             {/* Botão Limpar */}
-            <TouchableOpacity style={userListStyles.clearFiltersButton} onPress={limparFiltros}>
+            <TouchableOpacity style={userListStyles.clearFiltersButton} onPress={limparFiltros} accessibilityLabel="Limpar filtros">
               <Ionicons name="refresh" size={16} color="#fff" style={userListStyles.buttonIcon} />
               <Text style={userListStyles.buttonText}>Limpar</Text>
             </TouchableOpacity>

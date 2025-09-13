@@ -36,5 +36,5 @@ app.get('/health', (req, res) => { res.status(200).json({ status: 'OK', service:
 app.use((req, res, next) => { next(new app_error_1.AppError(`Rota não encontrada: ${req.originalUrl}`, 404)); });
 app.use(error_middleware_1.errorHandler);
 // --- Iniciar o servidor ---
-const server = app.listen(port, () => { console.log(`[Server] Pessoa Service rodando em http://159.112.183.233ort}`); });
+const server = app.listen(port, () => { console.log(`[Server] Pessoa Service rodando em http://localhost:${port}`); });
 //# sourceMappingURL=main.js.map

@@ -3,7 +3,7 @@ import { useState, useEffect } from "react"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { createDrawerNavigator } from "@react-navigation/drawer"
 import { Ionicons } from "@expo/vector-icons"
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from "react-native"
+import { View, Text, TouchableOpacity, ScrollView, Platform } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { SafeAreaView, SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -35,6 +35,7 @@ import PromotionDetailScreen from '../screens/Promotions/promotionDetailScreen'
 import PromotionFormScreen from '../screens/Promotions/promotionFormScreen'
 import LotFormScreen from "../screens/Lots/lotFormScreen"
 import LotListScreen from "../screens/Lots/lotListScreen"
+import { navigatorStyles } from "../common/styles/appNavigator/appNavigator"
 
 // --- Navegadores ---
 const Stack = createNativeStackNavigator()
@@ -233,22 +234,22 @@ const CustomDrawerContent = (props: any) => {
   const insets = useSafeAreaInsets();
   return (
     
-    <SafeAreaView style={[styles.drawerContainer, { paddingBottom: insets.bottom }]}>
-      <View style={styles.drawerHeader}>
-        <Text style={styles.drawerTitle}>ConsumaJá!</Text>
+    <SafeAreaView style={[navigatorStyles.drawerContainer, { paddingBottom: insets.bottom }]}>
+      <View style={navigatorStyles.drawerHeader}>
+        <Text style={navigatorStyles.drawerTitle}>ConsumaJá!</Text>
         <TouchableOpacity onPress={() => props.navigation.closeDrawer()}>
           <Ionicons name="close" size={24} color="white" />
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.menuScrollView}>
+      <ScrollView style={navigatorStyles.menuScrollView}>
         {filteredSections.map((section, sectionIndex) => (
           <View key={`section-${sectionIndex}`}>
             {section.title !== "Geral" && (
-              <View style={styles.sectionHeader}>
+              <View style={navigatorStyles.sectionHeader}>
                 {section.isDropdown ? (
-                  <TouchableOpacity style={styles.dropdownHeader} onPress={() => toggleSection(section.title)}>
-                    <Text style={styles.sectionTitle}>{section.title}</Text>
+                  <TouchableOpacity style={navigatorStyles.dropdownHeader} onPress={() => toggleSection(section.title)}>
+                    <Text style={navigatorStyles.sectionTitle}>{section.title}</Text>
                     <Ionicons
                       name={expandedSections[section.title] ? "chevron-up" : "chevron-down"}
                       size={20}
@@ -256,7 +257,7 @@ const CustomDrawerContent = (props: any) => {
                     />
                   </TouchableOpacity>
                 ) : (
-                  <Text style={styles.sectionTitle}>{section.title}</Text>
+                  <Text style={navigatorStyles.sectionTitle}>{section.title}</Text>
                 )}
               </View>
             )}
@@ -268,9 +269,9 @@ const CustomDrawerContent = (props: any) => {
                   <TouchableOpacity
                     key={`item-${item.key}`}
                     style={[
-                      styles.menuItem,
-                      section.isDropdown && styles.submenuItem,
-                      props.state.routes[props.state.index].name === item.name && styles.activeMenuItem,
+                      navigatorStyles.menuItem,
+                      section.isDropdown && navigatorStyles.submenuItem,
+                      props.state.routes[props.state.index].name === item.name && navigatorStyles.activeMenuItem,
                     ]}
                     onPress={() => {
                       props.navigation.navigate(item.name)
@@ -282,8 +283,8 @@ const CustomDrawerContent = (props: any) => {
                     })}
                     <Text
                       style={[
-                        styles.menuItemText,
-                        props.state.routes[props.state.index].name === item.name && styles.activeMenuItemText,
+                        navigatorStyles.menuItemText,
+                        props.state.routes[props.state.index].name === item.name && navigatorStyles.activeMenuItemText,
                       ]}
                     >
                       {item.title}
@@ -291,15 +292,15 @@ const CustomDrawerContent = (props: any) => {
                   </TouchableOpacity>
                 ))}
 
-            {sectionIndex < filteredSections.length - 1 && <View style={styles.divider} />}
+            {sectionIndex < filteredSections.length - 1 && <View style={navigatorStyles.divider} />}
           </View>
         ))}
       </ScrollView>
 
-      <View style={styles.logoutButtonContainer}>
-        <TouchableOpacity style={styles.logoutButton} onPress={() => props.navigation.navigate("Sair")}>
+      <View style={navigatorStyles.logoutButtonContainer}>
+        <TouchableOpacity style={navigatorStyles.logoutButton} onPress={() => props.navigation.navigate("Sair")}>
           <Ionicons name="log-out-outline" size={24} color="white" />
-          <Text style={styles.logoutText}>Sair</Text>
+          <Text style={navigatorStyles.logoutText}>Sair</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -520,100 +521,5 @@ const AppNavigator = () => {
     </SafeAreaProvider>
   )
 }
-
-// --- Estilos ---
-const styles = StyleSheet.create({
-  // Estilos para o drawer personalizado
-  drawerContainer: {
-    flex: 1,
-    backgroundColor: "#2F4F4F",
-  },
-  drawerHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    paddingTop: Platform.OS === 'android' ? 40 : 16, // Aumenta o padding no Android
-    backgroundColor: "#4CAF50",
-  },
-  drawerTitle: {
-    color: "white",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  menuScrollView: {
-    flex: 1,
-  },
-  sectionHeader: {
-    marginTop: 16,
-    marginBottom: 8,
-    paddingHorizontal: 16,
-  },
-  dropdownHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  sectionTitle: {
-    color: "#aaa",
-    fontSize: 14,
-    fontWeight: "bold",
-    textTransform: "uppercase",
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  submenuItem: {
-    paddingLeft: 32, // Mais indentado para itens do dropdown
-  },
-  activeMenuItem: {
-    backgroundColor: "rgba(76, 175, 80, 0.1)",
-  },
-  menuItemText: {
-    color: "white",
-    fontSize: 16,
-    marginLeft: 16,
-  },
-  activeMenuItemText: {
-    color: "#4CAF50",
-    fontWeight: "bold",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#555",
-    marginVertical: 8,
-    marginHorizontal: 16,
-  },
-  logoutButtonContainer: {
-    paddingBottom: Platform.OS === 'android' ? 20 : 10, // Adiciona padding extra no Android
-  },
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#555",
-  },
-  logoutText: {
-    color: "white",
-    fontSize: 16,
-    marginLeft: 16,
-  },
-
-  // Estilos originais para LogoutScreen
-  logoutContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
-    paddingTop: 16,
-    paddingHorizontal: 20,
-    borderTopWidth: 1,
-    marginBottom: 8
-  },
-})
 
 export default AppNavigator
