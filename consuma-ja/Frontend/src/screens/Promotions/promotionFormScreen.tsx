@@ -16,7 +16,7 @@ import {
   Platform,
 } from "react-native"
 import { Picker } from "@react-native-picker/picker"
-import DateTimePickerModal from "react-native-modal-datetime-picker"
+import DatePicker from '../../components/Common/datePicker/DatePicker';
 import { useNavigation, useRoute } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import promocaoService from "../../services/promocaoService"
@@ -165,17 +165,10 @@ const PromotionFormScreen = () => {
                 ? { pessoa_id: promoDetalhes.JURIDICA_PESSOA_pessoa_id, pessoa_nome: "Carregando..." }
                 : null)
 
-            if (fornecedorAtual && !fornecedorAtual.pessoa_nome && promoDetalhes.JURIDICA_PESSOA_pessoa_id) {
-              try {
-                const result = await promocaoService.listarFornecedoresAtivos({
-                  pessoaId: promoDetalhes.JURIDICA_PESSOA_pessoa_id,
-                })
-                if (result && result.data && result.data.length > 0) {
-                  fornecedorAtual.pessoa_nome = result.data[0].pessoa_nome
-                }
-              } catch (e) {
-                console.error("Erro ao buscar nome do fornecedor na edição", e)
-              }
+            if (fornecedorAtual && (!fornecedorAtual.pessoa_nome || fornecedorAtual.pessoa_nome === "Carregando...") && promoDetalhes.JURIDICA_PESSOA_pessoa_id) {
+              // Como o serviço listarFornecedoresAtivos não suporta busca por ID específico,
+              // vamos definir um nome padrão por enquanto
+              fornecedorAtual.pessoa_nome = `Fornecedor ID: ${promoDetalhes.JURIDICA_PESSOA_pessoa_id}`
             }
 
             setFornecedorSelecionado(fornecedorAtual)
@@ -188,17 +181,23 @@ const PromotionFormScreen = () => {
                 : new Date(new Date().setDate(new Date().getDate() + 7)),
               JURIDICA_PESSOA_pessoa_id: promoDetalhes.JURIDICA_PESSOA_pessoa_id,
               endereco_id: promoDetalhes.endereco_id,
-              itens: (promoDetalhes.itens || []).map((item: any) => ({
-                id: generateTempId(),
-                produto_id: item.produto?.produto_id,
-                produto_nome: item.produto?.produto_nome || "Produto Desconhecido",
-                produto_imagem_url: item.produto?.produto_imagem_url,
-                LOTEPROD_lote_id: item.LOTEPROD_lote_id || item.lote?.lote_id,
-                itemPromocao_qtde: item.itemPromocao_qtde?.toString() || "",
-                itemPromocao_valor: item.itemPromocao_valor?.toString().replace(".", ",") || "",
-                lote_display_nome: `${item.lote?.lote_codigo} (Val: ${item.lote?.lote_validade ? new Date(item.lote.lote_validade).toLocaleDateString() : "N/A"})`,
-                lote_estoque_disponivel: item.lote?.lote_quantidade_atual,
-              })),
+              itens: (promoDetalhes.itens || []).map((item: any) => {
+                // Garantir que os valores sejam strings válidas
+                const qtd = item.itemPromocao_qtde
+                const valor = item.itemPromocao_valor
+
+                return {
+                  id: generateTempId(),
+                  produto_id: item.produto?.produto_id,
+                  produto_nome: item.produto?.produto_nome || "Produto Desconhecido",
+                  produto_imagem_url: item.produto?.produto_imagem_url,
+                  LOTEPROD_lote_id: item.LOTEPROD_lote_id || item.lote?.lote_id,
+                  itemPromocao_qtde: (typeof qtd === 'number' ? qtd.toString() : qtd?.toString() || "").replace(".", ","),
+                  itemPromocao_valor: (typeof valor === 'number' ? valor.toString() : valor?.toString() || "").replace(".", ","),
+                  lote_display_nome: `${item.lote?.lote_codigo || 'N/A'} (Val: ${item.lote?.lote_validade ? new Date(item.lote.lote_validade).toLocaleDateString() : "N/A"})`,
+                  lote_estoque_disponivel: item.lote?.lote_quantidade_atual,
+                }
+              }),
             })
 
             navigation.setOptions({ title: `Editar: ${promoDetalhes.promocao_descricao || "Promoção"}` })
@@ -769,35 +768,13 @@ const PromotionFormScreen = () => {
     return date.toLocaleDateString("pt-BR")
   }
 
-  // Mostrar seletor de data
-  const mostrarDatePicker = (mode: "inicio" | "fim") => {
-    setDatePickerMode(mode)
-    setShowDatePicker(true)
-  }
-
-  // Confirmar data selecionada
-  const confirmarData = (date: Date) => {
-    setShowDatePicker(false)
-
-    if (datePickerMode === "inicio") {
-      setFormData((prev) => ({
-        ...prev,
-        inicio: date,
-      }))
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        fim: date,
-      }))
-    }
-  }
-
   // Validar formulário
   const validarFormulario = (): boolean => {
     const erros: { [key: string]: string } = {}
 
-    if (!formData.promocao_descricao.trim()) {
-      erros.descricao = "Descrição é obrigatória"
+    // Descrição é opcional conforme DTO do backend
+    if (formData.promocao_descricao && formData.promocao_descricao.trim().length > 0 && formData.promocao_descricao.trim().length < 5) {
+      erros.descricao = "Descrição deve ter pelo menos 5 caracteres"
     }
 
     if (!formData.JURIDICA_PESSOA_pessoa_id) {
@@ -822,21 +799,45 @@ const PromotionFormScreen = () => {
 
   // Preparar dados para envio
   const prepararDadosParaEnvio = () => {
-    // Formatar itens para o formato esperado pela API
-    const itensFormatados = formData.itens.map((item) => ({
-      LOTEPROD_lote_id: item.LOTEPROD_lote_id,
-      itemPromocao_qtde: Number.parseFloat(item.itemPromocao_qtde.replace(",", ".")),
-      itemPromocao_valor: Number.parseFloat(item.itemPromocao_valor.replace(",", ".")),
-    }))
+    // Função para formatar data no formato esperado pelo backend: AAAA-MM-DD HH:MM:SS
+    const formatarDataParaBackend = (date: Date): string => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    };
+
+    // Validar e formatar itens para o formato esperado pela API
+    const itensFormatados = formData.itens
+      .map((item) => {
+        const qtd = Number.parseFloat(item.itemPromocao_qtde.replace(",", "."));
+        const valor = Number.parseFloat(item.itemPromocao_valor.replace(",", "."));
+
+        // Validar se os valores são números válidos
+        if (isNaN(qtd) || isNaN(valor) || qtd <= 0 || valor <= 0) {
+          console.error(`Item inválido: ${item.produto_nome}, qtd: ${qtd}, valor: ${valor}`);
+          return null;
+        }
+
+        return {
+          LOTEPROD_lote_id: item.LOTEPROD_lote_id,
+          itemPromocao_qtde: qtd,
+          itemPromocao_valor: valor,
+        };
+      })
+      .filter((item) => item !== null); // Remover itens inválidos
 
     return {
-      promocao_descricao: formData.promocao_descricao,
-      inicio: formData.inicio.toISOString(),
-      fim: formData.fim.toISOString(),
+      promocao_descricao: formData.promocao_descricao?.trim() || null,
+      inicio: formatarDataParaBackend(formData.inicio),
+      fim: formData.fim ? formatarDataParaBackend(formData.fim) : null,
       JURIDICA_PESSOA_pessoa_id: formData.JURIDICA_PESSOA_pessoa_id,
       endereco_id: formData.endereco_id,
       itens: itensFormatados,
-    }
+    };
   }
 
   // Enviar formulário
@@ -853,6 +854,26 @@ const PromotionFormScreen = () => {
     try {
       const dadosParaEnvio = prepararDadosParaEnvio()
 
+      // Validação adicional dos dados preparados
+      if (!dadosParaEnvio.JURIDICA_PESSOA_pessoa_id) {
+        throw new Error("Fornecedor não selecionado")
+      }
+      if (!dadosParaEnvio.endereco_id) {
+        throw new Error("Endereço não selecionado")
+      }
+      if (dadosParaEnvio.itens.length === 0) {
+        throw new Error("Nenhum item válido encontrado")
+      }
+
+      // Verificar se todos os itens têm dados válidos
+      for (const item of dadosParaEnvio.itens) {
+        if (!item.LOTEPROD_lote_id || typeof item.itemPromocao_qtde !== 'number' || typeof item.itemPromocao_valor !== 'number') {
+          throw new Error("Dados de item inválidos")
+        }
+      }
+
+      console.log("Dados para envio:", JSON.stringify(dadosParaEnvio, null, 2))
+
       let resultado
       if (isEditing && promocaoIdParaEditar) {
         resultado = await promocaoService.atualizarPromocao(promocaoIdParaEditar, dadosParaEnvio)
@@ -866,7 +887,8 @@ const PromotionFormScreen = () => {
       navigation.goBack()
     } catch (error) {
       console.error("Erro ao salvar promoção:", error)
-      Alert.alert("Erro", "Ocorreu um erro ao salvar a promoção.")
+      const errorMessage = (error as any)?.response?.data?.message || (error as Error)?.message || "Ocorreu um erro ao salvar a promoção."
+      Alert.alert("Erro", errorMessage)
     } finally {
       setLoadingSubmit(false)
     }
@@ -899,12 +921,12 @@ const PromotionFormScreen = () => {
 
       {/* Descrição */}
       <View style={promotionFormStyles.formGroup}>
-        <Text style={promotionFormStyles.label}>Descrição da Promoção:</Text>
+        <Text style={promotionFormStyles.label}>Descrição da Promoção (opcional):</Text>
         <TextInput
           style={[promotionFormStyles.input, errors.descricao ? promotionFormStyles.inputError : null]}
           value={formData.promocao_descricao}
           onChangeText={(text) => setFormData((prev) => ({ ...prev, promocao_descricao: text }))}
-          placeholder="Ex: Promoção de Verão"
+          placeholder="Ex: Promoção de Verão (opcional)"
         />
         {errors.descricao ? <Text style={promotionFormStyles.errorText}>{errors.descricao}</Text> : null}
       </View>
@@ -1026,21 +1048,19 @@ const PromotionFormScreen = () => {
       <View style={promotionFormStyles.formGroup}>
         <Text style={promotionFormStyles.label}>Período da Promoção:</Text>
         <View style={promotionFormStyles.dateContainer}>
-          <View style={promotionFormStyles.dateField}>
-            <Text style={promotionFormStyles.dateLabel}>Início:</Text>
-            <TouchableOpacity style={promotionFormStyles.dateInput} onPress={() => mostrarDatePicker("inicio")}>
-              <Text>{formatarData(formData.inicio)}</Text>
-              <Ionicons name="calendar-outline" size={20} color="#555" />
-            </TouchableOpacity>
-          </View>
+          <DatePicker
+            label="Início"
+            value={formData.inicio}
+            onChange={(date) => setFormData(prev => ({ ...prev, inicio: date || new Date() }))}
+            minimumDate={new Date()}
+          />
 
-          <View style={promotionFormStyles.dateField}>
-            <Text style={promotionFormStyles.dateLabel}>Fim:</Text>
-            <TouchableOpacity style={promotionFormStyles.dateInput} onPress={() => mostrarDatePicker("fim")}>
-              <Text>{formatarData(formData.fim)}</Text>
-              <Ionicons name="calendar-outline" size={20} color="#555" />
-            </TouchableOpacity>
-          </View>
+          <DatePicker
+            label="Fim"
+            value={formData.fim}
+            onChange={(date) => setFormData(prev => ({ ...prev, fim: date || new Date() }))}
+            minimumDate={formData.inicio}
+          />
         </View>
         {errors.datas ? <Text style={promotionFormStyles.errorText}>{errors.datas}</Text> : null}
       </View>
@@ -1169,6 +1189,14 @@ const PromotionFormScreen = () => {
         )}
         {errors.itens ? <Text style={promotionFormStyles.errorText}>{errors.itens}</Text> : null}
       </View>
+
+      {/* Botão Cancelar */}
+      <TouchableOpacity
+        style={[promotionFormStyles.cancelButton]}
+        onPress={() => navigation.goBack()}
+      >
+        <Text style={promotionFormStyles.cancelButtonText}>Cancelar</Text>
+      </TouchableOpacity>
 
       {/* Botão Salvar */}
       <TouchableOpacity
@@ -1374,25 +1402,7 @@ const PromotionFormScreen = () => {
         </View>
       </Modal>
 
-      {/* DateTimePicker */}
-      <DateTimePickerModal
-        isVisible={showDatePicker}
-        mode="date"
-        onConfirm={confirmarData}
-        onCancel={() => setShowDatePicker(false)}
-        date={datePickerMode === "inicio" ? formData.inicio : formData.fim}
-      />
 
-      {/* DateTimePicker for batch - only for mobile */}
-      {Platform.OS !== "web" && (
-        <DateTimePickerModal
-          isVisible={showBatchDatePicker}
-          mode="date"
-          onConfirm={confirmarDataLote}
-          onCancel={() => setShowBatchDatePicker(false)}
-          date={batchFormData.lote_validade || new Date()}
-        />
-      )}
     </ScrollView>
   )
 }

@@ -5,12 +5,28 @@ import { createDrawerNavigator } from "@react-navigation/drawer"
 import { Ionicons } from "@expo/vector-icons"
 import { View, Text, TouchableOpacity, ScrollView, Platform } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import { SafeAreaView, SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
+
+// Dynamic import for SafeArea components to avoid bundling issues on web
+let SafeAreaView: any
+let SafeAreaProvider: any
+let useSafeAreaInsets: any
+
+try {
+  const safeAreaModule = require('react-native-safe-area-context')
+  SafeAreaView = safeAreaModule.SafeAreaView
+  SafeAreaProvider = safeAreaModule.SafeAreaProvider
+  useSafeAreaInsets = safeAreaModule.useSafeAreaInsets
+} catch (error) {
+  // Fallback for web or when module is not available
+  SafeAreaView = View
+  SafeAreaProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>
+  useSafeAreaInsets = () => ({ top: 0, bottom: 0, left: 0, right: 0 })
+  console.warn('react-native-safe-area-context not available, using fallback components')
+}
 
 import LoginScreen from "../screens/Auth/LoginScreen"
 import CadastroScreen from "../screens/Auth/RegisterScreen"
 import LogoutScreen from "../screens/Auth/LogoutScreen"
-import InicioScreen from "../screens/Core/homeScreen"
 import ConfigScreen from "../screens/Core/configScreen"
 import RelatoriosScreen from "../screens/Reports/relatoriosScreen"
 import EstadoListScreen from "../screens/Location/EstadoListScreen"
@@ -33,10 +49,19 @@ import AvaliacaoFormScreen from '../screens/Review/AvaliacaoFormScreen';
 
 import PromotionListItem from '../screens/Promotions/promotionListScreen'
 import PromotionDetailScreen from '../screens/Promotions/promotionDetailScreen'
+import ShoppingCartScreen from '../screens/Core/homeScreen/shoppingCart/shoppingCart'
 import PromotionFormScreen from '../screens/Promotions/promotionFormScreen'
+import PromotionComponent from '../screens/Promotions/promotionComponent'
+import PromotionScreenWrapper from '../screens/Promotions/promotionScreenWrapper'
 import LotFormScreen from "../screens/Lots/lotFormScreen"
 import LotListScreen from "../screens/Lots/lotListScreen"
 import { navigatorStyles } from "../common/styles/appNavigator/appNavigator"
+import { SearchProvider } from '../contexts/SearchHomeContext/searchHomeContext'
+import { PromotionProvider } from '../contexts/PromotionContext/promotionContext';
+import CustomHeader from "../components/Common/customHeader/customHeader"
+import CustomHeaderPromotion from "../components/Common/customHeader/customHeaderPromotion"
+import InicioScreen from "../screens/Core/homeScreen/homeScreenLegacy"
+import { CartProvider } from "../contexts/CartContext/cartContext"
 
 export type RootStackParamList = {
   Login: undefined;
@@ -336,7 +361,9 @@ const MainAppDrawer = () => {
       options={{
         title: "Início",
         drawerIcon: ({ color, size }) => <Ionicons name="home-outline" color={color} size={size} />,
+        header: () => <CustomHeader showFilter={true} />,
       }}
+      
     />,
 
     // Tela Gerenciar Produtos (Fornecedor)
@@ -352,28 +379,11 @@ const MainAppDrawer = () => {
     <Drawer.Screen 
       key="PromocaoList" 
       name="PromocaoList" 
-      component={PromotionListItem} 
+      component={PromotionScreenWrapper} 
       options={{ 
         title:'Gerenciar Promoções', 
         drawerIcon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
-       }} 
-    />,
-    <Drawer.Screen 
-      key="PromocaoForm" 
-      name="PromocaoForm" 
-      component={PromotionFormScreen} 
-      options={{ 
-        title:'Gerenciar Promoções', 
-        drawerIcon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
-       }} 
-    />,
-    <Drawer.Screen 
-      key="PromocaoDetail" 
-      name="PromocaoDetail" 
-      component={PromotionDetailScreen} 
-      options={{ 
-        title:'Detalhes das Promoções', 
-        drawerIcon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
+        headerShown: false,
        }} 
     />,
     <Drawer.Screen 
@@ -494,6 +504,7 @@ const MainAppDrawer = () => {
       initialRouteName="Inicio"
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
+        header: () => <CustomHeader />,
         drawerActiveTintColor: "#4CAF50",
         drawerInactiveTintColor: "white",
         drawerLabelStyle: { color: "white", fontSize: 16, marginLeft: 5 },
@@ -509,35 +520,39 @@ const MainAppDrawer = () => {
 const AppNavigator = () => {
   return (
     <SafeAreaProvider>
-      <Stack.Navigator initialRouteName="Login">
-        {/* Telas fora do Drawer */}
-        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Cadastro" component={CadastroScreen} options={{ title: "Criar Conta" }} />
+      <SearchProvider>
+        <CartProvider>
+          <Stack.Navigator initialRouteName="Login">
+            {/* Telas fora do Drawer */}
+            <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Cadastro" component={CadastroScreen} options={{ title: "Criar Conta" }} />
 
-        {/* Tela que contém o Drawer */}
-        <Stack.Screen name="Dashboard" component={MainAppDrawer} options={{ headerShown: false }} />
+            {/* Tela que contém o Drawer */}
+            <Stack.Screen name="Dashboard" component={MainAppDrawer} options={{ headerShown: false }} />
 
-        {/* Telas de Formulário/Detalhe chamadas de dentro do Drawer */}
-        <Stack.Screen name="EstadoForm" component={EstadoFormScreen} options={{ title: "Formulário de Estado" }} />
-        <Stack.Screen name="CidadeForm" component={CityFormScreen} options={{ title: "Formulário de Cidade" }} />
-        <Stack.Screen
-          name="CategoriaForm"
-          component={CategoriaFormScreen}
-          options={{ title: "Formulário de Categoria" }}
-        />
-        <Stack.Screen name="MarcaForm" component={MarcaFormScreen} options={{ title: "Formulário de Marca" }} />
-        <Stack.Screen name="TipoForm" component={TipoFormScreen} options={{ title: "Formulário de Tipo" }} />
-        <Stack.Screen name="ProductForm" component={ProductFormScreen} options={{ title: "Formulário de Produto" }} />
-        <Stack.Screen name="AvaliacaoForm" component={AvaliacaoFormScreen} options={{ title: 'Avaliar Produto' }}
-      />
-        <Stack.Screen
-          name="AprovacaoDetail"
-          component={AprovacaoDetailScreen}
-          options={{ title: "Aprovar/Rejeitar Produto" }}
-        />
-        <Stack.Screen name="PessoaForm" component={UserFormScreen} options={{ title: "Editar Usuário" }} />
-        <Stack.Screen name="AvaliacaoQuestionario" component={AvaliacaoFormScreen} options={{ title: 'Avaliar Compra' }} />
-      </Stack.Navigator>
+            {/* Telas de Formulário/Detalhe chamadas de dentro do Drawer */}
+            <Stack.Screen name="EstadoForm" component={EstadoFormScreen} options={{ title: "Formulário de Estado" }} />
+            <Stack.Screen name="CidadeForm" component={CityFormScreen} options={{ title: "Formulário de Cidade" }} />
+            <Stack.Screen
+              name="CategoriaForm"
+              component={CategoriaFormScreen}
+              options={{ title: "Formulário de Categoria" }}
+            />
+            <Stack.Screen name="MarcaForm" component={MarcaFormScreen} options={{ title: "Formulário de Marca" }} />
+            <Stack.Screen name="TipoForm" component={TipoFormScreen} options={{ title: "Formulário de Tipo" }} />
+            <Stack.Screen name="ProductForm" component={ProductFormScreen} options={{ title: "Formulário de Produto" }} />
+            <Stack.Screen
+              name="AprovacaoDetail"
+              component={AprovacaoDetailScreen}
+              options={{ title: "Aprovar/Rejeitar Produto" }}
+            />
+            <Stack.Screen name="PessoaForm" component={UserFormScreen} options={{ title: "Editar Usuário" }} />
+            <Stack.Screen name="PromocaoForm" component={PromotionFormScreen} options={{ title: "Formulário de Promoção" }} />
+            <Stack.Screen name="PromocaoDetail" component={PromotionDetailScreen} options={{ title: "Detalhes da Promoção" }} />
+            <Stack.Screen name="ShoppingCart" component={ShoppingCartScreen} options={{ title: "Carrinho de Compras" }} />
+          </Stack.Navigator>
+        </CartProvider>
+      </SearchProvider>
     </SafeAreaProvider>
   )
 }

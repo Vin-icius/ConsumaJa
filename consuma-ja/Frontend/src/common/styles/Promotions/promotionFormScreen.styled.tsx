@@ -265,6 +265,18 @@ export const promotionFormStyles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "500",
   },
+  cancelButton: {
+    backgroundColor: "#6c757d",
+    padding: 16,
+    borderRadius: 4,
+    alignItems: "center",
+    marginTop: 16,
+  },
+  cancelButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "500",
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",

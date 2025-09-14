@@ -120,6 +120,12 @@ const buscarLotesPorProduto = (produtoId, fornecedorId) => {
   )
 }
 
+// Função para finalizar venda/promocao
+const finalizarVenda = (saleData) => {
+  console.log('[PromocaoService] Finalizando venda com dados:', saleData)
+  return handleRequest(productApiClient.post(`/promocoes/sale`, saleData))
+}
+
 // Função para buscar todos os produtos (para o formulário de lotes)
 const listarTodosProdutos = (params = {}) => {
   return handleRequest(productApiClient.get(`/produtos`, { params }))
@@ -140,6 +146,9 @@ const promocaoService = {
   atualizarLote,
   excluirLote,
   buscarLotesPorProduto,
+  
+  // Vendas
+  finalizarVenda,
   
   // Auxiliares
   listarFornecedoresAtivos,

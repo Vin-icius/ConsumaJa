@@ -227,6 +227,9 @@ export class PromocaoMySQLRepository implements PromocaoRepository {
             } else if (filtros.searchType === 'fornecedor') {
                 whereConditions.push("pj.pessoa_nome LIKE ?");
                 queryParams.push(searchTermLike);
+            } else if (filtros.searchType === 'promocao') {
+                whereConditions.push("pr.promocao_descricao LIKE ?");
+                queryParams.push(searchTermLike);
             } else {
                 whereConditions.push("(p.produto_nome LIKE ? OR pj.pessoa_nome LIKE ?)");
                 queryParams.push(searchTermLike, searchTermLike);
