@@ -45,6 +45,7 @@ import AprovacaoListScreen from "../screens/Product/AprovacaoListScreen"
 import AprovacaoDetailScreen from "../screens/Product/AprovacaoDetailScreen"
 import UserListScreen from "../screens/User/userListScreen"
 import UserFormScreen from "../screens/User/userFormScreen"
+import AvaliacaoFormScreen from '../screens/Review/AvaliacaoFormScreen';
 
 import PromotionListItem from '../screens/Promotions/promotionListScreen'
 import PromotionDetailScreen from '../screens/Promotions/promotionDetailScreen'
@@ -61,6 +62,22 @@ import CustomHeader from "../components/Common/customHeader/customHeader"
 import CustomHeaderPromotion from "../components/Common/customHeader/customHeaderPromotion"
 import InicioScreen from "../screens/Core/homeScreen/homeScreenLegacy"
 import { CartProvider } from "../contexts/CartContext/cartContext"
+
+export type RootStackParamList = {
+  Login: undefined;
+  Cadastro: undefined;
+  Dashboard: undefined;
+  EstadoForm: { estadoId?: number };
+  CidadeForm: { cidadeId?: number };
+  CategoriaForm: { categoriaId?: number };
+  MarcaForm: { marcaId?: number };
+  TipoForm: { tipoId?: number };
+  ProductForm: { produtoId?: number };
+  AprovacaoDetail: { produto: any };
+  PessoaForm: { pessoaId?: number };
+  // --- Adicione a nova rota aqui ---
+  AvaliacaoQuestionario: { pedidoId: number };
+};
 
 // --- Navegadores ---
 const Stack = createNativeStackNavigator()
