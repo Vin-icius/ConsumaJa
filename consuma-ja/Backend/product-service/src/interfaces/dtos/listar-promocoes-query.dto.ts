@@ -5,8 +5,8 @@ export class ListarPromocoesQueryDto {
     @IsOptional() @IsString()
     searchTerm?: string;
 
-    @IsOptional() @IsIn(['produto', 'fornecedor'], { message: "Tipo de busca deve ser 'produto' ou 'fornecedor'."})
-    searchType?: 'produto' | 'fornecedor';
+    @IsOptional() @IsIn(['promocao', 'produto', 'fornecedor'], { message: "Tipo de busca deve ser 'promocao', 'produto' ou 'fornecedor'."})
+    searchType?: 'promocao' | 'produto' | 'fornecedor';
 
     @IsOptional()
     @IsInt() @Min(1) @Type(() => Number)

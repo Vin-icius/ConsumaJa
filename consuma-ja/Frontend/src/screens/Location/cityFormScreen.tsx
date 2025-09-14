@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Keyboard, ScrollView } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { RouteProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import locationService from '../../services/locationService';
 import { cityStyles } from '../../common/styles/Location/cityFormScreen.styled';
 
@@ -12,7 +14,14 @@ interface EstadoInfo {
     estado_sigla: string;
 }
 
-const CityFormScreen = ({ route, navigation }) => {
+type RootStackParamList = {
+    CityForm: { cidadeParaEditar?: any };
+};
+
+type CityFormScreenRouteProp = RouteProp<RootStackParamList, 'CityForm'>;
+type CityFormScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CityForm'>;
+
+const CityFormScreen = ({ route, navigation }: any) => {
   const cidadeParaEditar = route.params?.cidadeParaEditar;
   const isEditing = !!cidadeParaEditar;
 

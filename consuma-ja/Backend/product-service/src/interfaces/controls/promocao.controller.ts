@@ -32,8 +32,8 @@ export class PromocaoController {
     const dto = plainToClass(ListarPromocoesQueryDto, req.query); // Valida query params
     const errors = await validate(dto);
     if (errors.length > 0) { return next(errors); }
+    console.log('[PromocaoController] DTO validado com sucesso:', dto); // Log se validado
     try {
-      console.error('[PromocaoController] Erros de validação DTO:', errors);
       const promocoes = await this.promocaoService.listarPromocoesAtivas(dto);
       res.status(200).json(promocoes);
     } catch (error) {

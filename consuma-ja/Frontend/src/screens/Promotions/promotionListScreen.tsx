@@ -6,6 +6,8 @@ import promocaoService from '../../services/promocaoService';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { promotionListStyles } from '../../common/styles/Promotions/promotionListScreen.styled';
+import PromotionTable from '../../components/Promotions/PromotionTable';
+import { usePromotion } from '../../contexts/PromotionContext/promotionContext';
 
 // Tipo para o item da lista de promoções (admin view)
 interface PromocaoAdminItem {
@@ -24,31 +26,9 @@ interface PromocaoAdminItem {
 // };
 // type PromocaoListNavigationProp = NativeStackNavigationProp<PromotionStackParamList, 'PromocaoList'>;
 
-const PromotionListItem = ({ item, onEdit, onDelete }: { item: PromocaoAdminItem, onEdit: (item: PromocaoAdminItem) => void, onDelete: (item: PromocaoAdminItem) => void }) => (
-  <View style={[promotionListStyles.listItem, !item.ativo && promotionListStyles.listItemInactive]}>
-    <View style={promotionListStyles.listItemText}>
-        <Text style={promotionListStyles.itemTextTitle}>{item.promocao_id} - {item.promocao_descricao || 'Promoção sem descrição'}</Text>
-        <Text style={promotionListStyles.itemSubText}>Fornecedor: {item.fornecedor?.pessoa_nome || 'N/A'}</Text>
-        <Text style={promotionListStyles.itemSubText}>Início: {new Date(item.inicio).toLocaleDateString()}</Text>
-        {item.fim && <Text style={promotionListStyles.itemSubText}>Fim: {new Date(item.fim).toLocaleDateString()}</Text>}
-        <Text style={item.ativo ? promotionListStyles.statusActive : promotionListStyles.statusInactive}>
-            Status: {item.ativo ? 'Ativa' : 'Inativa'}
-        </Text>
-    </View>
-    <View style={promotionListStyles.listItemButtons}>
-        <TouchableOpacity onPress={() => onEdit(item)} style={[promotionListStyles.button, promotionListStyles.editButton]}>
-             <Ionicons name="pencil-outline" size={18} color="white" />
-        </TouchableOpacity>
-        {/* Botão para desativar ou reativar */}
-        <TouchableOpacity onPress={() => onDelete(item)} style={[promotionListStyles.button, item.ativo ? promotionListStyles.deleteButton : promotionListStyles.activateButton]}>
-             <Ionicons name={item.ativo ? "trash-outline" : "checkmark-circle-outline"} size={18} color="white" />
-        </TouchableOpacity>
-    </View>
-  </View>
-);
-
 const PromocaoListScreen = () => {
   const navigation = useNavigation<any>(); // Use o tipo correto se definido
+  const { searchQuery, setSearchQuery, selectedFilters, setSelectedFilters } = usePromotion();
   const [promocoes, setPromocoes] = useState<PromocaoAdminItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,9 +38,18 @@ const PromocaoListScreen = () => {
     if (!isRefreshing) setLoading(true);
     setError(null);
     try {
+      const params: any = {};
+      if (searchQuery.trim()) {
+        params.searchTerm = searchQuery.trim();
+      }
+      if (selectedFilters.includes('ativo')) {
+        params.ativo = true;
+      } else if (selectedFilters.includes('inativo')) {
+        params.ativo = false;
+      }
       // No backend, o service/repo de promoção já deve tratar o filtro 'TODAS'
       // e buscar o nome do fornecedor via JOIN
-      const data = await promocaoService.listarPromocoes(); // Exemplo para buscar todas
+      const data = await promocaoService.listarPromocoes(params); // Exemplo para buscar todas
       setPromocoes(data || []);
     } catch (err: any) {
       console.error("Erro buscar promoções admin (Tela):", err.response?.data || err.message || err);
@@ -70,7 +59,7 @@ const PromocaoListScreen = () => {
       if (!isRefreshing) setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [searchQuery, selectedFilters]);
 
   useFocusEffect(useCallback(() => { fetchPromocoesAdmin(); }, [fetchPromocoesAdmin]));
 
@@ -118,63 +107,42 @@ const PromocaoListScreen = () => {
     );
   };
 
-  // <<< FUNÇÃO RENDERCONTENT COMPLETA E CORRETA >>>
+  // Função para renderizar o conteúdo
   const renderContent = () => {
-    if (loading && !refreshing && promocoes.length === 0) { // Mostrar loading só se lista vazia no load inicial
-        return <ActivityIndicator size="large" color="#007bff" style={promotionListStyles.centered} />;
+    if (loading && !refreshing && promocoes.length === 0) {
+      return <ActivityIndicator size="large" color="#007bff" style={promotionListStyles.centered} />;
     }
     if (error) {
-        return (
-            <View style={promotionListStyles.centered}>
-                <Text style={promotionListStyles.errorText}>{error}</Text>
-                <TouchableOpacity onPress={() => fetchPromocoesAdmin()} style={promotionListStyles.retryButton}>
-                    <Text style={promotionListStyles.retryButtonText}>Tentar Novamente</Text>
-                </TouchableOpacity>
-            </View>
-        );
+      return (
+        <View style={promotionListStyles.centered}>
+          <Text style={promotionListStyles.errorText}>{error}</Text>
+          <TouchableOpacity onPress={() => fetchPromocoesAdmin()} style={promotionListStyles.retryButton}>
+            <Text style={promotionListStyles.retryButtonText}>Tentar Novamente</Text>
+          </TouchableOpacity>
+        </View>
+      );
     }
-    if (promocoes.length === 0 && !loading) { // Se não está carregando e não tem promoções
-        return (
-             <View style={promotionListStyles.centered}>
-                <Text style={promotionListStyles.emptyText}>Nenhuma promoção encontrada.</Text>
-                <Text style={promotionListStyles.emptySubText}>(Pull-to-refresh para atualizar)</Text>
-            </View>
-        );
-    }
-    // Se chegou aqui, tem promoções para listar
     return (
-      <FlatList
-        data={promocoes}
-        keyExtractor={(item) => item.promocao_id.toString()}
-        renderItem={({ item }) => (
-          <PromotionListItem item={item} onEdit={handleEdit} onDelete={handleDeleteToggle} />
-        )}
-        contentContainerStyle={promotionListStyles.list}
-        refreshControl={
-            <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                colors={["#007bff"]} // Cor do indicador de refresh
-                tintColor={"#007bff"} // Cor no iOS
-            />
-        }
+      <PromotionTable
+        promocoes={promocoes}
+        onEdit={handleEdit}
+        onDelete={handleDeleteToggle}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
       />
     );
   };
-  // <<< FIM DA FUNÇÃO RENDERCONTENT >>>
 
   return (
     <View style={promotionListStyles.container}>
-       <TouchableOpacity
-         style={[promotionListStyles.button, promotionListStyles.addButton]}
-         onPress={() => navigation.navigate('PromocaoForm')} // Modo criação
-       >
-         <Ionicons name="add-circle-outline" size={22} color="white" style={{marginRight: 8}}/>
-         <Text style={promotionListStyles.buttonText}>Nova Promoção</Text>
-       </TouchableOpacity>
+      <TouchableOpacity
+        style={[promotionListStyles.button, promotionListStyles.addButton]}
+        onPress={() => navigation.navigate('PromocaoForm')} // Modo criação
+      >
+        <Ionicons name="add-circle-outline" size={22} color="white" style={{marginRight: 8}}/>
+        <Text style={promotionListStyles.buttonText}>Nova Promoção</Text>
+      </TouchableOpacity>
       {renderContent()} {/* Chama a função aqui */}
-       {/* Overlay de Loading para ações como delete/update (opcional, já incluído no loading geral) */}
-       {/* {loading && !refreshing && promocoes.length > 0 && <View style={promotionListStyles.loadingOverlay}><ActivityIndicator size="large" color="#FFF" /></View>} */}
     </View>
   );
 };

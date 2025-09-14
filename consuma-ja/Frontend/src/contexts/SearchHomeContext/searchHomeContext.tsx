@@ -5,7 +5,7 @@ interface CategoriaItem {
   categoria_nome: string;
 }
 
-interface PromotionContextType {
+interface SearchContextType {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   debouncedQuery: string;
@@ -19,24 +19,23 @@ interface PromotionContextType {
   setCategoriasFiltro: (categorias: CategoriaItem[]) => void;
   selectedFilters: any[];
   setSelectedFilters: React.Dispatch<React.SetStateAction<any[]>>;
-  isSearching: boolean;
 }
 
-const PromotionContext = createContext<PromotionContextType | undefined>(undefined);
+const SearchContext = createContext<SearchContextType | undefined>(undefined);
 
-export const usePromotion = () => {
-  const context = useContext(PromotionContext);
+export const useSearch = () => {
+  const context = useContext(SearchContext);
   if (!context) {
-    throw new Error('usePromotion must be used within a PromotionProvider');
+    throw new Error('useSearch must be used within a SearchProvider');
   }
   return context;
 };
 
-interface PromotionProviderProps {
+interface SearchProviderProps {
   children: ReactNode;
 }
 
-export const PromotionProvider: React.FC<PromotionProviderProps> = ({ children }) => {
+export const SearchProvider: React.FC<SearchProviderProps> = ({ children }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [searchType, setSearchType] = useState<'produto' | 'fornecedor' | 'promocao'>('promocao');
@@ -44,39 +43,15 @@ export const PromotionProvider: React.FC<PromotionProviderProps> = ({ children }
   const [selectedCategoriaId, setSelectedCategoriaId] = useState<number | undefined>(undefined);
   const [categoriasFiltro, setCategoriasFiltro] = useState<CategoriaItem[]>([]);
   const [selectedFilters, setSelectedFilters] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
 
-  // Debounce para searchQuery
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(searchQuery), 500);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Chama performSearch quando debouncedQuery muda
-  useEffect(() => {
-    if (performSearch && typeof performSearch === 'function') {
-      performSearch();
-    }
-  }, [debouncedQuery, performSearch]);
-
   return (
-    <PromotionContext.Provider value={{
-      searchQuery,
-      setSearchQuery,
-      debouncedQuery,
-      searchType,
-      setSearchType,
-      performSearch,
-      setPerformSearch,
-      selectedCategoriaId,
-      setSelectedCategoriaId,
-      categoriasFiltro,
-      setCategoriasFiltro,
-      selectedFilters,
-      setSelectedFilters,
-      isSearching,
-    }}>
+    <SearchContext.Provider value={{ searchQuery, setSearchQuery, debouncedQuery, searchType, setSearchType, performSearch, setPerformSearch, selectedCategoriaId, setSelectedCategoriaId, categoriasFiltro, setCategoriasFiltro, selectedFilters, setSelectedFilters }}>
       {children}
-    </PromotionContext.Provider>
+    </SearchContext.Provider>
   );
 };
