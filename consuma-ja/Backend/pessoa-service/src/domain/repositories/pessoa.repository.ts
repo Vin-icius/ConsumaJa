@@ -40,6 +40,14 @@ export interface PessoaRepository {
 
     criar(data: CreatePessoaData): Promise<Pessoa>;
     atualizar(id: number, data: UpdatePessoaData): Promise<Pessoa | null>;
+    atualizarEndereco(pessoaId: number, enderecoData: {
+        endereco_cep?: string;
+        endereco_rua?: string;
+        endereco_numero?: string;
+        endereco_complemento?: string | null;
+        endereco_bairro?: string;
+        cidade_id?: number;
+    }): Promise<boolean>;
     excluir(id: number): Promise<boolean>; // Exclusão Lógica
     atualizarCaminhosFotos(pessoaId: number, paths: { foto_selfie_path?: string; foto_documento_path?: string }): Promise<boolean>;
     listar(filtros: ListarPessoasQueryDto): Promise<PaginatedRepositoryResponse<Pessoa>>;

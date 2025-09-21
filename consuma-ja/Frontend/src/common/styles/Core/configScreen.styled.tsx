@@ -37,7 +37,6 @@ export const configStyles = StyleSheet.create({
   header: {
     backgroundColor: "#4CAF50",
     padding: 16,
-    paddingTop: Platform.OS === "ios" ? 50 : 16,
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -168,6 +167,10 @@ export const configStyles = StyleSheet.create({
   saveButton: {
     backgroundColor: "#4CAF50",
   },
+  secondaryButton: {
+    backgroundColor: "#757575",
+    marginTop: 10,
+  },
   retryButton: {
     backgroundColor: "#757575",
     marginTop: 15,
@@ -256,6 +259,11 @@ export const configStyles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
   },
+  paymentCardExpiry: {
+    fontSize: 12,
+    color: "#999",
+    marginTop: 2,
+  },
   paymentCardAction: {
     paddingHorizontal: 15,
     paddingVertical: 8,
@@ -282,5 +290,35 @@ export const configStyles = StyleSheet.create({
     color: "#4CAF50",
     marginLeft: 5,
     fontSize: 16,
+  },
+
+  // Histórico de pagamentos
+  paymentHistoryItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 15,
+    borderWidth: 1,
+    borderColor: "#eee",
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  paymentHistoryInfo: {
+    flex: 1,
+  },
+  paymentHistoryTitle: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#333",
+  },
+  paymentHistoryDate: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 2,
+  },
+  paymentHistoryAmount: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#4CAF50",
   },
 })

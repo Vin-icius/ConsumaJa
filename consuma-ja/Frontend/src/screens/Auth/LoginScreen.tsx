@@ -14,12 +14,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import { Ionicons } from "@expo/vector-icons"
 import type { StackNavigationProp } from "@react-navigation/stack"
 import authService from "../../services/authService"
+import { useAuth } from "../../contexts/AuthContext/authContext"
 import { styles } from "../../common/styles/Auth/loginScreen.styled"
 
 // Definindo tipos para navegação
 type RootStackParamList = {
   Login: undefined
   Cadastro: undefined
+  TwoFactorVerification: undefined
   Dashboard: undefined
 }
 
@@ -27,15 +29,6 @@ type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, "Login"
 
 interface LoginScreenProps {
   navigation: LoginScreenNavigationProp
-}
-
-// Definindo tipo para resposta de login
-interface LoginResponse {
-  token: string
-  user: {
-    tipo: string
-    [key: string]: any
-  }
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
@@ -48,7 +41,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [forgotPasswordVisible, setForgotPasswordVisible] = useState(false)
   const [resetEmail, setResetEmail] = useState("")
 
-  // Animações
+  // Context
+  const { login, checkTwoFactorStatus, twoFactorRequired, isLoading } = useAuth()
   const fadeAnim = useRef(new Animated.Value(0)).current
   const slideAnim = useRef(new Animated.Value(50)).current
 
@@ -156,19 +150,27 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     setLoading(true)
 
     try {
-      const response = (await authService.login({
-        login: loginToSend,
-        senha: senha,
-      })) as LoginResponse
+      // PRIMEIRO: Verificar se o usuário tem 2FA habilitado usando apenas o identificador
+      console.log('[LoginScreen] Verificando se usuário tem 2FA habilitado para:', loginToSend)
+      const has2FA = await checkTwoFactorStatus(loginToSend)
+      console.log('[LoginScreen] Resultado da verificação 2FA:', has2FA, 'tipo:', typeof has2FA)
 
-      const { token, user } = response
-      if (token && user?.tipo) {
-        await AsyncStorage.setItem("userToken", token)
-        await AsyncStorage.setItem("userType", user.tipo)
-
-        navigation.replace("Dashboard")
+      if (has2FA) {
+        // Usuário TEM 2FA - fazer login completo e mostrar tela de validação
+        console.log('[LoginScreen] Usuário tem 2FA, fazendo login e redirecionando para validação')
+        await login({
+          login: loginToSend,
+          senha: senha,
+        })
+        // O useEffect vai detectar twoFactorRequired e navegar automaticamente para TwoFactorVerification
       } else {
-        setErrorMessage("Erro inesperado na resposta do servidor.")
+        // Usuário NÃO tem 2FA - fazer login normal direto
+        console.log('[LoginScreen] Usuário não tem 2FA, fazendo login normal')
+        await login({
+          login: loginToSend,
+          senha: senha,
+        }, true) // skip2FACheck = true
+        // O AuthNavigator vai detectar a autenticação e navegar para o Dashboard
       }
     } catch (error: any) {
       const message =

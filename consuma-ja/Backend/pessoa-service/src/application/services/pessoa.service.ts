@@ -149,42 +149,90 @@ export class PessoaService {
      */
     async atualizarPessoa(id: number, dto: UpdatePessoaDto): Promise<Pessoa> {
          console.log(`[Service] Iniciando atualização para pessoa ID: ${id}`);
-         // Garante que a pessoa existe e está ativa ANTES de tentar atualizar
          await this.buscarPessoaPorId(id); // Já lança 404 se não existir ou inativo
 
-         // Prepara dados do DTO para UpdatePessoaData do repositório
          const dataToUpdate: UpdatePessoaData = {};
          if (dto.pessoa_nome !== undefined) dataToUpdate.pessoa_nome = dto.pessoa_nome;
          if (dto.pessoa_email !== undefined) dataToUpdate.pessoa_email = dto.pessoa_email;
          if (dto.pessoa_telefone !== undefined) dataToUpdate.pessoa_telefone = dto.pessoa_telefone ?? null;
          if (dto.pessoa_status !== undefined) dataToUpdate.pessoa_status = dto.pessoa_status;
 
-         // Hash da senha SE foi fornecida
          if (dto.pessoa_senha) {
               console.log(`[Service] Gerando novo hash para senha do usuário ${id}`);
               dataToUpdate.pessoa_senha = await PasswordUtil.hashPassword(dto.pessoa_senha);
          }
 
-         // Checar unicidade de email se alterado...
           if (dataToUpdate.pessoa_email){
               const emailExists = await this.pessoaRepository.findByEmail(dataToUpdate.pessoa_email);
               if(emailExists && emailExists.pessoa_id !== id) { throw new AppError(`Email "${dataToUpdate.pessoa_email}" pertence a outro usuário.`, 409); }
           }
 
-         // Se não houver dados válidos para atualizar no DTO (após remover login/tipo implicitamente)
-         if (Object.keys(dataToUpdate).length === 0) {
+         // Extrair dados de endereço do DTO
+         // O frontend pode enviar os dados de duas formas:
+         // 1. Campos diretos: endereco_cep, endereco_rua, etc.
+         // 2. Objeto endereco: { endereco: { endereco_cep, endereco_rua, etc. } }
+         const dtoAny = dto as any; // Type assertion para acessar propriedade endereco
+         let enderecoData: any = {};
+
+         if (dtoAny.endereco && typeof dtoAny.endereco === 'object' && !Array.isArray(dtoAny.endereco)) {
+             // Dados vêm dentro do objeto endereco
+             console.log(`[Service] Extraindo dados do objeto endereco`);
+             enderecoData = {
+                 endereco_cep: dtoAny.endereco.endereco_cep,
+                 endereco_rua: dtoAny.endereco.endereco_rua,
+                 endereco_numero: dtoAny.endereco.endereco_numero,
+                 endereco_complemento: dtoAny.endereco.endereco_complemento,
+                 endereco_bairro: dtoAny.endereco.endereco_bairro,
+                 cidade_id: dtoAny.endereco.cidade_id,
+             };
+         } else {
+             // Dados vêm diretamente no DTO
+             console.log(`[Service] Extraindo dados diretamente do DTO`);
+             enderecoData = {
+                 endereco_cep: dto.endereco_cep,
+                 endereco_rua: dto.endereco_rua,
+                 endereco_numero: dto.endereco_numero,
+                 endereco_complemento: dto.endereco_complemento,
+                 endereco_bairro: dto.endereco_bairro,
+                 cidade_id: dto.cidade_id,
+             };
+         }
+
+         console.log(`[Service] Dados de endereço extraídos:`, enderecoData);
+
+         const hasEnderecoData = Object.values(enderecoData).some(value => value !== undefined && value !== null && value !== '');
+         console.log(`[Service] Tem dados de endereço (filtrados):`, hasEnderecoData);
+
+         if (Object.keys(dataToUpdate).length === 0 && !hasEnderecoData) {
              console.log(`[Service] Nenhum dado fornecido para atualizar pessoa ${id}.`);
-             // Retorna os dados atuais sem fazer update
              return this.buscarPessoaPorId(id);
          }
 
          try {
-            // Chama o repositório para atualizar
-            const pessoaAtualizada = await this.pessoaRepository.atualizar(id, dataToUpdate);
-            if (!pessoaAtualizada) {
-                 // Repositório retorna null se não encontrou a linha ATIVA para atualizar
-                 throw new AppError(`Pessoa com ID ${id} não encontrada ou inativa durante a atualização.`, 404);
+            // Chama o repositório para atualizar dados da pessoa
+            let pessoaAtualizada: Pessoa | null = null;
+            if (Object.keys(dataToUpdate).length > 0) {
+                pessoaAtualizada = await this.pessoaRepository.atualizar(id, dataToUpdate);
+                if (!pessoaAtualizada) {
+                     // Repositório retorna null se não encontrou a linha ATIVA para atualizar
+                     throw new AppError(`Pessoa com ID ${id} não encontrada ou inativa durante a atualização.`, 404);
+                }
             }
+
+            // Atualizar endereço se houver dados
+            if (hasEnderecoData) {
+                console.log(`[Service] Atualizando endereço para pessoa ${id}`);
+                const enderecoAtualizado = await this.pessoaRepository.atualizarEndereco(id, enderecoData);
+                if (!enderecoAtualizado) {
+                    console.warn(`[Service] Nenhum campo de endereço foi atualizado para pessoa ${id}`);
+                }
+            }
+
+            // Se não atualizou dados da pessoa, buscar os dados atuais
+            if (!pessoaAtualizada) {
+                pessoaAtualizada = await this.buscarPessoaPorId(id);
+            }
+
             delete pessoaAtualizada.pessoa_senha; // Remove hash
             console.log(`[Service] Pessoa ${id} atualizada com sucesso.`);
             return pessoaAtualizada;
@@ -251,4 +299,4 @@ export class PessoaService {
      }
    }
 
-} // Fim da classe PessoaService
+}

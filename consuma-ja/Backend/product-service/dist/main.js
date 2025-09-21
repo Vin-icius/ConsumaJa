@@ -9,6 +9,7 @@ require("dotenv/config");
 const cors_1 = __importDefault(require("cors"));
 // Importar Rotas de cada módulo do product-service
 const avaliacao_routes_1 = __importDefault(require("./interfaces/routes/avaliacao.routes"));
+const pergunta_routes_1 = __importDefault(require("./interfaces/routes/pergunta.routes"));
 const categoria_routes_1 = __importDefault(require("./interfaces/routes/categoria.routes"));
 const marca_routes_1 = __importDefault(require("./interfaces/routes/marca.routes"));
 const tipo_routes_1 = __importDefault(require("./interfaces/routes/tipo.routes"));
@@ -38,7 +39,8 @@ if (process.env.NODE_ENV !== 'test') {
 }
 // --- Rotas da API para Product Service ---
 const apiRouter = express_1.default.Router();
-app.use('/api/product', avaliacao_routes_1.default);
+apiRouter.use('/perguntas', pergunta_routes_1.default);
+apiRouter.use('/avaliacoes', avaliacao_routes_1.default);
 apiRouter.use('/categorias', categoria_routes_1.default);
 apiRouter.use('/marcas', marca_routes_1.default);
 apiRouter.use('/tipos', tipo_routes_1.default);
