@@ -1,7 +1,7 @@
 {
-  "name": "auth-service",
+  "name": "pessoa-service",
   "version": "1.0.0",
-  "description": "Microserviço de autenticação para o sistema ConsumaJá",
+  "description": "Microserviço de pessoas para o sistema ConsumaJá",
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc",
@@ -23,7 +23,9 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.2",
     "mysql2": "^3.14.0",
-    "reflect-metadata": "^0.2.2"
+    "qrcode": "^1.5.4",
+    "reflect-metadata": "^0.2.2",
+    "speakeasy": "^2.0.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
@@ -33,6 +35,8 @@
     "@types/jsonwebtoken": "^9.0.9",
     "@types/multer": "^1.4.12",
     "@types/node": "^22.14.0",
+    "@types/qrcode": "^1.5.5",
+    "@types/speakeasy": "^2.0.10",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }

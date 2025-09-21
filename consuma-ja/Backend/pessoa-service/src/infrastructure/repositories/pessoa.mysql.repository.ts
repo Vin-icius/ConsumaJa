@@ -143,20 +143,78 @@ export class PessoaMySQLRepository implements PessoaRepository {
     }
 
     async findById(id: number): Promise<Pessoa | null> {
-         // Não seleciona a senha por padrão em findById
-         const query = `
-            SELECT p.*, f.pessoa_cpf, f.pessoa_documentoValidado, f.pessoa_fotoValidada, j.cnpj, j.fornecedor_num
+        const query = `
+            SELECT
+              p.*,
+              f.pessoa_cpf, f.pessoa_documentoValidado, f.pessoa_fotoValidada, j.cnpj, j.fornecedor_num,
+              e.endereco_id,
+              e.cep as endereco_cep,
+              e.rua as endereco_rua,
+              e.numero as endereco_numero,
+              e.complemento as endereco_complemento,
+              e.bairro as endereco_bairro,
+              e.CIDADE_cidade_id as cidade_id,
+              c.cidade_nome,
+              es.estado_nome,
+              es.estado_sigla as estado_uf
             FROM PESSOA p
             LEFT JOIN FISICA f ON p.pessoa_id = f.PESSOA_pessoa_id AND p.pessoa_tipo = 'Fisica'
             LEFT JOIN JURIDICA j ON p.pessoa_id = j.PESSOA_pessoa_id AND p.pessoa_tipo = 'Juridica'
+            LEFT JOIN ENDERECO e ON p.pessoa_id = e.PESSOA_pessoa_id
+            LEFT JOIN CIDADE c ON e.CIDADE_cidade_id = c.cidade_id
+            LEFT JOIN ESTADO es ON c.ESTADO_estado_id = es.estado_id
             WHERE p.pessoa_id = ?
             LIMIT 1
         `;
-         try {
+
+        try {
             if (!pool) throw new AppError("Pool de conexão não definido!", 500, false);
-            const [rows] = await pool.query<PessoaRow[]>(query, [id]);
-            return rows.length > 0 ? this.mapRowToPessoa(rows[0]) : null;
-        } catch (error: any) { /* ... tratamento mantido ... */ throw new AppError(`Erro DB ao buscar usuário ${id}.`, 500, false); }
+            const [rows] = await pool.query<RowDataPacket[]>(query, [id]);
+
+            if (rows.length === 0) {
+                return null;
+            }
+
+            const pessoa = rows[0];
+
+            // Separar dados de endereço
+            const endereco = pessoa.endereco_id ? {
+                endereco_id: pessoa.endereco_id,
+                endereco_cep: pessoa.endereco_cep,
+                endereco_rua: pessoa.endereco_rua,
+                endereco_numero: pessoa.endereco_numero,
+                endereco_complemento: pessoa.endereco_complemento,
+                endereco_bairro: pessoa.endereco_bairro,
+                cidade_id: pessoa.cidade_id,
+                cidade_nome: pessoa.cidade_nome,
+                estado_nome: pessoa.estado_nome,
+                estado_uf: pessoa.estado_uf
+            } : null;
+
+            // Remover campos de endereço da pessoa
+            delete pessoa.endereco_id;
+            delete pessoa.endereco_cep;
+            delete pessoa.endereco_rua;
+            delete pessoa.endereco_numero;
+            delete pessoa.endereco_complemento;
+            delete pessoa.endereco_bairro;
+            delete pessoa.cidade_id;
+            delete pessoa.cidade_nome;
+            delete pessoa.estado_nome;
+            delete pessoa.estado_uf;
+
+            // Mapear para entidade Pessoa
+            const pessoaEntity = this.mapRowToPessoa(pessoa as PessoaRow);
+
+            // Adicionar endereço à entidade
+            return {
+                ...pessoaEntity,
+                endereco
+            };
+        } catch (error: any) {
+            console.error(`[Repo] Erro ao buscar pessoa por ID ${id}:`, error);
+            throw new AppError(`Erro no banco de dados ao buscar pessoa ${id}.`, 500, false);
+        }
     }
 
     async findByEmail(email: string): Promise<Pick<Pessoa, 'pessoa_id'> | null> {
@@ -352,6 +410,66 @@ export class PessoaMySQLRepository implements PessoaRepository {
              console.error(`[Repo] Erro ao atualizar caminhos fotos para pessoa ${pessoaId}:`, error);
              // Não lança AppError aqui, serviço pode tentar de novo ou logar
              return false; // Indica falha
+        }
+    }
+
+    async atualizarEndereco(pessoaId: number, enderecoData: {
+        endereco_cep?: string;
+        endereco_rua?: string;
+        endereco_numero?: string;
+        endereco_complemento?: string | null;
+        endereco_bairro?: string;
+        cidade_id?: number;
+    }): Promise<boolean> {
+        console.log(`[Repo] atualizarEndereco chamado para pessoa ${pessoaId} com dados:`, enderecoData);
+        const setParts: string[] = [];
+        const values: any[] = [];
+
+        if (enderecoData.endereco_cep !== undefined && enderecoData.endereco_cep !== null) {
+            setParts.push("cep = ?");
+            values.push(enderecoData.endereco_cep);
+        }
+        if (enderecoData.endereco_rua !== undefined && enderecoData.endereco_rua !== null) {
+            setParts.push("rua = ?");
+            values.push(enderecoData.endereco_rua);
+        }
+        if (enderecoData.endereco_numero !== undefined && enderecoData.endereco_numero !== null) {
+            setParts.push("numero = ?");
+            values.push(enderecoData.endereco_numero);
+        }
+        if (enderecoData.endereco_complemento !== undefined) {
+            setParts.push("complemento = ?");
+            values.push(enderecoData.endereco_complemento);
+        }
+        if (enderecoData.endereco_bairro !== undefined && enderecoData.endereco_bairro !== null) {
+            setParts.push("bairro = ?");
+            values.push(enderecoData.endereco_bairro);
+        }
+        if (enderecoData.cidade_id !== undefined && enderecoData.cidade_id !== null) {
+            setParts.push("CIDADE_cidade_id = ?");
+            values.push(enderecoData.cidade_id);
+        }
+
+        if (setParts.length === 0) {
+            console.warn(`[Repo] Chamado atualizarEndereco para pessoa ${pessoaId} sem dados.`);
+            return false; // Nada a atualizar
+        }
+
+        // Atualiza na tabela ENDERECO associada à PESSOA
+        const query = `UPDATE ENDERECO SET ${setParts.join(', ')} WHERE PESSOA_pessoa_id = ?`;
+        values.push(pessoaId);
+
+        console.log(`[Repo] Query final:`, query);
+        console.log(`[Repo] Values finais:`, values);
+
+        try {
+            if (!pool) throw new AppError("Pool de conexão não definido!", 500, false);
+            const [result] = await pool.query<ResultSetHeader>(query, values);
+            console.log(`[Repo] Resultado update endereço:`, result);
+            return result.affectedRows > 0; // Retorna true se atualizou
+        } catch (error: any) {
+             console.error(`[Repo] Erro ao atualizar endereço para pessoa ${pessoaId}:`, error);
+             throw new AppError(`Erro ao atualizar endereço para pessoa ${pessoaId}.`, 500, false);
         }
     }
 }

@@ -18,4 +18,5 @@ export interface Pessoa {
 
   fisica?: Fisica | null;
   juridica?: Juridica | null;
+  endereco?: any | null; // Dados de endereço com cidade e estado
 }

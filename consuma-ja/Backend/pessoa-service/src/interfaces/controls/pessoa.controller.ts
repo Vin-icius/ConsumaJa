@@ -101,7 +101,6 @@ export class PessoaController {
     }
 }
 
-    // <<< NOVO/ATUALIZADO: Atualizar Pessoa >>>
     async atualizarPessoa(req: Request, res: Response, next: NextFunction): Promise<void> {
         const id = parseInt(req.params.id, 10);
         if (isNaN(id) || id <= 0) { return next(new AppError("ID inválido.", 400)); }
@@ -109,12 +108,9 @@ export class PessoaController {
         const dto = plainToClass(UpdatePessoaDto, req.body);
         const errors = await validate(dto);
         if (errors.length > 0) { return next(errors); }
-        // Não precisa checar DTO vazio, pois Partial é permitido
-        // if (Object.keys(dto).length === 0) { return next(new AppError("Nenhum dado para atualizar.", 400)); }
 
         try {
            const pessoa = await this.pessoaService.atualizarPessoa(id, dto);
-           // Serviço lança 404 se não achar
            res.status(200).json(pessoa);
         } catch (error) {
            next(error);

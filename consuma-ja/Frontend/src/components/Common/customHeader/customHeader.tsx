@@ -12,9 +12,10 @@ interface CustomHeaderProps {
   showFilter?: boolean;
   showAddButton?: boolean;
   onAddPress?: () => void;
+  hideSearchBar?: boolean;
 }
 
-const CustomHeader: React.FC<CustomHeaderProps> = ({ showFilter = false, showAddButton = false, onAddPress }) => {
+const CustomHeader: React.FC<CustomHeaderProps> = ({ showFilter = false, showAddButton = false, onAddPress, hideSearchBar = false }) => {
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
   const isLargeScreen = width > 768;
@@ -81,32 +82,34 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({ showFilter = false, showAdd
       <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.openDrawer())}>
         <Ionicons name="menu" size={24} color="white" />
       </TouchableOpacity>
-      <View style={[customHeaderStyles.searchContainer, isLargeScreen && customHeaderStyles.largeSearchContainer]}>
-        <SearchBar
-          placeholder={getPlaceholder()}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          onSubmitEditing={performSearch}
-        />
-        {showFilter && (
-          <View style={[customHeaderStyles.filterSpacing, isLargeScreen && { marginLeft: 20 }]}>
-            <FilterDropdown
-              options={filterOptions}
-              value={selectedFilters}
-              onValueChange={handleFilterChange}
-              placeholder="Filtrar"
-            />
-          </View>
-        )}
-        {showAddButton && onAddPress && (
-          <TouchableOpacity
-            style={[customHeaderStyles.addButton, isLargeScreen && customHeaderStyles.largeAddButton]}
-            onPress={onAddPress}
-          >
-            <Ionicons name="add-circle-outline" size={isLargeScreen ? 28 : 24} color="white" />
-          </TouchableOpacity>
-        )}
-      </View>
+      {!hideSearchBar && (
+        <View style={[customHeaderStyles.searchContainer, isLargeScreen && customHeaderStyles.largeSearchContainer]}>
+          <SearchBar
+            placeholder={getPlaceholder()}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onSubmitEditing={performSearch}
+          />
+          {showFilter && (
+            <View style={[customHeaderStyles.filterSpacing, isLargeScreen && { marginLeft: 20 }]}>
+              <FilterDropdown
+                options={filterOptions}
+                value={selectedFilters}
+                onValueChange={handleFilterChange}
+                placeholder="Filtrar"
+              />
+            </View>
+          )}
+          {showAddButton && onAddPress && (
+            <TouchableOpacity
+              style={[customHeaderStyles.addButton, isLargeScreen && customHeaderStyles.largeAddButton]}
+              onPress={onAddPress}
+            >
+              <Ionicons name="add-circle-outline" size={isLargeScreen ? 28 : 24} color="white" />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
       <TouchableOpacity style={[customHeaderStyles.notificationSpacing, isLargeScreen && { marginLeft: 20 }]} onPress={handleCartPress}>
         <View style={customHeaderStyles.cartIconContainer}>
           <Ionicons name="cart-outline" size={24} color="white" />

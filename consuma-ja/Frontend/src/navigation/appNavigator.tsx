@@ -27,6 +27,7 @@ try {
 import LoginScreen from "../screens/Auth/LoginScreen"
 import CadastroScreen from "../screens/Auth/RegisterScreen"
 import LogoutScreen from "../screens/Auth/LogoutScreen"
+import TwoFactorVerificationScreen from "../screens/Auth/TwoFactorVerificationScreen"
 import ConfigScreen from "../screens/Core/configScreen"
 import RelatoriosScreen from "../screens/Reports/relatoriosScreen"
 import EstadoListScreen from "../screens/Location/EstadoListScreen"
@@ -60,8 +61,11 @@ import { SearchProvider } from '../contexts/SearchHomeContext/searchHomeContext'
 import { PromotionProvider } from '../contexts/PromotionContext/promotionContext';
 import CustomHeader from "../components/Common/customHeader/customHeader"
 import CustomHeaderPromotion from "../components/Common/customHeader/customHeaderPromotion"
-import InicioScreen from "../screens/Core/homeScreen/homeScreenLegacy"
+import InicioScreen from "../screens/Core/homeScreen/homeScreen"
 import { CartProvider } from "../contexts/CartContext/cartContext"
+import { ConfigProvider } from "../contexts/ConfigContext/configContext"
+import { AuthProvider, useAuth } from "../contexts/AuthContext/authContext"
+import { ApplicationProvider } from "../contexts/ApplicationContext/ApplicationContext"
 
 export type RootStackParamList = {
   Login: undefined;
@@ -487,6 +491,7 @@ const MainAppDrawer = () => {
       options={{
         title: "Configurações",
         drawerIcon: ({ color, size }) => <Ionicons name="settings-outline" color={color} size={size} />,
+        headerShown: false,
       }}
     />,
 
@@ -520,41 +525,81 @@ const MainAppDrawer = () => {
 const AppNavigator = () => {
   return (
     <SafeAreaProvider>
-      <SearchProvider>
-        <CartProvider>
-          <Stack.Navigator initialRouteName="Login">
-            {/* Telas fora do Drawer */}
-            <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Cadastro" component={CadastroScreen} options={{ title: "Criar Conta" }} />
-
-            {/* Tela que contém o Drawer */}
-            <Stack.Screen name="Dashboard" component={MainAppDrawer} options={{ headerShown: false }} />
-
-            {/* Telas de Formulário/Detalhe chamadas de dentro do Drawer */}
-            <Stack.Screen name="EstadoForm" component={EstadoFormScreen} options={{ title: "Formulário de Estado" }} />
-            <Stack.Screen name="CidadeForm" component={CityFormScreen} options={{ title: "Formulário de Cidade" }} />
-            <Stack.Screen
-              name="CategoriaForm"
-              component={CategoriaFormScreen}
-              options={{ title: "Formulário de Categoria" }}
-            />
-            <Stack.Screen name="MarcaForm" component={MarcaFormScreen} options={{ title: "Formulário de Marca" }} />
-            <Stack.Screen name="TipoForm" component={TipoFormScreen} options={{ title: "Formulário de Tipo" }} />
-            <Stack.Screen name="ProductForm" component={ProductFormScreen} options={{ title: "Formulário de Produto" }} />
-            <Stack.Screen
-              name="AprovacaoDetail"
-              component={AprovacaoDetailScreen}
-              options={{ title: "Aprovar/Rejeitar Produto" }}
-            />
-            <Stack.Screen name="PessoaForm" component={UserFormScreen} options={{ title: "Editar Usuário" }} />
-            <Stack.Screen name="PromocaoForm" component={PromotionFormScreen} options={{ title: "Formulário de Promoção" }} />
-            <Stack.Screen name="PromocaoDetail" component={PromotionDetailScreen} options={{ title: "Detalhes da Promoção" }} />
-            <Stack.Screen name="ShoppingCart" component={ShoppingCartScreen} options={{ title: "Carrinho de Compras" }} />
-          </Stack.Navigator>
-        </CartProvider>
-      </SearchProvider>
+      <ApplicationProvider>
+        <AuthProvider>
+          <SearchProvider>
+            <CartProvider>
+              <ConfigProvider>
+                <AuthNavigator />
+              </ConfigProvider>
+            </CartProvider>
+          </SearchProvider>
+        </AuthProvider>
+      </ApplicationProvider>
     </SafeAreaProvider>
   )
+}
+
+// --- Componente que verifica autenticação e decide qual navegador mostrar ---
+const AuthNavigator = () => {
+  const { isAuthenticated, isLoading, twoFactorPending } = useAuth();
+
+  if (isLoading) {
+    // Mostrar tela de loading enquanto verifica autenticação
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Carregando...</Text>
+      </View>
+    );
+  }
+
+  if (twoFactorPending) {
+    // Usuário fez login mas precisa validar 2FA
+    return (
+      <Stack.Navigator initialRouteName="TwoFactorVerification">
+        <Stack.Screen name="TwoFactorVerification" component={TwoFactorVerificationScreen} options={{ headerShown: false }} />
+      </Stack.Navigator>
+    );
+  }
+
+  if (!isAuthenticated) {
+    // Usuário não autenticado - mostrar telas de login
+    return (
+      <Stack.Navigator initialRouteName="Login">
+        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Cadastro" component={CadastroScreen} options={{ title: "Criar Conta" }} />
+      </Stack.Navigator>
+    );
+  }
+
+  // Usuário autenticado - mostrar app principal com drawer
+  return (
+    <Stack.Navigator initialRouteName="Dashboard">
+      {/* Tela que contém o Drawer */}
+      <Stack.Screen name="Dashboard" component={MainAppDrawer} options={{ headerShown: false }} />
+
+      {/* Telas de Formulário/Detalhe chamadas de dentro do Drawer */}
+      <Stack.Screen name="EstadoForm" component={EstadoFormScreen} options={{ title: "Formulário de Estado" }} />
+      <Stack.Screen name="CidadeForm" component={CityFormScreen} options={{ title: "Formulário de Cidade" }} />
+      <Stack.Screen
+        name="CategoriaForm"
+        component={CategoriaFormScreen}
+        options={{ title: "Formulário de Categoria" }}
+      />
+      <Stack.Screen name="MarcaForm" component={MarcaFormScreen} options={{ title: "Formulário de Marca" }} />
+      <Stack.Screen name="TipoForm" component={TipoFormScreen} options={{ title: "Formulário de Tipo" }} />
+      <Stack.Screen name="ProductForm" component={ProductFormScreen} options={{ title: "Formulário de Produto" }} />
+      <Stack.Screen
+        name="AprovacaoDetail"
+        component={AprovacaoDetailScreen}
+        options={{ title: "Aprovar/Rejeitar Produto" }}
+      />
+      <Stack.Screen name="PessoaForm" component={UserFormScreen} options={{ title: "Editar Usuário" }} />
+      <Stack.Screen name="PromocaoForm" component={PromotionFormScreen} options={{ title: "Formulário de Promoção" }} />
+      <Stack.Screen name="PromocaoDetail" component={PromotionDetailScreen} options={{ title: "Detalhes da Promoção" }} />
+      <Stack.Screen name="ShoppingCart" component={ShoppingCartScreen} options={{ title: "Carrinho de Compras" }} />
+    </Stack.Navigator>
+  );
 }
 
 export default AppNavigator
