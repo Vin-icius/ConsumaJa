@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, Alert, ActivityIndicator, SafeAreaView, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import avaliacaoService, { Pergunta } from '../../services/avaliacaoService'; // O serviço mantém o nome
+import avaliacaoService from '../../services/avaliacaoService';
+import perguntaService, { Pergunta } from '../../services/perguntaService';
 import { avaliacaoQuestionarioStyles as styles } from '../../common/styles/Review/avaliacaoFormScreen.styled'; // <-- Caminho do estilo atualizado
 import { RootStackParamList } from '../../navigation/appNavigator'; 
 
@@ -46,7 +47,7 @@ const AvaliacaoQuestionarioScreen: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await avaliacaoService.listarPerguntasAtivas();
+      const data = await perguntaService.listarAtivas();
       setPerguntas(data);
     } catch (err) {
       setError("Não foi possível carregar o formulário de avaliação. Tente novamente.");

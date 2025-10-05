@@ -1,6 +1,7 @@
 import { Avaliacao } from '../../domain/entities/avaliacao.entity';
 import { AvaliacaoRepository } from '../../domain/repositories/avaliacao.repository';
 import { CreateAvaliacaoDto } from '../../interfaces/dtos/create-avaliacao.dto';
+import { FiltrosRelatorioAvaliacao, PaginatedRelatorioResponse } from '../../domain/repositories/avaliacao.repository';
 
 export class AvaliacaoService {
     constructor(private avaliacaoRepository: AvaliacaoRepository) {}
@@ -12,5 +13,10 @@ export class AvaliacaoService {
             PESSOA_pessoa_id: pessoaId,
             respostas: dto.respostas,
         });
+    }
+
+    async gerarRelatorio(filtros: FiltrosRelatorioAvaliacao): Promise<PaginatedRelatorioResponse> {
+        // O serviço pode adicionar lógicas aqui, como validar o intervalo de datas, etc.
+        return this.avaliacaoRepository.gerarRelatorio(filtros);
     }
 }

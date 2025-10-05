@@ -13,5 +13,9 @@ const perguntaController = new PerguntaController(perguntaService);
 
 // A rota agora é a raiz '/', pois o prefixo '/perguntas' será definido em main.ts
 router.get('/ativas', perguntaController.listarAtivas);
+router.get('/', perguntaController.listarTodas);
+router.post('/', perguntaController.criar);
+router.put('/:id', perguntaController.atualizar);
+router.delete('/:id', perguntaController.excluir);
 
 export default router;

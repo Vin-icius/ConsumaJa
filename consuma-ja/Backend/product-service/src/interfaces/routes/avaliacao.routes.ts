@@ -13,5 +13,6 @@ const avaliacaoController = new AvaliacaoController(avaliacaoService);
 
 // A rota agora é a raiz '/', pois o prefixo '/avaliacoes' será definido em main.ts
 router.post('/', avaliacaoController.criar);
+router.get('/relatorio', avaliacaoController.gerarRelatorio);
 
 export default router;
