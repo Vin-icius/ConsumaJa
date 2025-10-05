@@ -29,7 +29,8 @@ import CadastroScreen from "../screens/Auth/RegisterScreen"
 import LogoutScreen from "../screens/Auth/LogoutScreen"
 import TwoFactorVerificationScreen from "../screens/Auth/TwoFactorVerificationScreen"
 import ConfigScreen from "../screens/Core/configScreen"
-import RelatoriosScreen from "../screens/Reports/relatoriosScreen"
+import RelatoriosScreen from "../screens/Reports/RelatoriosScreen";
+import RelatorioAvaliacoesScreen from '../screens/Reports/RelatorioAvaliacoesScreen';
 import EstadoListScreen from "../screens/Location/EstadoListScreen"
 import EstadoFormScreen from "../screens/Location/EstadoFormScreen"
 import CidadeListScreen from "../screens/Location/cityListScreen"
@@ -47,6 +48,8 @@ import AprovacaoDetailScreen from "../screens/Product/AprovacaoDetailScreen"
 import UserListScreen from "../screens/User/userListScreen"
 import UserFormScreen from "../screens/User/userFormScreen"
 import AvaliacaoFormScreen from '../screens/Review/AvaliacaoFormScreen';
+import PerguntaListScreen from '../screens/Review/PerguntaListScreen';
+import PerguntaFormScreen from '../screens/Review/PerguntaFormScreen';
 
 import PromotionListItem from '../screens/Promotions/promotionListScreen'
 import PromotionDetailScreen from '../screens/Promotions/promotionDetailScreen'
@@ -80,7 +83,13 @@ export type RootStackParamList = {
   AprovacaoDetail: { produto: any };
   PessoaForm: { pessoaId?: number };
   // --- Adicione a nova rota aqui ---
-  AvaliacaoQuestionario: { pedidoId: number };
+  PerguntaList: undefined;
+  PerguntaForm: { pergunta?: any }; // `pergunta` é opcional (para o modo de edição)
+  AvaliacaoForm: { 
+    pedidoId: number; 
+    avaliacaoExistente?: any;
+  };
+  RelatorioAvaliacoes: undefined;
 };
 
 // --- Navegadores ---
@@ -247,6 +256,14 @@ const CustomDrawerContent = (props: any) => {
           title: "Gerenciar Usuários",
           icon: ({ color, size }) => <Ionicons name="people-outline" color={color} size={size} />,
           roles: ["Admin"],
+        },
+        { 
+          key: "PerguntaList", 
+          name: "PerguntaList", 
+          component: PerguntaListScreen, 
+          title: "Gerenciar Perguntas", 
+          icon: ({ color, size }) => <Ionicons name="help-circle-outline" color={color} size={size} />, 
+          roles: ["Admin"] 
         },
       ],
       roles: ["Admin"],
@@ -494,6 +511,12 @@ const MainAppDrawer = () => {
         headerShown: false,
       }}
     />,
+    <Drawer.Screen 
+      key="PerguntaList"
+      name="PerguntaList"
+      component={PerguntaListScreen}
+      options={{ title: "Gerenciar Perguntas" }}
+    />,
 
     // Tela Sair (oculta no drawer)
     <Drawer.Screen
@@ -525,17 +548,42 @@ const MainAppDrawer = () => {
 const AppNavigator = () => {
   return (
     <SafeAreaProvider>
-      <ApplicationProvider>
-        <AuthProvider>
-          <SearchProvider>
-            <CartProvider>
-              <ConfigProvider>
-                <AuthNavigator />
-              </ConfigProvider>
-            </CartProvider>
-          </SearchProvider>
-        </AuthProvider>
-      </ApplicationProvider>
+      <SearchProvider>
+        <CartProvider>
+          <Stack.Navigator initialRouteName="Dashboard">
+            {/* Telas fora do Drawer */}
+            <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Cadastro" component={CadastroScreen} options={{ title: "Criar Conta" }} />
+
+            {/* Tela que contém o Drawer */}
+            <Stack.Screen name="Dashboard" component={MainAppDrawer} options={{ headerShown: false }} />
+
+            {/* Telas de Formulário/Detalhe chamadas de dentro do Drawer */}
+            <Stack.Screen name="EstadoForm" component={EstadoFormScreen} options={{ title: "Formulário de Estado" }} />
+            <Stack.Screen name="CidadeForm" component={CityFormScreen} options={{ title: "Formulário de Cidade" }} />
+            <Stack.Screen
+              name="CategoriaForm"
+              component={CategoriaFormScreen}
+              options={{ title: "Formulário de Categoria" }}
+            />
+            <Stack.Screen name="MarcaForm" component={MarcaFormScreen} options={{ title: "Formulário de Marca" }} />
+            <Stack.Screen name="TipoForm" component={TipoFormScreen} options={{ title: "Formulário de Tipo" }} />
+            <Stack.Screen name="ProductForm" component={ProductFormScreen} options={{ title: "Formulário de Produto" }} />
+            <Stack.Screen
+              name="AprovacaoDetail"
+              component={AprovacaoDetailScreen}
+              options={{ title: "Aprovar/Rejeitar Produto" }}
+            />
+            <Stack.Screen name="PessoaForm" component={UserFormScreen} options={{ title: "Editar Usuário" }} />
+            <Stack.Screen name="PromocaoForm" component={PromotionFormScreen} options={{ title: "Formulário de Promoção" }} />
+            <Stack.Screen name="PromocaoDetail" component={PromotionDetailScreen} options={{ title: "Detalhes da Promoção" }} />
+            <Stack.Screen name="ShoppingCart" component={ShoppingCartScreen} options={{ title: "Carrinho de Compras" }} />
+            <Stack.Screen name="PerguntaForm" component={PerguntaFormScreen} options={{ title: "Formulário de Pergunta" }} />
+            <Stack.Screen name="AvaliacaoForm" component={AvaliacaoFormScreen} options={{ title: "Avaliar Compra" }} />
+            <Stack.Screen name="RelatorioAvaliacoes" component={RelatorioAvaliacoesScreen} options={{ title: "Relatório de Avaliações" }} />
+          </Stack.Navigator>
+        </CartProvider>
+      </SearchProvider>
     </SafeAreaProvider>
   )
 }
