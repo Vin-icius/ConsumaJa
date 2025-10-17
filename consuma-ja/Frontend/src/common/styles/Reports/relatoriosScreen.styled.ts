@@ -12,21 +12,24 @@ export const relatoriosStyles = StyleSheet.create({
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
+    textAlign: 'center',
   },
   itemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 15,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   itemIcon: {
-    marginRight: 15,
+    marginRight: 20,
   },
   itemText: {
     fontSize: 18,
     color: '#333',
+    flex: 1,
   },
   arrowIcon: {
     marginLeft: 'auto',

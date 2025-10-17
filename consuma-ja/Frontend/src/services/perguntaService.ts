@@ -32,8 +32,11 @@ const perguntaService = {
   atualizar: (id: number, data: { perguntas_descricao?: string, ativo?: boolean }): Promise<Pergunta> =>
     handleRequest(productApiClient.put<Pergunta>(`/perguntas/${id}`, data)),
 
-  excluir: (id: number): Promise<void> =>
+  excluirLogico: (id: number): Promise<void> =>
     handleRequest(productApiClient.delete<void>(`/perguntas/${id}`)),
+
+  excluirFisico: (id: number): Promise<void> =>
+    handleRequest(productApiClient.delete(`/perguntas/${id}/fisico`)),
 };
 
 export default perguntaService;
