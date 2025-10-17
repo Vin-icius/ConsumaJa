@@ -76,7 +76,7 @@ export class PerguntaMySQLRepository implements PerguntaRepository {
         }
     }
 
-    async excluir(id: number): Promise<boolean> {
+    async excluirLogico(id: number): Promise<boolean> {
         const query = "UPDATE PERGUNTAS SET ativo = FALSE WHERE perguntas_id = ?";
         try {
             const [result] = await pool.query<ResultSetHeader>(query, [id]);
@@ -84,6 +84,40 @@ export class PerguntaMySQLRepository implements PerguntaRepository {
         } catch (error) {
             console.error(`[Repo Pergunta] Erro ao excluir (desativar) pergunta ${id}:`, error);
             throw new AppError("Erro no banco de dados ao desativar pergunta.", 500);
+        }
+    }
+
+    async excluirFisico(id: number): Promise<boolean> {
+        const connection = await pool.getConnection();
+        console.log("dentro do excluirFisico repo");
+        try {
+            await connection.beginTransaction();
+
+            // 1. Verifica se a pergunta está sendo usada na tabela NOTA_AVALIACAO
+            const checkQuery = "SELECT COUNT(*) as count FROM NOTA_AVALIACAO WHERE PERGUNTAS_perguntas_id = ?";
+            const [rows] = await connection.query<RowDataPacket[]>(checkQuery, [id]);
+            
+            if (rows[0].count > 0) {
+                // Lança um erro específico que o serviço pode capturar
+                throw new AppError("Esta pergunta não pode ser excluída pois já possui avaliações associadas.", 409); // 409 Conflict
+            }
+
+            // 2. Se não estiver sendo usada, prossegue com a exclusão
+            const deleteQuery = "DELETE FROM PERGUNTAS WHERE perguntas_id = ?";
+            const [result] = await connection.query<ResultSetHeader>(deleteQuery, [id]);
+            
+            await connection.commit();
+            return result.affectedRows > 0;
+
+        } catch (error) {
+            await connection.rollback();
+            // Repassa o erro de AppError ou cria um novo
+            if (error instanceof AppError) throw error;
+            
+            console.error(`[Repo Pergunta] Erro ao excluir permanentemente a pergunta ${id}:`, error);
+            throw new AppError("Erro no banco de dados ao excluir pergunta.", 500);
+        } finally {
+            connection.release();
         }
     }
 }

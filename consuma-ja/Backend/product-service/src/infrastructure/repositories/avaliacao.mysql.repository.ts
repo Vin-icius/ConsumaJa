@@ -81,8 +81,11 @@ export class AvaliacaoMySQLRepository implements AvaliacaoRepository {
             params.push(filtros.dataInicio);
         }
         if (filtros.dataFim) {
+            const dataFimAjustada = new Date(filtros.dataFim);
+            dataFimAjustada.setHours(23, 59, 59, 999);
+
             conditions.push("a.avaliacao_data <= ?");
-            params.push(filtros.dataFim);
+            params.push(dataFimAjustada);
         }
         if (filtros.promocaoId) {
             conditions.push("v.PROMOCAO_promocao_id = ?");

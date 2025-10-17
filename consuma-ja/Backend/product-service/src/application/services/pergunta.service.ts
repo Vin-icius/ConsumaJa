@@ -34,16 +34,27 @@ export class PerguntaService {
         return perguntaAtualizada;
     }
 
-    async excluir(id: number): Promise<void> {
+    async excluirLogico(id: number): Promise<void> {
         // A validação do ID agora está no controller
         const pergunta = await this.perguntaRepository.buscarPorId(id);
         if (!pergunta) {
             throw new AppError("Pergunta não encontrada.", 404);
         }
 
-        const sucesso = await this.perguntaRepository.excluir(id);
+        const sucesso = await this.perguntaRepository.excluirLogico(id);
         if (!sucesso) {
             throw new AppError("Não foi possível desativar a pergunta.", 500);
+        }
+    }
+
+    async excluirFisico(id: number): Promise<void> {
+        if (isNaN(id)) {
+            throw new AppError("ID da pergunta inválido.", 400);
+        }
+        const sucesso = await this.perguntaRepository.excluirFisico(id);
+        if (!sucesso) {
+            // Isso pode acontecer se o ID não for encontrado
+            throw new AppError("Pergunta não encontrada para exclusão.", 404);
         }
     }
 }

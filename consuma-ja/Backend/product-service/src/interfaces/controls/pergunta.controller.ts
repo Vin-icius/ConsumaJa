@@ -11,6 +11,8 @@ export class PerguntaController {
         this.listarTodas = this.listarTodas.bind(this);
         this.criar = this.criar.bind(this);
         this.atualizar = this.atualizar.bind(this);
+        this.excluirLogico = this.excluirLogico.bind(this);
+        this.excluirFisico = this.excluirFisico.bind(this);
     }
 
     async listarAtivas(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -55,13 +57,24 @@ export class PerguntaController {
         } catch (error) { next(error); }
     }
 
-    async excluir(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async excluirLogico(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const id = parseInt(req.params.id, 10);
             if (isNaN(id)) return next({ message: "ID da pergunta inválido.", status: 400 });
             
-            await this.perguntaService.excluir(id);
+            await this.perguntaService.excluirLogico(id);
             res.status(204).send(); // Sucesso, sem conteúdo
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async excluirFisico(req: Request, res: Response, next: NextFunction): Promise<void> {
+        console.log("Chegou na controller de exclusão física");
+        try {
+            const id = parseInt(req.params.id, 10);
+            await this.perguntaService.excluirFisico(id);
+            res.status(204).send();
         } catch (error) {
             next(error);
         }

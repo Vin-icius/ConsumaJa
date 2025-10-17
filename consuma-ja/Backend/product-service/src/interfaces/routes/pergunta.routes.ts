@@ -16,6 +16,7 @@ router.get('/ativas', perguntaController.listarAtivas);
 router.get('/', perguntaController.listarTodas);
 router.post('/', perguntaController.criar);
 router.put('/:id', perguntaController.atualizar);
-router.delete('/:id', perguntaController.excluir);
+router.delete('/:id', perguntaController.excluirLogico);
+router.delete('/:id/fisico', perguntaController.excluirFisico);
 
 export default router;

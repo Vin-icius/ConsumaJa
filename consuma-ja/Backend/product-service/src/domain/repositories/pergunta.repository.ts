@@ -28,5 +28,6 @@ export interface PerguntaRepository {
     // Atualiza uma pergunta existente
     atualizar(id: number, data: UpdatePerguntaData): Promise<Pergunta | null>;
 
-    excluir(id: number): Promise<boolean>;
+    excluirLogico(id: number): Promise<boolean>;
+    excluirFisico(id: number): Promise<boolean>;
 }
