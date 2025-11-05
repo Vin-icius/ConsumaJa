@@ -10,11 +10,11 @@ import {
   ScrollView,
   Animated,
 } from "react-native"
-import AsyncStorage from "@react-native-async-storage/async-storage"
 import { Ionicons } from "@expo/vector-icons"
 import type { StackNavigationProp } from "@react-navigation/stack"
 import authService from "../../services/authService"
 import { styles } from "../../common/styles/Auth/loginScreen.styled"
+import { useCart } from "../../contexts/CartContext/cartContext"
 
 // Definindo tipos para navegação
 type RootStackParamList = {
@@ -47,6 +47,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState(false)
   const [forgotPasswordVisible, setForgotPasswordVisible] = useState(false)
   const [resetEmail, setResetEmail] = useState("")
+  const { refreshCart } = useCart()
 
   // Animações
   const fadeAnim = useRef(new Animated.Value(0)).current
@@ -162,10 +163,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       })) as LoginResponse
 
       const { token, user } = response
-      if (token && user?.tipo) {
-        await AsyncStorage.setItem("userToken", token)
-        await AsyncStorage.setItem("userType", user.tipo)
-
+      if (token && user?.id) {
+        await authService.storeAuthData(token, user)
+        try {
+          await refreshCart()
+        } catch (refreshError) {
+          console.error("Falha ao sincronizar carrinho após login:", refreshError)
+        }
         navigation.replace("Dashboard")
       } else {
         setErrorMessage("Erro inesperado na resposta do servidor.")

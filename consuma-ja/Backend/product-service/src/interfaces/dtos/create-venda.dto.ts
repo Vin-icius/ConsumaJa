@@ -28,6 +28,10 @@ export class CreateVendaDto {
   @IsOptional() @IsNumber() @Min(0.01) @Type(() => Number)
   valor_total?: number;
 
+  @IsOptional() @IsArray() @Type(() => Number)
+  @IsNumber({}, { each: true })
+  cart_item_ids?: number[];
+
   // Adicionar campos obrigatórios que podem vir do auth ou payload
   @IsNumber() @Min(1) @Type(() => Number)
   pessoa_id!: number;

@@ -10,6 +10,7 @@ const produto_mysql_repository_1 = require("../../infrastructure/repositories/pr
 const categoria_mysql_repository_1 = require("../../infrastructure/repositories/categoria.mysql.repository");
 const marca_mysql_repository_1 = require("../../infrastructure/repositories/marca.mysql.repository");
 const tipo_mysql_repository_1 = require("../../infrastructure/repositories/tipo.mysql.repository");
+const product_images_config_1 = require("../../config/product-images.config");
 const router = express_1.default.Router();
 // --- Instanciação (Idealmente usar DI) ---
 const categoriaRepository = new categoria_mysql_repository_1.CategoriaMySQLRepository();
@@ -27,6 +28,7 @@ router.get('/para-selecao-promocao', produtoController.listarParaSelecao); // Pa
 router.get('/', /* authMiddleware, */ produtoController.listarProdutos);
 // Rotas de criação (sem ID na URL)
 router.post('/', /* authMiddleware, */ produtoController.criarProduto);
+router.post('/:id/imagem', product_images_config_1.productImageUpload.single('imagem'), produtoController.uploadImagem);
 // <<< ROTAS COM PARÂMETRO /:id VÊM DEPOIS DAS ESPECÍFICAS >>>
 router.get('/:id', /* authMiddleware, */ produtoController.buscarProdutoPorId);
 router.put('/:id', /* authMiddleware, */ produtoController.atualizarProduto);

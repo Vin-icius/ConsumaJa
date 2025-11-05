@@ -5,6 +5,7 @@ import { ListarPromocoesQueryDto } from "../../interfaces/dtos/listar-promocoes-
 import { pool } from "../database/mysql.connection";
 import { AppError } from "../../common/errors/app-error";
 import { RowDataPacket, ResultSetHeader, PoolConnection } from 'mysql2/promise';
+import { buildProductImagePublicPath } from "../../common/utils/image-url";
 
 // Tipagem para linha da promoção com preview de itens (pode precisar de GROUP_CONCAT)
 interface PromocaoPreviewRow extends RowDataPacket, Omit<Promocao, 'itens_preview' | 'itens' | 'fornecedor'> {
@@ -66,16 +67,24 @@ export class PromocaoMySQLRepository implements PromocaoRepository {
             FROM ITEM_PROMOCAO ip
             JOIN LOTEPROD lp ON ip.LOTEPROD_lote_id = lp.lote_id
             JOIN PRODUTO p ON lp.produto_id = p.produto_id
-            WHERE ip.PROMOCAO_promocao_id = ? AND p.ativo = TRUE
+            WHERE ip.PROMOCAO_promocao_id = ?
+              AND ip.itemPromocao_qtde > 0
+              AND p.ativo = TRUE
+              AND lp.ativo = TRUE
+              AND lp.lote_quantidade_atual > 0
             LIMIT 2; -- Limite para preview
         `;
         const [itemRows] = await queryRunner.query<RowDataPacket[]>(queryItens, [promocaoId]);
-        return itemRows.map((ir: any) => ({
+        return itemRows.map((ir: any) => {
+            const imagemUrl = buildProductImagePublicPath(ir.produto_imagem_url);
+            return {
             produto_id: ir.produto_id,
             produto_nome: ir.produto_nome,
             itemPromocao_valor: Number(ir.itemPromocao_valor),
-            produto_imagem_url: ir.produto_imagem_url,
-        }));
+                produto_imagem_url: imagemUrl,
+                imagem_url: imagemUrl,
+            };
+        });
     }
 
     private async fetchItensDetail(promocaoId: number, connection?: PoolConnection): Promise<ItemPromocao[]> {
@@ -93,7 +102,11 @@ export class PromocaoMySQLRepository implements PromocaoRepository {
             LEFT JOIN CATEGORIA_PRODUTO c ON p.CATEGORIA_PRODUTO_categoria_id = c.categoria_id
             LEFT JOIN MARCA_PRODUTO m ON p.MARCA_PRODUTO_marca_id = m.marca_id
             LEFT JOIN TIPO_PRODUTO t ON p.TIPO_PRODUTO_tipo_id = t.tipo_id
-            WHERE ip.PROMOCAO_promocao_id = ? AND p.ativo = TRUE AND lp.lote_quantidade_atual > 0 AND lp.ativo = TRUE;
+                        WHERE ip.PROMOCAO_promocao_id = ?
+                            AND ip.itemPromocao_qtde > 0
+                            AND p.ativo = TRUE
+                            AND lp.lote_quantidade_atual > 0
+                            AND lp.ativo = TRUE;
         `;
         
         // Determina se usa a conexão da transação ou a pool principal
@@ -121,7 +134,8 @@ export class PromocaoMySQLRepository implements PromocaoRepository {
                     produto_nome: row.produto_nome,
                     produto_medida: row.produto_medida,
                     produto_precoOriginal: Number(row.produto_precoOriginal),
-                    produto_imagem_url: row.produto_imagem_url,
+                    produto_imagem_url: buildProductImagePublicPath(row.produto_imagem_url),
+                    imagem_url: buildProductImagePublicPath(row.produto_imagem_url),
                     categoria: row.produto_categoria_nome ? { categoria_nome: row.produto_categoria_nome } : null,
                     marca: row.produto_marca_nome ? { marca_nome: row.produto_marca_nome } : null,
                     tipo: row.produto_tipo_nome ? { tipo_nome: row.produto_tipo_nome } : null,
@@ -240,6 +254,20 @@ export class PromocaoMySQLRepository implements PromocaoRepository {
             queryParams.push(filtros.categoriaId);
         }
 
+        whereConditions.push(`
+            EXISTS (
+                SELECT 1
+                FROM ITEM_PROMOCAO ip_valid
+                JOIN LOTEPROD lp_valid ON ip_valid.LOTEPROD_lote_id = lp_valid.lote_id
+                JOIN PRODUTO p_valid ON lp_valid.produto_id = p_valid.produto_id
+                WHERE ip_valid.PROMOCAO_promocao_id = pr.promocao_id
+                  AND ip_valid.itemPromocao_qtde > 0
+                  AND lp_valid.lote_quantidade_atual > 0
+                  AND lp_valid.ativo = TRUE
+                  AND p_valid.ativo = TRUE
+            )
+        `);
+
         if (whereConditions.length > 0) { baseQuery += " WHERE " + whereConditions.join(" AND "); }
         baseQuery += " ORDER BY pr.inicio DESC, pr.promocao_id DESC";
         try {
@@ -257,7 +285,7 @@ export class PromocaoMySQLRepository implements PromocaoRepository {
                 }
                 return promocaoBase;
             }));
-            return promocoesComPreview;
+            return promocoesComPreview.filter(promocao => promocao.itens_preview && promocao.itens_preview.length > 0);
         } catch (error: any) {
             console.error("[Repo Promocao] Erro ao listar promoções:", error);
             throw new AppError("Erro DB ao listar promoções.", 500, false);

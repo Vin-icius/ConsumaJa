@@ -12,6 +12,8 @@ import tipoRoutes from './interfaces/routes/tipo.routes';
 import produtoRoutes from './interfaces/routes/produto.routes';
 import promocaoRoutes from './interfaces/routes/promocao.routes';
 import loteprodRoutes from './interfaces/routes/loteprod.routes'; // <<< IMPORTAR AS ROTAS DE LOTEPROD
+import shoppingCartRoutes from './interfaces/routes/shopping-cart.routes';
+import { resolveProductImageDir, PRODUCT_IMAGE_STATIC_ROUTE } from './common/utils/image-url';
 
 import { errorHandler } from './interfaces/middlewares/error.middleware';
 import { AppError } from './common/errors/app-error';
@@ -19,6 +21,7 @@ import { testDbConnection } from './infrastructure/database/mysql.connection';
 
 const app: Express = express();
 const port = process.env.PRODUCT_SERVICE_PORT || process.env.PORT || 3000;
+const productImagesDir = resolveProductImageDir();
 
 // Middlewares Essenciais
 const corsOptions: cors.CorsOptions = {
@@ -29,6 +32,7 @@ const corsOptions: cors.CorsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(PRODUCT_IMAGE_STATIC_ROUTE, express.static(productImagesDir));
 
 // Teste de Conexão com Banco (opcional, mas bom para o início)
 if (process.env.NODE_ENV !== 'test') {
@@ -48,6 +52,7 @@ apiRouter.use('/tipos', tipoRoutes);
 apiRouter.use('/produtos', produtoRoutes);
 apiRouter.use('/promocoes', promocaoRoutes);
 apiRouter.use('/lotes', loteprodRoutes); // <<< MONTAR AS ROTAS DE LOTEPROD AQUI
+apiRouter.use('/cart', shoppingCartRoutes);
 
 // Aplica o prefixo /api/product a todas as rotas definidas no apiRouter
 app.use('/api/product', apiRouter);

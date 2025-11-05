@@ -21,6 +21,7 @@ const produtoService = {
   getProdutoById: (id) => handleRequest(productApiClient.get(`/produtos/${id}`)),
   atualizarProduto: (id, data) => handleRequest(productApiClient.put(`/produtos/${id}`, data)),
   excluirProduto: (id) => handleRequestNoData(productApiClient.delete(`/produtos/${id}`)),
+  uploadProdutoImagem: (id, formData) => handleRequest(productApiClient.post(`/produtos/${id}/imagem`, formData)),
 
   listarProdutosPendentes: () => handleRequest(productApiClient.get('/produtos/pendentes')),
   aprovarProduto: (id) => handleRequestNoData(productApiClient.patch(`/produtos/${id}/aprovar`)),

@@ -5,19 +5,19 @@ import { LOCATION_API_URL, PRODUCT_API_URL, PERSON_API_URL } from '../constants/
 // --- Instância para Location Service ---
 const locationApiClient = axios.create({
   baseURL: LOCATION_API_URL,
-  headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+  headers: { Accept: 'application/json' },
 });
 
 // --- Instância para Product Service ---
 const productApiClient = axios.create({
   baseURL: PRODUCT_API_URL,
-  headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+  headers: { Accept: 'application/json' },
 });
 
 // --- Instância para Pessoa Service ---
 const pessoaApiClient = axios.create({
   baseURL: PERSON_API_URL, // <<< USA A NOVA URL BASE
-  headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+  headers: { Accept: 'application/json' },
 });
 
 

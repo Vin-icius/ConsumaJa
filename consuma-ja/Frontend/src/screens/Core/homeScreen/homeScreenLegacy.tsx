@@ -9,10 +9,12 @@ import PromocaoCard from "../../../components/Promotions/PromocaoCard"
 import { homeStyles } from "../../../common/styles/Core/homeScreenLegacy.styled"
 import { CategoriaItem, Promocao } from "./homeScreen.constants"
 import { useSearch } from "../../../contexts/SearchHomeContext/searchHomeContext"
+import MobileFooterNav from "../../../components/Common/mobileFooter/mobileFooter"
 
 const InicioScreen = () => {
   const navigation = useNavigation<any>()
   const { width } = useWindowDimensions()
+  const isDesktop = width >= 768
   const [numColumns, setNumColumns] = useState(1)
   const [cardWidth, setCardWidth] = useState(0)
 
@@ -160,18 +162,21 @@ const InicioScreen = () => {
         ListEmptyComponent={<Text style={homeStyles.emptyText}>Nenhuma promoção encontrada com os filtros atuais.</Text>}
         contentContainerStyle={[
           homeStyles.listContent,
-          // Se for desktop, centraliza o conteúdo e limita a largura máxima
-          Platform.OS === "web" &&
-            width > 768 && {
-              maxWidth: 1200,
-              alignSelf: "center",
-              width: "100%",
-            },
+          !isDesktop ? { paddingBottom: 140 } : null,
+          Platform.OS === "web" && width > 768
+            ? {
+                maxWidth: 1200,
+                alignSelf: "center",
+                width: "100%",
+              }
+            : null,
         ]}
         columnWrapperStyle={numColumns > 1 ? homeStyles.columnWrapper : undefined}
         onRefresh={fetchPromocoes.bind(null, true)} // Passa true para isRefreshing
         refreshing={loading && promocoes.length > 0} // Mostra indicador de refresh se carregando E já tem itens
       />
+
+      {!isDesktop && <MobileFooterNav activeTab="home" />}
 
     </View>
   )

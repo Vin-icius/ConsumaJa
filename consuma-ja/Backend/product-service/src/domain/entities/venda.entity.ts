@@ -10,6 +10,7 @@ export interface Venda {
   venda_data: Date;
   venda_total: number;
   venda_status: 'EM ANDAMENTO' | 'CONCLUIDA' | 'CANCELADA';
+  promocao_id: number | null;
   pessoa_id: number;
   endereco_id: number;
   itens: ItemVenda[];

@@ -21,6 +21,7 @@ class ProdutoController {
         this.rejeitarProduto = this.rejeitarProduto.bind(this);
         this.listarPendentes = this.listarPendentes.bind(this);
         this.listarParaSelecao = this.listarParaSelecao.bind(this);
+        this.uploadImagem = this.uploadImagem.bind(this);
     }
     async criarProduto(req, res, next) {
         const dto = (0, class_transformer_1.plainToClass)(create_produto_dto_1.CreateProdutoDto, req.body);
@@ -108,6 +109,25 @@ class ProdutoController {
             }
             await this.produtoService.excluirProduto(id);
             res.status(204).send();
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    async uploadImagem(req, res, next) {
+        try {
+            const id = parseInt(req.params.id, 10);
+            if (isNaN(id) || id <= 0) {
+                throw new app_error_1.AppError("ID inválido.", 400);
+            }
+            if (!req.file) {
+                throw new app_error_1.AppError("Nenhuma imagem enviada para o produto.", 400);
+            }
+            const produto = await this.produtoService.definirImagemPrincipal(id, req.file.filename);
+            res.status(200).json({
+                message: "Imagem do produto atualizada com sucesso.",
+                produto,
+            });
         }
         catch (error) {
             next(error);

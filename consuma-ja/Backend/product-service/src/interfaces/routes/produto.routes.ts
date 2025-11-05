@@ -5,6 +5,7 @@ import { ProdutoMySQLRepository } from '../../infrastructure/repositories/produt
 import { CategoriaMySQLRepository } from '../../infrastructure/repositories/categoria.mysql.repository';
 import { MarcaMySQLRepository } from '../../infrastructure/repositories/marca.mysql.repository';
 import { TipoMySQLRepository } from '../../infrastructure/repositories/tipo.mysql.repository';
+import { productImageUpload } from '../../config/product-images.config';
 
 const router = express.Router();
 
@@ -33,6 +34,7 @@ router.get('/', /* authMiddleware, */ produtoController.listarProdutos);
 
 // Rotas de criação (sem ID na URL)
 router.post('/', /* authMiddleware, */ produtoController.criarProduto);
+router.post('/:id/imagem', productImageUpload.single('imagem'), produtoController.uploadImagem);
 
 // <<< ROTAS COM PARÂMETRO /:id VÊM DEPOIS DAS ESPECÍFICAS >>>
 router.get('/:id', /* authMiddleware, */ produtoController.buscarProdutoPorId);
