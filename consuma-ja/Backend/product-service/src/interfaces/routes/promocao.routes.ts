@@ -7,6 +7,7 @@ import { ProdutoMySQLRepository } from '../../infrastructure/repositories/produt
 import { VendaController } from '../controls/venda.controller';
 import { VendaService } from '../../application/services/venda.service';
 import { VendaMySQLRepository } from '../../infrastructure/repositories/venda.mysql.repository';
+import { ShoppingCartMySQLRepository } from '../../infrastructure/repositories/shopping-cart.mysql.repository';
 
 const router = express.Router();
 
@@ -20,7 +21,8 @@ const promocaoController = new PromocaoController(promocaoService);
 
 // Para venda
 const vendaRepository = new VendaMySQLRepository();
-const vendaService = new VendaService(vendaRepository, promocaoRepository, loteProdRepository);
+const shoppingCartRepository = new ShoppingCartMySQLRepository();
+const vendaService = new VendaService(vendaRepository, promocaoRepository, loteProdRepository, shoppingCartRepository);
 const vendaController = new VendaController(vendaService);
 
 // Rotas

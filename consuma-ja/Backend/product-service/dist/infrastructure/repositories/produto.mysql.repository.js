@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProdutoMySQLRepository = void 0;
 const mysql_connection_1 = require("../database/mysql.connection");
 const app_error_1 = require("../../common/errors/app-error");
+const image_url_1 = require("../../common/utils/image-url");
 class ProdutoMySQLRepository {
     constructor() {
         this.BASE_SELECT_QUERY = `
@@ -48,6 +49,7 @@ class ProdutoMySQLRepository {
             data_aprovacao: row.data_aprovacao ? new Date(row.data_aprovacao) : null,
             data_exclusao: row.data_exclusao ? new Date(row.data_exclusao) : null,
             ativo: Boolean(row.produto_ativo),
+            produto_imagem_url: (0, image_url_1.buildProductImagePublicPath)(row.produto_imagem_url),
             CATEGORIA_PRODUTO_categoria_id: row.CATEGORIA_PRODUTO_categoria_id,
             MARCA_PRODUTO_marca_id: row.MARCA_PRODUTO_marca_id,
             TIPO_PRODUTO_tipo_id: row.TIPO_PRODUTO_tipo_id,
@@ -124,7 +126,7 @@ class ProdutoMySQLRepository {
             const data = dataRows.map((row) => ({
                 produto_id: row.produto_id,
                 produto_nome: row.produto_nome,
-                produto_imagem_url: row.produto_imagem_url,
+                produto_imagem_url: (0, image_url_1.buildProductImagePublicPath)(row.produto_imagem_url),
             }));
             return { data, total };
         }

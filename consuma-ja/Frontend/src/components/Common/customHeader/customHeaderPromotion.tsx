@@ -81,6 +81,10 @@ const CustomHeaderPromotion: React.FC<CustomHeaderPromotionProps> = ({
     }
   };
 
+  if (!isLargeScreen) {
+    return null;
+  }
+
   return (
     <View style={[customHeaderStyles.container, isLargeScreen && customHeaderStyles.largeContainer]}>
       <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.openDrawer())}>

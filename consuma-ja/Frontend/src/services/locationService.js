@@ -29,6 +29,8 @@ const locationService = {
   updateCidade: (id, data) => handleRequest(locationApiClient.put(`/cidades/${id}`, data)),
   deleteCidade: (id) => handleRequestNoData(locationApiClient.delete(`/cidades/${id}`)),
 
+  getEnderecos: (params) => handleRequest(locationApiClient.get('/enderecos', { params })),
+
   lookupCep: (cep) => {
     const cleanedCep = String(cep).replace(/\D/g, '')
     if (cleanedCep.length !== 8) {

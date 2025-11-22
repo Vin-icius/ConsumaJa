@@ -1,10 +1,11 @@
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { createDrawerNavigator } from "@react-navigation/drawer"
 import { Ionicons } from "@expo/vector-icons"
-import { View, Text, TouchableOpacity, ScrollView, Platform } from "react-native"
+import { View, Text, TouchableOpacity, ScrollView, Platform, useWindowDimensions } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import { baseIconMap, createMenuSections, MenuItem, MenuSection, UserRole } from "./menuConfig"
 
 // Dynamic import for SafeArea components to avoid bundling issues on web
 let SafeAreaView: any
@@ -27,10 +28,8 @@ try {
 import LoginScreen from "../screens/Auth/LoginScreen"
 import CadastroScreen from "../screens/Auth/RegisterScreen"
 import LogoutScreen from "../screens/Auth/LogoutScreen"
-import TwoFactorVerificationScreen from "../screens/Auth/TwoFactorVerificationScreen"
 import ConfigScreen from "../screens/Core/configScreen"
-import RelatoriosScreen from "../screens/Reports/RelatoriosScreen";
-import RelatorioAvaliacoesScreen from '../screens/Reports/RelatorioAvaliacoesScreen';
+import RelatoriosScreen from "../screens/Reports/relatoriosScreen"
 import EstadoListScreen from "../screens/Location/EstadoListScreen"
 import EstadoFormScreen from "../screens/Location/EstadoFormScreen"
 import CidadeListScreen from "../screens/Location/cityListScreen"
@@ -48,10 +47,7 @@ import AprovacaoDetailScreen from "../screens/Product/AprovacaoDetailScreen"
 import UserListScreen from "../screens/User/userListScreen"
 import UserFormScreen from "../screens/User/userFormScreen"
 import AvaliacaoFormScreen from '../screens/Review/AvaliacaoFormScreen';
-import PerguntaListScreen from '../screens/Review/PerguntaListScreen';
-import PerguntaFormScreen from '../screens/Review/PerguntaFormScreen';
 
-import PromotionListItem from '../screens/Promotions/promotionListScreen'
 import PromotionDetailScreen from '../screens/Promotions/promotionDetailScreen'
 import ShoppingCartScreen from '../screens/Core/homeScreen/shoppingCart/shoppingCart'
 import PromotionFormScreen from '../screens/Promotions/promotionFormScreen'
@@ -61,14 +57,11 @@ import LotFormScreen from "../screens/Lots/lotFormScreen"
 import LotListScreen from "../screens/Lots/lotListScreen"
 import { navigatorStyles } from "../common/styles/appNavigator/appNavigator"
 import { SearchProvider } from '../contexts/SearchHomeContext/searchHomeContext'
-import { PromotionProvider } from '../contexts/PromotionContext/promotionContext';
 import CustomHeader from "../components/Common/customHeader/customHeader"
 import CustomHeaderPromotion from "../components/Common/customHeader/customHeaderPromotion"
-import InicioScreen from "../screens/Core/homeScreen/homeScreen"
+import InicioScreen from "../screens/Core/homeScreen/homeScreenLegacy"
 import { CartProvider } from "../contexts/CartContext/cartContext"
-import { ConfigProvider } from "../contexts/ConfigContext/configContext"
-import { AuthProvider, useAuth } from "../contexts/AuthContext/authContext"
-import { ApplicationProvider } from "../contexts/ApplicationContext/ApplicationContext"
+import MobileBackHeader from "../components/Common/mobileHeader/mobileHeader"
 
 export type RootStackParamList = {
   Login: undefined;
@@ -83,39 +76,12 @@ export type RootStackParamList = {
   AprovacaoDetail: { produto: any };
   PessoaForm: { pessoaId?: number };
   // --- Adicione a nova rota aqui ---
-  PerguntaList: undefined;
-  PerguntaForm: { pergunta?: any }; // `pergunta` é opcional (para o modo de edição)
-  AvaliacaoForm: { 
-    pedidoId: number; 
-    avaliacaoExistente?: any;
-  };
-  RelatorioAvaliacoes: undefined;
+  AvaliacaoQuestionario: { pedidoId: number };
 };
 
 // --- Navegadores ---
 const Stack = createNativeStackNavigator()
 const Drawer = createDrawerNavigator()
-
-// --- Tipos de usuário ---
-type UserRole = "Admin" | "Fornecedor" | "Cliente"
-
-// --- Interface para itens do menu ---
-interface MenuItem {
-  key: string
-  name: string
-  component: React.ComponentType<any>
-  title: string
-  icon: (props: { color: string; size: number }) => React.ReactNode
-  roles: UserRole[]
-}
-
-// --- Interface para seções do menu ---
-interface MenuSection {
-  title: string
-  items: MenuItem[]
-  isDropdown?: boolean
-  roles: UserRole[]
-}
 
 // --- Componente personalizado para o Drawer ---
 const CustomDrawerContent = (props: any) => {
@@ -150,150 +116,24 @@ const CustomDrawerContent = (props: any) => {
     // getUserRole();
   }, [])
 
-  // Definição das seções e itens do menu
-  const menuSections: MenuSection[] = [
-    {
-      title: "Geral",
-      items: [
-        {
-          key: "Inicio",
-          name: "Inicio",
-          component: InicioScreen,
-          title: "Início",
-          icon: ({ color, size }) => <Ionicons name="home-outline" color={color} size={size} />,
-          roles: ["Admin", "Fornecedor", "Cliente"],
-        },
-      ],
-      roles: ["Admin", "Fornecedor", "Cliente"],
-    },
-    {
-      title: "Fornecedor",
-      isDropdown: true,
-      items: [
-        {
-          key: "Cadastro Produto",
-          name: "Cadastro Produto",
-          component: ProductListScreen,
-          title: "Gerenciar Produtos",
-          icon: ({ color, size }) => <Ionicons name="cube-outline" color={color} size={size} />,
-          roles: ["Admin", "Fornecedor"],
-        },
-        {
-          key: "PromocaoList",
-          name: "PromocaoList",
-          component: PromotionListItem,
-          title: 'Gerenciar Promoções', 
-          icon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
-          roles: ["Admin", "Fornecedor"],
-       },
-        {
-          key: "LoteList",
-          name: "LoteList",
-          component: LotListScreen,
-          title: 'Gerenciar Lotes', 
-          icon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
-          roles: ["Admin", "Fornecedor"],
-       },
-      ],
-      roles: ["Admin", "Fornecedor"],
-    },
-    {
-      title: "Admin",
-      isDropdown: true,
-      items: [
-        {
-          key: "Cadastro Categoria",
-          name: "Cadastro Categoria",
-          component: CategoriaListScreen,
-          title: "Gerenciar Categorias",
-          icon: ({ color, size }) => <Ionicons name="pricetag-outline" color={color} size={size} />,
-          roles: ["Admin"],
-        },
-        {
-          key: "Cadastro Marca",
-          name: "Cadastro Marca",
-          component: MarcaListScreen,
-          title: "Gerenciar Marcas",
-          icon: ({ color, size }) => <Ionicons name="bookmark-outline" color={color} size={size} />,
-          roles: ["Admin"],
-        },
-        {
-          key: "Cadastro Tipo",
-          name: "Cadastro Tipo",
-          component: TipoListScreen,
-          title: "Gerenciar Tipos",
-          icon: ({ color, size }) => <Ionicons name="file-tray-outline" color={color} size={size} />,
-          roles: ["Admin"],
-        },
-        {
-          key: "Aprovacao de Produtos",
-          name: "Aprovacao de Produtos",
-          component: AprovacaoListScreen,
-          title: "Aprovar Produtos",
-          icon: ({ color, size }) => <Ionicons name="checkmark-done-outline" color={color} size={size} />,
-          roles: ["Admin"],
-        },
-        {
-          key: "EstadoList",
-          name: "EstadoList",
-          component: EstadoListScreen,
-          title: "Gerenciar Estados",
-          icon: ({ color, size }) => <Ionicons name="map-outline" color={color} size={size} />,
-          roles: ["Admin"],
-        },
-        {
-          key: "CidadeList",
-          name: "CidadeList",
-          component: CidadeListScreen,
-          title: "Gerenciar Cidades",
-          icon: ({ color, size }) => <Ionicons name="business-outline" color={color} size={size} />,
-          roles: ["Admin"],
-        },
-        {
-          key: "PessoaList",
-          name: "PessoaList",
-          component: UserListScreen,
-          title: "Gerenciar Usuários",
-          icon: ({ color, size }) => <Ionicons name="people-outline" color={color} size={size} />,
-          roles: ["Admin"],
-        },
-        { 
-          key: "PerguntaList", 
-          name: "PerguntaList", 
-          component: PerguntaListScreen, 
-          title: "Gerenciar Perguntas", 
-          icon: ({ color, size }) => <Ionicons name="help-circle-outline" color={color} size={size} />, 
-          roles: ["Admin"] 
-        },
-      ],
-      roles: ["Admin"],
-    },
-    {
-      title: "Sistema",
-      items: [
-        {
-          key: "Relatorios",
-          name: "Relatorios",
-          component: RelatoriosScreen,
-          title: "Relatórios",
-          icon: ({ color, size }) => <Ionicons name="stats-chart-outline" color={color} size={size} />,
-          roles: ["Admin"],
-        },
-        {
-          key: "Configuracoes",
-          name: "Configuracoes",
-          component: ConfigScreen,
-          title: "Configurações",
-          icon: ({ color, size }) => <Ionicons name="settings-outline" color={color} size={size} />,
-          roles: ["Admin", "Fornecedor", "Cliente"],
-        },
-      ],
-      roles: ["Admin", "Fornecedor", "Cliente"],
-    },
-  ]
+  const menuSections: MenuSection[] = useMemo(() => {
+    const menuScreens = drawerScreenConfigs.filter((screen) => screen.showInMenu !== false)
+    const screensMap = menuScreens.reduce((acc, screen) => {
+      acc[screen.name] = screen
+      return acc
+    }, {} as Record<string, MenuItem>)
+
+    return createMenuSections(screensMap)
+  }, [])
 
   // Filtrar seções com base no papel do usuário
-  const filteredSections = menuSections.filter((section) => section.roles.includes(userRole))
+  const filteredSections = menuSections
+    .filter((section) => section.roles.includes(userRole))
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => item.roles.includes(userRole)),
+    }))
+    .filter((section) => section.items.length > 0)
   const insets = useSafeAreaInsets();
   return (
     
@@ -326,34 +166,32 @@ const CustomDrawerContent = (props: any) => {
             )}
 
             {(!section.isDropdown || expandedSections[section.title]) &&
-              section.items
-                .filter((item) => item.roles.includes(userRole))
-                .map((item, itemIndex) => (
-                  <TouchableOpacity
-                    key={`item-${item.key}`}
+              section.items.map((item) => (
+                <TouchableOpacity
+                  key={`item-${item.key}`}
+                  style={[
+                    navigatorStyles.menuItem,
+                    section.isDropdown && navigatorStyles.submenuItem,
+                    props.state.routes[props.state.index].name === item.name && navigatorStyles.activeMenuItem,
+                  ]}
+                  onPress={() => {
+                    props.navigation.navigate(item.name)
+                  }}
+                >
+                  {item.icon({
+                    color: props.state.routes[props.state.index].name === item.name ? "#4CAF50" : "white",
+                    size: 24,
+                  })}
+                  <Text
                     style={[
-                      navigatorStyles.menuItem,
-                      section.isDropdown && navigatorStyles.submenuItem,
-                      props.state.routes[props.state.index].name === item.name && navigatorStyles.activeMenuItem,
+                      navigatorStyles.menuItemText,
+                      props.state.routes[props.state.index].name === item.name && navigatorStyles.activeMenuItemText,
                     ]}
-                    onPress={() => {
-                      props.navigation.navigate(item.name)
-                    }}
                   >
-                    {item.icon({
-                      color: props.state.routes[props.state.index].name === item.name ? "#4CAF50" : "white",
-                      size: 24,
-                    })}
-                    <Text
-                      style={[
-                        navigatorStyles.menuItemText,
-                        props.state.routes[props.state.index].name === item.name && navigatorStyles.activeMenuItemText,
-                      ]}
-                    >
-                      {item.title}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                    {item.title}
+                  </Text>
+                </TouchableOpacity>
+              ))}
 
             {sectionIndex < filteredSections.length - 1 && <View style={navigatorStyles.divider} />}
           </View>
@@ -370,187 +208,253 @@ const CustomDrawerContent = (props: any) => {
   )
 }
 
+interface DrawerScreenConfig extends MenuItem {
+  renderDesktopHeader?: () => React.ReactNode
+  renderMobileHeader?: (navigation: any) => React.ReactNode
+  extraOptions?: any
+  showInMenu?: boolean
+}
+
+const fallbackIcon: MenuItem["icon"] = ({ color, size }) => (
+  <Ionicons name="ellipse-outline" color={color} size={size} />
+)
+
+const getIconForScreen = (name: string): MenuItem["icon"] => baseIconMap[name] ?? fallbackIcon
+
+const drawerScreenConfigs: DrawerScreenConfig[] = [
+  {
+    key: "Inicio",
+    name: "Inicio",
+    component: InicioScreen,
+    title: "Início",
+    icon: getIconForScreen("Inicio"),
+    roles: ["Admin", "Fornecedor", "Cliente"],
+    renderDesktopHeader: () => <CustomHeader showFilter={true} />,
+  },
+  {
+    key: "Cadastro Produto",
+    name: "Cadastro Produto",
+    component: ProductListScreen,
+    title: "Gerenciar Produtos",
+    icon: getIconForScreen("Cadastro Produto"),
+    roles: ["Admin", "Fornecedor"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "PromocaoList",
+    name: "PromocaoList",
+    component: PromotionScreenWrapper,
+    title: "Gerenciar Promoções",
+    icon: getIconForScreen("PromocaoList"),
+    roles: ["Admin", "Fornecedor"],
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "LoteList",
+    name: "LoteList",
+    component: LotListScreen,
+    title: "Listagem de lotes",
+    icon: getIconForScreen("LoteList"),
+    roles: ["Admin", "Fornecedor"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "LoteForm",
+    name: "LoteForm",
+    component: LotFormScreen,
+    title: "Formulário de lotes",
+    icon: getIconForScreen("LoteForm"),
+    roles: ["Admin", "Fornecedor"],
+    showInMenu: false,
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "Cadastro Categoria",
+    name: "Cadastro Categoria",
+    component: CategoriaListScreen,
+    title: "Gerenciar Categorias",
+    icon: getIconForScreen("Cadastro Categoria"),
+    roles: ["Admin"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "Cadastro Marca",
+    name: "Cadastro Marca",
+    component: MarcaListScreen,
+    title: "Gerenciar Marcas",
+    icon: getIconForScreen("Cadastro Marca"),
+    roles: ["Admin"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "Cadastro Tipo",
+    name: "Cadastro Tipo",
+    component: TipoListScreen,
+    title: "Gerenciar Tipos",
+    icon: getIconForScreen("Cadastro Tipo"),
+    roles: ["Admin"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "Aprovacao de Produtos",
+    name: "Aprovacao de Produtos",
+    component: AprovacaoListScreen,
+    title: "Aprovar Produtos",
+    icon: getIconForScreen("Aprovacao de Produtos"),
+    roles: ["Admin"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "EstadoList",
+    name: "EstadoList",
+    component: EstadoListScreen,
+    title: "Gerenciar Estados",
+    icon: getIconForScreen("EstadoList"),
+    roles: ["Admin"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "CidadeList",
+    name: "CidadeList",
+    component: CidadeListScreen,
+    title: "Gerenciar Cidades",
+    icon: getIconForScreen("CidadeList"),
+    roles: ["Admin"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "PessoaList",
+    name: "PessoaList",
+    component: UserListScreen,
+    title: "Gerenciar Usuários",
+    icon: getIconForScreen("PessoaList"),
+    roles: ["Admin"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "Relatorios",
+    name: "Relatorios",
+    component: RelatoriosScreen,
+    title: "Relatórios",
+    icon: getIconForScreen("Relatorios"),
+    roles: ["Admin"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "Configuracoes",
+    name: "Configuracoes",
+    component: ConfigScreen,
+    title: "Configurações",
+    icon: getIconForScreen("Configuracoes"),
+    roles: ["Admin", "Fornecedor", "Cliente"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "Sair",
+    name: "Sair",
+    component: LogoutScreen,
+    title: "Sair",
+    icon: getIconForScreen("Sair"),
+    roles: ["Admin", "Fornecedor", "Cliente"],
+    showInMenu: false,
+    extraOptions: { drawerItemStyle: { display: "none" } },
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+]
+
 // --- Componente que define o Drawer Navigator ---
 const MainAppDrawer = () => {
-  // Definição das telas do Drawer
-  const drawerScreens = [
-    // Tela Início
-    <Drawer.Screen
-      key="Inicio"
-      name="Inicio"
-      component={InicioScreen}
-      options={{
-        title: "Início",
-        drawerIcon: ({ color, size }) => <Ionicons name="home-outline" color={color} size={size} />,
-        header: () => <CustomHeader showFilter={true} />,
-      }}
-      
-    />,
-
-    // Tela Gerenciar Produtos (Fornecedor)
-    <Drawer.Screen
-      key="Cadastro Produto"
-      name="Cadastro Produto"
-      component={ProductListScreen}
-      options={{
-        title: "Gerenciar Produtos",
-        drawerIcon: ({ color, size }) => <Ionicons name="cube-outline" color={color} size={size} />,
-      }}
-    />,
-    <Drawer.Screen 
-      key="PromocaoList" 
-      name="PromocaoList" 
-      component={PromotionScreenWrapper} 
-      options={{ 
-        title:'Gerenciar Promoções', 
-        drawerIcon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
-        headerShown: false,
-       }} 
-    />,
-    <Drawer.Screen 
-      key="LoteList" 
-      name="LoteList" 
-      component={LotListScreen} 
-      options={{ 
-        title:'Listagem de lotes', 
-        drawerIcon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
-       }} 
-    />,
-    <Drawer.Screen 
-      key="LoteForm" 
-      name="LoteForm" 
-      component={LotFormScreen} 
-      options={{ 
-        title:'Formulário de lotes', 
-        drawerIcon: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
-       }} 
-    />,
-
-    // Telas Admin
-    <Drawer.Screen
-      key="Cadastro Categoria"
-      name="Cadastro Categoria"
-      component={CategoriaListScreen}
-      options={{
-        title: "Gerenciar Categorias",
-        drawerIcon: ({ color, size }) => <Ionicons name="pricetag-outline" color={color} size={size} />,
-      }}
-    />,
-    <Drawer.Screen
-      key="Cadastro Marca"
-      name="Cadastro Marca"
-      component={MarcaListScreen}
-      options={{
-        title: "Gerenciar Marcas",
-        drawerIcon: ({ color, size }) => <Ionicons name="bookmark-outline" color={color} size={size} />,
-      }}
-    />,
-    <Drawer.Screen
-      key="Cadastro Tipo"
-      name="Cadastro Tipo"
-      component={TipoListScreen}
-      options={{
-        title: "Gerenciar Tipos",
-        drawerIcon: ({ color, size }) => <Ionicons name="file-tray-outline" color={color} size={size} />,
-      }}
-    />,
-    <Drawer.Screen
-      key="Aprovacao de Produtos"
-      name="Aprovacao de Produtos"
-      component={AprovacaoListScreen}
-      options={{
-        title: "Aprovar Produtos",
-        drawerIcon: ({ color, size }) => <Ionicons name="checkmark-done-outline" color={color} size={size} />,
-      }}
-    />,
-    <Drawer.Screen
-      key="EstadoList"
-      name="EstadoList"
-      component={EstadoListScreen}
-      options={{
-        title: "Gerenciar Estados",
-        drawerIcon: ({ color, size }) => <Ionicons name="map-outline" color={color} size={size} />,
-      }}
-    />,
-    <Drawer.Screen
-      key="CidadeList"
-      name="CidadeList"
-      component={CidadeListScreen}
-      options={{
-        title: "Gerenciar Cidades",
-        drawerIcon: ({ color, size }) => <Ionicons name="business-outline" color={color} size={size} />,
-      }}
-    />,
-    <Drawer.Screen
-      key="PessoaList"
-      name="PessoaList"
-      component={UserListScreen}
-      options={{
-        title: "Gerenciar Usuários",
-        drawerIcon: ({ color, size }) => <Ionicons name="people-outline" color={color} size={size} />,
-      }}
-    />,
-
-    // Telas Sistema (no final)
-    <Drawer.Screen
-      key="Relatorios"
-      name="Relatorios"
-      component={RelatoriosScreen}
-      options={{
-        title: "Relatórios",
-        drawerIcon: ({ color, size }) => <Ionicons name="stats-chart-outline" color={color} size={size} />,
-      }}
-    />,
-    <Drawer.Screen
-      key="Configuracoes"
-      name="Configuracoes"
-      component={ConfigScreen}
-      options={{
-        title: "Configurações",
-        drawerIcon: ({ color, size }) => <Ionicons name="settings-outline" color={color} size={size} />,
-        headerShown: false,
-      }}
-    />,
-    <Drawer.Screen 
-      key="PerguntaList"
-      name="PerguntaList"
-      component={PerguntaListScreen}
-      options={{ title: "Gerenciar Perguntas" }}
-    />,
-
-    // Tela Sair (oculta no drawer)
-    <Drawer.Screen
-      key="Sair"
-      name="Sair"
-      component={LogoutScreen}
-      options={{ drawerItemStyle: { display: "none" } }}
-    />,
-  ]
+  const { width } = useWindowDimensions()
+  const isDesktop = width >= 768
 
   return (
     <Drawer.Navigator
       initialRouteName="Inicio"
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
-        header: () => <CustomHeader />,
         drawerActiveTintColor: "#4CAF50",
         drawerInactiveTintColor: "white",
         drawerLabelStyle: { color: "white", fontSize: 16, marginLeft: 5 },
-        drawerStyle: { backgroundColor: "#2F4F4F" },
+        drawerStyle: { backgroundColor: "#2F4F4F", width: isDesktop ? undefined : '100%' },
+        drawerType: isDesktop ? 'slide' : 'front',
+        overlayColor: isDesktop ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.45)',
+        headerShown: false,
       }}
     >
-      {drawerScreens}
+      {drawerScreenConfigs.map((screen) => (
+        <Drawer.Screen
+          key={screen.name}
+          name={screen.name}
+          component={screen.component}
+          options={({ navigation }) => {
+            const options: any = {
+              title: screen.title,
+              drawerIcon: screen.icon,
+              ...(screen.extraOptions || {}),
+            }
+
+            if (isDesktop) {
+              if (screen.renderDesktopHeader) {
+                options.headerShown = true
+                options.header = () => screen.renderDesktopHeader!()
+              } else if (options.headerShown === undefined) {
+                options.headerShown = false
+              }
+            } else {
+              if (screen.renderMobileHeader) {
+                options.headerShown = true
+                options.header = () => screen.renderMobileHeader!(navigation)
+              } else if (options.headerShown === undefined) {
+                options.headerShown = false
+              }
+            }
+
+            return options
+          }}
+        />
+      ))}
     </Drawer.Navigator>
   )
 }
 
 // --- Navegador Principal da Aplicação ---
 const AppNavigator = () => {
+  const { width } = useWindowDimensions()
+  const isDesktop = width >= 768
+
   return (
     <SafeAreaProvider>
       <SearchProvider>
         <CartProvider>
-          <Stack.Navigator initialRouteName="Dashboard">
+          <Stack.Navigator
+            initialRouteName="Login"
+            screenOptions={({ navigation, route }) => {
+              if (isDesktop) {
+                return {}
+              }
+
+              if (route.name === "Login" || route.name === "Dashboard") {
+                return { headerShown: false }
+              }
+
+              return {
+                headerShown: true,
+                header: () => <MobileBackHeader onBack={() => navigation.goBack()} />,
+              }
+            }}
+          >
             {/* Telas fora do Drawer */}
             <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Cadastro" component={CadastroScreen} options={{ title: "Criar Conta" }} />
@@ -577,77 +481,16 @@ const AppNavigator = () => {
             <Stack.Screen name="PessoaForm" component={UserFormScreen} options={{ title: "Editar Usuário" }} />
             <Stack.Screen name="PromocaoForm" component={PromotionFormScreen} options={{ title: "Formulário de Promoção" }} />
             <Stack.Screen name="PromocaoDetail" component={PromotionDetailScreen} options={{ title: "Detalhes da Promoção" }} />
-            <Stack.Screen name="ShoppingCart" component={ShoppingCartScreen} options={{ title: "Carrinho de Compras" }} />
-            <Stack.Screen name="PerguntaForm" component={PerguntaFormScreen} options={{ title: "Formulário de Pergunta" }} />
-            <Stack.Screen name="AvaliacaoForm" component={AvaliacaoFormScreen} options={{ title: "Avaliar Compra" }} />
-            <Stack.Screen name="RelatorioAvaliacoes" component={RelatorioAvaliacoesScreen} options={{ title: "Relatório de Avaliações" }} />
+            <Stack.Screen
+              name="ShoppingCart"
+              component={ShoppingCartScreen}
+              options={{ title: "Carrinho de Compras" }}
+            />
           </Stack.Navigator>
         </CartProvider>
       </SearchProvider>
     </SafeAreaProvider>
   )
-}
-
-// --- Componente que verifica autenticação e decide qual navegador mostrar ---
-const AuthNavigator = () => {
-  const { isAuthenticated, isLoading, twoFactorPending } = useAuth();
-
-  if (isLoading) {
-    // Mostrar tela de loading enquanto verifica autenticação
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Carregando...</Text>
-      </View>
-    );
-  }
-
-  if (twoFactorPending) {
-    // Usuário fez login mas precisa validar 2FA
-    return (
-      <Stack.Navigator initialRouteName="TwoFactorVerification">
-        <Stack.Screen name="TwoFactorVerification" component={TwoFactorVerificationScreen} options={{ headerShown: false }} />
-      </Stack.Navigator>
-    );
-  }
-
-  if (!isAuthenticated) {
-    // Usuário não autenticado - mostrar telas de login
-    return (
-      <Stack.Navigator initialRouteName="Login">
-        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Cadastro" component={CadastroScreen} options={{ title: "Criar Conta" }} />
-      </Stack.Navigator>
-    );
-  }
-
-  // Usuário autenticado - mostrar app principal com drawer
-  return (
-    <Stack.Navigator initialRouteName="Dashboard">
-      {/* Tela que contém o Drawer */}
-      <Stack.Screen name="Dashboard" component={MainAppDrawer} options={{ headerShown: false }} />
-
-      {/* Telas de Formulário/Detalhe chamadas de dentro do Drawer */}
-      <Stack.Screen name="EstadoForm" component={EstadoFormScreen} options={{ title: "Formulário de Estado" }} />
-      <Stack.Screen name="CidadeForm" component={CityFormScreen} options={{ title: "Formulário de Cidade" }} />
-      <Stack.Screen
-        name="CategoriaForm"
-        component={CategoriaFormScreen}
-        options={{ title: "Formulário de Categoria" }}
-      />
-      <Stack.Screen name="MarcaForm" component={MarcaFormScreen} options={{ title: "Formulário de Marca" }} />
-      <Stack.Screen name="TipoForm" component={TipoFormScreen} options={{ title: "Formulário de Tipo" }} />
-      <Stack.Screen name="ProductForm" component={ProductFormScreen} options={{ title: "Formulário de Produto" }} />
-      <Stack.Screen
-        name="AprovacaoDetail"
-        component={AprovacaoDetailScreen}
-        options={{ title: "Aprovar/Rejeitar Produto" }}
-      />
-      <Stack.Screen name="PessoaForm" component={UserFormScreen} options={{ title: "Editar Usuário" }} />
-      <Stack.Screen name="PromocaoForm" component={PromotionFormScreen} options={{ title: "Formulário de Promoção" }} />
-      <Stack.Screen name="PromocaoDetail" component={PromotionDetailScreen} options={{ title: "Detalhes da Promoção" }} />
-      <Stack.Screen name="ShoppingCart" component={ShoppingCartScreen} options={{ title: "Carrinho de Compras" }} />
-    </Stack.Navigator>
-  );
 }
 
 export default AppNavigator

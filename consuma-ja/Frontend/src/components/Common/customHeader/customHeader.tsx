@@ -23,6 +23,10 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({ showFilter = false, showAdd
   const { getTotalItems } = useCart();
   const [selectedFilters, setSelectedFilters] = useState<any[]>([]);
 
+  if (!isLargeScreen) {
+    return null;
+  }
+
   const totalItems = getTotalItems();
 
   useEffect(() => {

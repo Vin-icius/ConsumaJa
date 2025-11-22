@@ -1,10 +1,23 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator, Alert, ScrollView, Platform, Modal } from 'react-native';
-import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator, Alert, Modal, useWindowDimensions, TextInput } from 'react-native';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import promocaoService from '../../services/promocaoService';
 import { Ionicons } from '@expo/vector-icons';
-import { promotionDetailStyles } from '../../common/styles/Promotions/promotionDetailScreen.styled';
+import { createPromotionDetailStyles } from '../../common/styles/Promotions/promotionDetailScreen.styled';
 import { useCart } from '../../contexts/CartContext/cartContext';
+import { resolveProductImageUrl } from '../../utils/image';
+
+const DEFAULT_PRODUCT_IMAGE = require('../../assets/placeholder.png');
+
+const getProductImageSource = (uri?: string | null) => {
+  if (uri && typeof uri === 'string' && uri.trim().length > 0) {
+    const resolved = resolveProductImageUrl(uri);
+    if (resolved) {
+      return { uri: resolved };
+    }
+  }
+  return DEFAULT_PRODUCT_IMAGE;
+};
 interface ProdutoInfoParaDetalhe {
     produto_id: number;
     produto_nome: string;
@@ -45,7 +58,6 @@ const PromotionDetailScreen = () => {
   const [promocao, setPromocao] = useState<PromocaoDetalhada | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [cart, setCart] = useState<ItemPromocaoParaDetalhe[]>([]); // Manter cart local
 
   // Estados para o modal de quantidade
   const [quantityModalVisible, setQuantityModalVisible] = useState(false);
@@ -53,6 +65,7 @@ const PromotionDetailScreen = () => {
   const [selectedQuantity, setSelectedQuantity] = useState(1);
 
   const { addToCart: addToCartContext } = useCart();
+  const [addingToCart, setAddingToCart] = useState(false);
 
   const fetchDetalhes = useCallback(async () => {
     if (!promocaoId) { setError("ID da promoção não fornecido."); setLoading(false); return; }
@@ -74,9 +87,30 @@ const PromotionDetailScreen = () => {
     } finally { setLoading(false); }
   }, [promocaoId, navigation]);
 
-  useEffect(() => { fetchDetalhes(); }, [fetchDetalhes]);
+  useFocusEffect(useCallback(() => {
+    fetchDetalhes();
+  }, [fetchDetalhes]));
+
+  const { width } = useWindowDimensions();
+  const promotionDetailStyles = useMemo(() => createPromotionDetailStyles(width >= 768), [width]);
+
+  const maxAvailable = useMemo(() => {
+    if (!selectedItem) return 1;
+    return Math.max(0, Math.min(selectedItem.lote.lote_quantidade_atual, selectedItem.itemPromocao_qtde));
+  }, [selectedItem]);
+
+  const updateQuantity = useCallback((value: number) => {
+    const normalized = Number.isFinite(value) ? value : 1;
+    const clamped = Math.max(1, Math.min(normalized, maxAvailable || 1));
+    setSelectedQuantity(clamped);
+  }, [maxAvailable]);
 
   const openQuantityModal = (item: ItemPromocaoParaDetalhe) => {
+    const available = Math.min(item.lote.lote_quantidade_atual, item.itemPromocao_qtde);
+    if (available <= 0) {
+      Alert.alert('Indisponível', 'Esta promoção não possui quantidade disponível no momento.');
+      return;
+    }
     setSelectedItem(item);
     setSelectedQuantity(1);
     setQuantityModalVisible(true);
@@ -88,41 +122,75 @@ const PromotionDetailScreen = () => {
     setSelectedQuantity(1);
   };
 
-  const confirmAddToCart = () => {
-    if (!selectedItem) return;
+  const handleDecrease = () => updateQuantity(selectedQuantity - 1);
+  const handleIncrease = () => updateQuantity(selectedQuantity + 1);
 
-    // Adicionar ao carrinho global usando o contexto
-    addToCartContext({
-      produto_id: selectedItem.produto.produto_id,
-      produto_nome: selectedItem.produto.produto_nome,
-      produto_imagem_url: selectedItem.produto.produto_imagem_url,
-      lote_id: selectedItem.LOTEPROD_lote_id,
-      lote_codigo: selectedItem.lote.lote_codigo,
-      itemPromocao_valor: selectedItem.itemPromocao_valor,
-      maxQuantidade: selectedItem.itemPromocao_qtde,
-      quantidade: selectedQuantity,
-      promocao_id: promocao?.promocao_id,
-      fornecedor_nome: promocao?.fornecedor.pessoa_nome,
-    });
-
-    Alert.alert("Sucesso!", `${selectedItem.produto.produto_nome} adicionado ao carrinho (${selectedQuantity} unidade${selectedQuantity > 1 ? 's' : ''}).`);
-    closeQuantityModal();
+  const handleQuantityInputChange = (text: string) => {
+    const sanitized = text.replace(/\D/g, '');
+    if (!sanitized) {
+      setSelectedQuantity(1);
+      return;
+    }
+    updateQuantity(parseInt(sanitized, 10));
   };
 
-  const addToCart = (item: ItemPromocaoParaDetalhe) => {
-    if (item.lote.lote_quantidade_atual <= 0) { Alert.alert("Indisponível", "Este item do lote está esgotado."); return; }
-    setCart(prevCart => [...prevCart, item]);
-    Alert.alert("Adicionado!", `${item.produto.produto_nome} adicionado ao carrinho.`);
+  const effectiveMaxAvailable = maxAvailable || 1;
+
+  useEffect(() => {
+    if (!quantityModalVisible || !selectedItem) return;
+    if (selectedQuantity > effectiveMaxAvailable) {
+      setSelectedQuantity(Math.max(1, effectiveMaxAvailable));
+    }
+  }, [effectiveMaxAvailable, quantityModalVisible, selectedItem, selectedQuantity]);
+
+  const confirmAddToCart = async () => {
+    if (!selectedItem || !promocao) return;
+
+    const maxPermitido = Math.min(selectedItem.lote.lote_quantidade_atual, selectedItem.itemPromocao_qtde);
+    if (maxPermitido <= 0) {
+      Alert.alert('Indisponível', 'Esta promoção não possui quantidade disponível no momento.');
+      return;
+    }
+
+    const quantidadeFinal = Math.min(selectedQuantity, maxPermitido);
+
+    setAddingToCart(true);
+    try {
+      await addToCartContext({
+        produtoId: selectedItem.produto.produto_id,
+        loteId: selectedItem.LOTEPROD_lote_id,
+        promocaoId: promocao.promocao_id,
+        quantidade: quantidadeFinal,
+      });
+      Alert.alert(
+        'Sucesso!',
+        `${selectedItem.produto.produto_nome} adicionado ao carrinho (${quantidadeFinal} unidade${quantidadeFinal > 1 ? 's' : ''}).`,
+      );
+      closeQuantityModal();
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        'Não foi possível adicionar o item ao carrinho.';
+      Alert.alert('Erro', message);
+    } finally {
+      setAddingToCart(false);
+    }
   };
 
   const renderProductItem = ({ item }: { item: ItemPromocaoParaDetalhe }) => {
     const nomeCompleto = `${item.produto.produto_nome}${item.produto.marca?.marca_nome ? `, ${item.produto.marca.marca_nome}` : ''}${item.produto.categoria?.categoria_nome ? `, ${item.produto.categoria.categoria_nome}` : ''}${item.produto.tipo?.tipo_nome ? `, ${item.produto.tipo.tipo_nome}` : ''}`;
     const validadeString = item.lote.lote_validade ? new Date(item.lote.lote_validade).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'N/A';
+    const disponibilidadeLote = Math.max(0, item.lote.lote_quantidade_atual);
+    const disponibilidadePromo = Math.max(0, item.itemPromocao_qtde);
+    const disponibilidadeTotal = Math.min(disponibilidadeLote, disponibilidadePromo);
+    const isDisponivel = disponibilidadeTotal > 0;
 
     return (
         <View style={promotionDetailStyles.productItem}>
           <Image
-            source={item.produto.produto_imagem_url ? { uri: item.produto.produto_imagem_url } : require('../../assets/placeholder.png')}
+            source={getProductImageSource(item.produto.produto_imagem_url)}
             style={promotionDetailStyles.productImage}
             resizeMode="contain"
           />
@@ -133,13 +201,16 @@ const PromotionDetailScreen = () => {
                 <Text style={promotionDetailStyles.originalPrice}>De: R$ {Number(item.produto.produto_precoOriginal).toFixed(2)}</Text>
             )}
             <Text style={promotionDetailStyles.promoPrice}>Por: R$ {Number(item.itemPromocao_valor).toFixed(2)}</Text>
-            <Text style={promotionDetailStyles.productStock}>Disponível (lote): {item.lote.lote_quantidade_atual} / Ofertado (promo): {item.itemPromocao_qtde}</Text>
+            <Text style={promotionDetailStyles.productStock}>
+              Disponível (lote): {disponibilidadeLote} / Ofertado (promo): {disponibilidadePromo}
+            </Text>
+            <Text style={promotionDetailStyles.productStock}>Quantidade restante para venda: {disponibilidadeTotal}</Text>
             <Text style={promotionDetailStyles.productValidity}>Validade Lote: {validadeString}</Text>
           </View>
           <TouchableOpacity
-            style={[promotionDetailStyles.addToCartButton, item.lote.lote_quantidade_atual <= 0 && promotionDetailStyles.disabledButton]}
+            style={[promotionDetailStyles.addToCartButton, !isDisponivel && promotionDetailStyles.disabledButton]}
             onPress={() => openQuantityModal(item)}
-            disabled={item.lote.lote_quantidade_atual <= 0}
+            disabled={!isDisponivel}
           >
             <Ionicons name="cart-outline" size={20} color="white" />
             <Text style={promotionDetailStyles.addToCartButtonText}>Adicionar</Text>
@@ -149,11 +220,26 @@ const PromotionDetailScreen = () => {
   };
 
   if (loading) return <ActivityIndicator size="large" color="#007bff" style={promotionDetailStyles.centered} />;
-  if (error) return <View style={promotionDetailStyles.centered}><Text style={promotionDetailStyles.errorText}>{error}</Text><TouchableOpacity onPress={fetchDetalhes}><Text style={promotionDetailStyles.retryText}>Tentar Novamente</Text></TouchableOpacity></View>;
-  if (!promocao) return <Text style={promotionDetailStyles.centered}>Promoção não encontrada ou dados inválidos.</Text>;
+  if (error) {
+    return (
+      <View style={promotionDetailStyles.centered}>
+        <Text style={promotionDetailStyles.errorText}>{error}</Text>
+        <TouchableOpacity onPress={fetchDetalhes}>
+          <Text style={promotionDetailStyles.retryText}>Tentar Novamente</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+  if (!promocao) {
+    return (
+      <View style={promotionDetailStyles.centered}>
+        <Text style={promotionDetailStyles.emptyText}>Promoção não encontrada ou dados inválidos.</Text>
+      </View>
+    );
+  }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={promotionDetailStyles.screen}>
       <FlatList
           ListHeaderComponent={
               <View style={promotionDetailStyles.header}>
@@ -190,7 +276,7 @@ const PromotionDetailScreen = () => {
             {selectedItem && (
               <View style={promotionDetailStyles.modalProductInfo}>
                 <Image
-                  source={selectedItem.produto.produto_imagem_url ? { uri: selectedItem.produto.produto_imagem_url } : require('../../assets/placeholder.png')}
+                  source={getProductImageSource(selectedItem.produto.produto_imagem_url)}
                   style={promotionDetailStyles.modalProductImage}
                   resizeMode="contain"
                 />
@@ -211,21 +297,27 @@ const PromotionDetailScreen = () => {
             <View style={promotionDetailStyles.quantitySelector}>
               <TouchableOpacity
                 style={promotionDetailStyles.quantityButton}
-                onPress={() => setSelectedQuantity(Math.max(1, selectedQuantity - 1))}
+                onPress={handleDecrease}
+                disabled={selectedQuantity <= 1}
               >
-                <Ionicons name="remove" size={24} color="#007bff" />
+                <Ionicons name="remove" size={24} color={selectedQuantity <= 1 ? '#ccd4dc' : '#007bff'} />
               </TouchableOpacity>
 
-              <Text style={promotionDetailStyles.quantityText}>{selectedQuantity}</Text>
+              <TextInput
+                style={promotionDetailStyles.quantityInput}
+                keyboardType="numeric"
+                value={String(selectedQuantity)}
+                onChangeText={handleQuantityInputChange}
+                returnKeyType="done"
+                maxLength={3}
+              />
 
               <TouchableOpacity
                 style={promotionDetailStyles.quantityButton}
-                onPress={() => setSelectedQuantity(Math.min(
-                  selectedItem ? Math.min(selectedItem.lote.lote_quantidade_atual, selectedItem.itemPromocao_qtde) : 1,
-                  selectedQuantity + 1
-                ))}
+                onPress={handleIncrease}
+                disabled={selectedQuantity >= effectiveMaxAvailable}
               >
-                <Ionicons name="add" size={24} color="#007bff" />
+                <Ionicons name="add" size={24} color={selectedQuantity >= effectiveMaxAvailable ? '#ccd4dc' : '#007bff'} />
               </TouchableOpacity>
             </View>
 
@@ -242,11 +334,18 @@ const PromotionDetailScreen = () => {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[promotionDetailStyles.modalButton, promotionDetailStyles.confirmButton]}
+                style={[promotionDetailStyles.modalButton, promotionDetailStyles.confirmButton, addingToCart && promotionDetailStyles.disabledButton]}
                 onPress={confirmAddToCart}
+                disabled={addingToCart}
               >
-                <Ionicons name="cart" size={20} color="white" />
-                <Text style={promotionDetailStyles.confirmButtonText}>Adicionar ao Carrinho</Text>
+                {addingToCart ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="cart" size={20} color="white" />
+                    <Text style={promotionDetailStyles.confirmButtonText}>Adicionar ao Carrinho</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
           </View>

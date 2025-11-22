@@ -1,6 +1,10 @@
 import { pessoaApiClient } from '../api/client'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
+const USER_TOKEN_KEY = 'userToken'
+const USER_TYPE_KEY = 'userType'
+const USER_INFO_KEY = 'userInfo'
+
 const handleRequest = async (requestPromise) => {
   try {
     const response = await requestPromise
@@ -17,34 +21,18 @@ const login = (credentials) => {
 
 const storeAuthData = async (token, user) => {
   try {
-    console.log('[AuthService] storeAuthData - token:', token)
-    console.log('[AuthService] storeAuthData - user object:', user)
-
-    await AsyncStorage.setItem('userToken', token)
-
-    // Mapear campos do usuário - tentar diferentes formatos
-    const userId = user?.pessoa_id || user?.id || user?.userId
-    const userType = user?.tipo || user?.userType || user?.role
-    const userName = user?.pessoa_nome || user?.nome || user?.name || user?.userName
-    const userEmail = user?.pessoa_email || user?.email || user?.userEmail
-
-    console.log('[AuthService] Mapped fields - userId:', userId, 'userType:', userType, 'userName:', userName, 'userEmail:', userEmail)
-
-    if (userId) await AsyncStorage.setItem('userId', userId.toString())
-    if (userType) await AsyncStorage.setItem('userType', userType)
-    if (userName) await AsyncStorage.setItem('userName', userName)
-    if (userEmail) await AsyncStorage.setItem('userEmail', userEmail)
-
-    console.log('[AuthService] storeAuthData - data stored successfully')
+    await AsyncStorage.setItem(USER_TOKEN_KEY, token)
+    if (user?.tipo) await AsyncStorage.setItem(USER_TYPE_KEY, user.tipo)
+    if (user) await AsyncStorage.setItem(USER_INFO_KEY, JSON.stringify(user))
   } catch (e) {
     console.error('[AuthService] Erro ao salvar dados:', e)
-    throw new Error("Erro ao salvar os dados da sessão.")
+    throw new Error('Erro ao salvar os dados da sessão.')
   }
 }
 
 const clearAuthData = async () => {
   try {
-    await AsyncStorage.multiRemove(['userToken', 'userType', 'userId', 'userName', 'userEmail'])
+    await AsyncStorage.multiRemove([USER_TOKEN_KEY, USER_TYPE_KEY, USER_INFO_KEY])
   } catch (e) {
     console.error('[AuthService] Erro ao limpar dados:', e)
   }
@@ -52,32 +40,21 @@ const clearAuthData = async () => {
 
 const getToken = async () => {
   try {
-    return await AsyncStorage.getItem('userToken')
+    return await AsyncStorage.getItem(USER_TOKEN_KEY)
   } catch (e) {
     console.error('[AuthService] Erro ao obter token:', e)
     return null
   }
 }
 
-const getCurrentUser = async () => {
+const getStoredUser = async () => {
   try {
-    const [userId, userType, userName, userEmail] = await AsyncStorage.multiGet([
-      'userId', 'userType', 'userName', 'userEmail'
-    ])
-    return {
-      pessoa_id: userId[1] ? parseInt(userId[1]) : null,
-      tipo: userType[1] || null,
-      pessoa_nome: userName[1] || null,
-      pessoa_email: userEmail[1] || null,
-    }
+    const raw = await AsyncStorage.getItem(USER_INFO_KEY)
+    return raw ? JSON.parse(raw) : null
   } catch (e) {
     console.error('[AuthService] Erro ao obter dados do usuário:', e)
     return null
   }
-}
-
-const verifyTwoFactor = (tempToken, code) => {
-  return handleRequest(pessoaApiClient.post('/auth/verify-2fa', { tempToken, code }))
 }
 
 export default {
@@ -85,6 +62,5 @@ export default {
   storeAuthData,
   clearAuthData,
   getToken,
-  getCurrentUser,
-  verifyTwoFactor,
+  getStoredUser,
 }

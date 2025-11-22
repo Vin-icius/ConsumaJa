@@ -17,9 +17,10 @@ export class ProdutoController {
       this.atualizarProduto = this.atualizarProduto.bind(this);
       this.excluirProduto = this.excluirProduto.bind(this);
       this.aprovarProduto = this.aprovarProduto.bind(this);
-      this.rejeitarProduto = this.rejeitarProduto.bind(this);
-      this.listarPendentes = this.listarPendentes.bind(this);
-      this.listarParaSelecao = this.listarParaSelecao.bind(this);
+   this.rejeitarProduto = this.rejeitarProduto.bind(this);
+   this.listarPendentes = this.listarPendentes.bind(this);
+   this.listarParaSelecao = this.listarParaSelecao.bind(this);
+   this.uploadImagem = this.uploadImagem.bind(this);
   }
 
   async criarProduto(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -91,6 +92,21 @@ export class ProdutoController {
          if (isNaN(id) || id <= 0) { throw new AppError("ID inválido.", 400); }
          await this.produtoService.excluirProduto(id);
          res.status(204).send();
+      } catch (error) { next(error); }
+  }
+
+  async uploadImagem(req: Request, res: Response, next: NextFunction): Promise<void> {
+      try {
+         const id = parseInt(req.params.id, 10);
+         if (isNaN(id) || id <= 0) { throw new AppError("ID inválido.", 400); }
+         if (!req.file) {
+           throw new AppError("Nenhuma imagem enviada para o produto.", 400);
+         }
+         const produto = await this.produtoService.definirImagemPrincipal(id, req.file.filename);
+         res.status(200).json({
+            message: "Imagem do produto atualizada com sucesso.",
+            produto,
+         });
       } catch (error) { next(error); }
   }
 

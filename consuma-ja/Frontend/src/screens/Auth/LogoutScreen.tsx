@@ -1,33 +1,42 @@
 import React, { useEffect } from 'react';
 import { View, Text, ActivityIndicator, Alert } from 'react-native';
-import { useAuth } from '../../contexts/AuthContext/authContext';
+import { useNavigation } from '@react-navigation/native';
 import { logoutStyles } from '../../common/styles/Auth/logoutScreen.styled';
+import authService from '../../services/authService';
 
 const LogoutScreen = () => {
-  const { logout, isLoading } = useAuth();
+  // Usar tipo específico se disponível, senão 'any'
+  const navigation = useNavigation<any>();
 
   useEffect(() => {
-    const performLogout = async () => {
-      try {
-        console.log('[LogoutScreen] Iniciando logout...');
-        await logout();
-        console.log('[LogoutScreen] Logout realizado com sucesso');
-        // A navegação será feita automaticamente pelo AuthNavigator
-        // quando o estado de autenticação mudar
-      } catch (error) {
-        console.error('[LogoutScreen] Erro durante logout:', error);
-        Alert.alert(
-          'Erro',
-          'Não foi possível completar o logout. Tente novamente.',
-          [{ text: 'OK' }]
-        );
-      }
+    const performLogout = () => {
+      Alert.alert(
+        'Sair',
+        'Tem certeza que deseja sair?',
+        [
+          { text: 'Cancelar', style: 'cancel', onPress: () => navigation.goBack() },
+          { text: 'Sair', style: 'destructive', onPress: async () => {
+              try {
+                console.log('[LogoutScreen] Limpando dados de sessão...');
+                await authService.clearAuthData();
+                console.log('[LogoutScreen] Redirecionando para Login...');
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Login' }],
+                });
+              } catch (e) {
+                console.error("[LogoutScreen] Erro:", e);
+                Alert.alert("Erro", "Não foi possível completar o logout.");
+                navigation.goBack();
+              }
+           }},
+        ],
+        { cancelable: false }
+      );
     };
-
-    // Pequeno delay para mostrar o loading
-    const timer = setTimeout(performLogout, 100);
+    const timer = setTimeout(performLogout, 50);
     return () => clearTimeout(timer);
-  }, [logout]);
+  }, [navigation]);
 
   return (
     <View style={logoutStyles.container}>

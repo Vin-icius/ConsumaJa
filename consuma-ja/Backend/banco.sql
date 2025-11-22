@@ -408,6 +408,40 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
+-- Table `ConsumaJaDB`.`shopping_cart`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`SHOPPING_CART` (
+  `cart_item_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `PESSOA_pessoa_id` INT UNSIGNED NOT NULL,
+  `PRODUTO_produto_id` INT UNSIGNED NOT NULL,
+  `PROMOCAO_promocao_id` INT NULL DEFAULT NULL,
+  `LOTEPROD_lote_id` INT NOT NULL,
+  `quantidade` INT UNSIGNED NOT NULL,
+  `unit_price` DECIMAL(10,2) NOT NULL,
+  `status` ENUM('ACTIVE', 'REMOVED', 'PURCHASED', 'EXPIRED') NOT NULL DEFAULT 'ACTIVE',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`cart_item_id`),
+  INDEX `idx_cart_user_status` (`PESSOA_pessoa_id` ASC, `status` ASC) VISIBLE,
+  INDEX `idx_cart_lote` (`LOTEPROD_lote_id` ASC) VISIBLE,
+  CONSTRAINT `fk_CART_PESSOA1`
+    FOREIGN KEY (`PESSOA_pessoa_id`)
+    REFERENCES `ConsumaJaDB`.`PESSOA` (`pessoa_id`),
+  CONSTRAINT `fk_CART_PRODUTO1`
+    FOREIGN KEY (`PRODUTO_produto_id`)
+    REFERENCES `ConsumaJaDB`.`PRODUTO` (`produto_id`),
+  CONSTRAINT `fk_CART_PROMOCAO1`
+    FOREIGN KEY (`PROMOCAO_promocao_id`)
+    REFERENCES `ConsumaJaDB`.`PROMOCAO` (`promocao_id`),
+  CONSTRAINT `fk_CART_LOTE1`
+    FOREIGN KEY (`LOTEPROD_lote_id`)
+    REFERENCES `ConsumaJaDB`.`LOTEPROD` (`lote_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
 -- Table `ConsumaJaDB`.`perguntas`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`PERGUNTAS` (

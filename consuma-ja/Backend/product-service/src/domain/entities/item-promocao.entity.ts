@@ -10,6 +10,7 @@ export interface ItemPromocaoPreview {
     produto_nome: string;
     itemPromocao_valor: number;
     produto_imagem_url: string | null; // Do JOIN com PRODUTO
+    imagem_url?: string | null;
 }
 
 export interface ItemPromocao {
@@ -22,7 +23,8 @@ export interface ItemPromocao {
         produto_nome: string;
         produto_medida: string; // <<< Garantir que está aqui
         produto_precoOriginal?: number;
-        produto_imagem_url?: string | null;
+    produto_imagem_url?: string | null;
+    imagem_url?: string | null;
         // <<< Adicionar tipos para as relações >>>
         categoria?: Pick<Categoria, 'categoria_nome'> | null;
         marca?: Pick<Marca, 'marca_nome'> | null;

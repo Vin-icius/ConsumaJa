@@ -1,14 +1,17 @@
-  import { Produto } from "../../domain/entities/produto.entity";
-  import { ProdutoRepository } from "../../domain/repositories/produto.repository";
-  import { CategoriaRepository } from "../../domain/repositories/categoria-produto.repository";
-  import { MarcaRepository } from "../../domain/repositories/marca-produto.repository";
-  import { TipoRepository } from "../../domain/repositories/tipo-produto.repository";
-  import { AppError } from "../../common/errors/app-error";
-  import { CreateProdutoDto } from "../../interfaces/dtos/create-produto.dto";
-  import { UpdateProdutoDto } from "../../interfaces/dtos/update-produto.dto";
-  import { RejeitarProdutoDto } from "../../interfaces/dtos/rejeitar-produto.dto";
-  import { ListarProdutosSelecaoQueryDto } from "../../interfaces/dtos/listar-produtos-selecao-query.dto"
-  import { ListarProdutosQueryDto } from "../../interfaces/dtos/listar-produtos-query.dto"
+    import { Produto } from "../../domain/entities/produto.entity";
+    import { ProdutoRepository } from "../../domain/repositories/produto.repository";
+    import { CategoriaRepository } from "../../domain/repositories/categoria-produto.repository";
+    import { MarcaRepository } from "../../domain/repositories/marca-produto.repository";
+    import { TipoRepository } from "../../domain/repositories/tipo-produto.repository";
+    import { AppError } from "../../common/errors/app-error";
+    import { CreateProdutoDto } from "../../interfaces/dtos/create-produto.dto";
+    import { UpdateProdutoDto } from "../../interfaces/dtos/update-produto.dto";
+    import { RejeitarProdutoDto } from "../../interfaces/dtos/rejeitar-produto.dto";
+    import { ListarProdutosSelecaoQueryDto } from "../../interfaces/dtos/listar-produtos-selecao-query.dto"
+    import { ListarProdutosQueryDto } from "../../interfaces/dtos/listar-produtos-query.dto"
+    import path from "path";
+    import fs from "fs";
+    import { resolveProductImageDir } from "../../common/utils/image-url";
 
   export interface PaginatedServiceResponse<T> {
     data: T[];
@@ -137,6 +140,53 @@
               console.error(`[Service] Erro ao excluir produto ${id}:`, error);
               throw new AppError(`Erro interno ao excluir produto ${id}.`, 500, false);
         }
+    }
+
+    private extrairNomeArquivoImagem(imagemUrl: string | null | undefined): string | null {
+        if (!imagemUrl) return null;
+        try {
+            const url = new URL(imagemUrl, "http://placeholder");
+            const pathname = url.pathname || imagemUrl;
+            const segments = pathname.split("/").filter(Boolean);
+            return segments.length ? segments[segments.length - 1] : null;
+        } catch (_error) {
+            const trimmed = imagemUrl.trim();
+            if (!trimmed) return null;
+            const parts = trimmed.split("/").filter(Boolean);
+            return parts.length ? parts[parts.length - 1] : trimmed;
+        }
+    }
+
+    private async removerImagemAnterior(produto: Produto): Promise<void> {
+        const nomeArquivo = this.extrairNomeArquivoImagem(produto.produto_imagem_url);
+        if (!nomeArquivo || !nomeArquivo.startsWith("produto_")) {
+            return;
+        }
+        const imagemDir = resolveProductImageDir();
+        const caminhoArquivo = path.join(imagemDir, nomeArquivo);
+        try {
+            await fs.promises.stat(caminhoArquivo);
+            await fs.promises.unlink(caminhoArquivo);
+        } catch (error: any) {
+            if (error?.code !== "ENOENT") {
+                console.warn(`[ProdutoService] Falha ao remover imagem antiga (${caminhoArquivo}):`, error);
+            }
+        }
+    }
+
+    async definirImagemPrincipal(id: number, arquivoArmazenado: string): Promise<Produto> {
+        if (!arquivoArmazenado || !arquivoArmazenado.trim()) {
+            throw new AppError("Arquivo de imagem inválido para atualização.", 400);
+        }
+
+        const produtoAtual = await this.buscarProdutoPorId(id);
+        await this.removerImagemAnterior(produtoAtual);
+
+        const atualizado = await this.produtoRepository.atualizar(id, { produto_imagem_url: arquivoArmazenado });
+        if (!atualizado) {
+            throw new AppError(`Produto com ID ${id} não encontrado para atualizar imagem.`, 404);
+        }
+        return atualizado;
     }
 
     // --- Métodos de Aprovação ---

@@ -4,6 +4,19 @@ import { useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, Image, useWindowDimensions, Platform } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import MarqueeText from "./MarqueeText" // Importação corrigida para o mesmo diretório
+import { resolveProductImageUrl } from "../../utils/image"
+
+const DEFAULT_PRODUCT_IMAGE = require("../../assets/placeholder.png")
+
+const getItemImageSource = (uri?: string) => {
+  if (uri && uri.trim().length > 0) {
+    const resolved = resolveProductImageUrl(uri)
+    if (resolved) {
+      return { uri: resolved }
+    }
+  }
+  return DEFAULT_PRODUCT_IMAGE
+}
 
 // Tipos
 interface PromocaoCardProps {
@@ -57,13 +70,7 @@ const PromocaoCard = ({ promocao_descricao, fornecedor, itens_preview, onPressDe
       <View style={styles.imageSection}>
         {hasItems ? (
           <>
-            {currentItem?.imagem_url ? (
-              <Image source={{ uri: currentItem.imagem_url }} style={styles.itemImage} resizeMode="cover" />
-            ) : (
-              <View style={styles.itemImagePlaceholder}>
-                <Ionicons name="image-outline" size={32} color="#aaa" />
-              </View>
-            )}
+            <Image source={getItemImageSource(currentItem?.imagem_url)} style={styles.itemImage} resizeMode="cover" />
 
             {/* Botões de navegação do carrossel */}
             {itens_preview.length > 1 && (

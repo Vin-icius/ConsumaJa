@@ -1,7 +1,13 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProdutoService = void 0;
 const app_error_1 = require("../../common/errors/app-error");
+const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
+const image_url_1 = require("../../common/utils/image-url");
 class ProdutoService {
     constructor(produtoRepository, categoriaRepository, marcaRepository, tipoRepository) {
         this.produtoRepository = produtoRepository;
@@ -121,6 +127,52 @@ class ProdutoService {
             console.error(`[Service] Erro ao excluir produto ${id}:`, error);
             throw new app_error_1.AppError(`Erro interno ao excluir produto ${id}.`, 500, false);
         }
+    }
+    extrairNomeArquivoImagem(imagemUrl) {
+        if (!imagemUrl)
+            return null;
+        try {
+            const url = new URL(imagemUrl, "http://placeholder");
+            const pathname = url.pathname || imagemUrl;
+            const segments = pathname.split("/").filter(Boolean);
+            return segments.length ? segments[segments.length - 1] : null;
+        }
+        catch (_error) {
+            const trimmed = imagemUrl.trim();
+            if (!trimmed)
+                return null;
+            const parts = trimmed.split("/").filter(Boolean);
+            return parts.length ? parts[parts.length - 1] : trimmed;
+        }
+    }
+    async removerImagemAnterior(produto) {
+        const nomeArquivo = this.extrairNomeArquivoImagem(produto.produto_imagem_url);
+        if (!nomeArquivo || !nomeArquivo.startsWith("produto_")) {
+            return;
+        }
+        const imagemDir = (0, image_url_1.resolveProductImageDir)();
+        const caminhoArquivo = path_1.default.join(imagemDir, nomeArquivo);
+        try {
+            await fs_1.default.promises.stat(caminhoArquivo);
+            await fs_1.default.promises.unlink(caminhoArquivo);
+        }
+        catch (error) {
+            if ((error === null || error === void 0 ? void 0 : error.code) !== "ENOENT") {
+                console.warn(`[ProdutoService] Falha ao remover imagem antiga (${caminhoArquivo}):`, error);
+            }
+        }
+    }
+    async definirImagemPrincipal(id, arquivoArmazenado) {
+        if (!arquivoArmazenado || !arquivoArmazenado.trim()) {
+            throw new app_error_1.AppError("Arquivo de imagem inválido para atualização.", 400);
+        }
+        const produtoAtual = await this.buscarProdutoPorId(id);
+        await this.removerImagemAnterior(produtoAtual);
+        const atualizado = await this.produtoRepository.atualizar(id, { produto_imagem_url: arquivoArmazenado });
+        if (!atualizado) {
+            throw new app_error_1.AppError(`Produto com ID ${id} não encontrado para atualizar imagem.`, 404);
+        }
+        return atualizado;
     }
     // --- Métodos de Aprovação ---
     async listarProdutosPendentes() {
