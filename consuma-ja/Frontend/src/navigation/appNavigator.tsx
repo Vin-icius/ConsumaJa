@@ -79,8 +79,10 @@ export type RootStackParamList = {
   ProductForm: { produtoId?: number };
   AprovacaoDetail: { produto: any };
   PessoaForm: { pessoaId?: number };
-  // --- Adicione a nova rota aqui ---
-  AvaliacaoQuestionario: { pedidoId: number };
+  AvaliacaoForm: { pedidoId: number };
+  RelatorioAvaliacoes: undefined;
+  ReclamacaoForm: { vendaId: number; pessoaId: number };
+  ReclamacaoAdminList: undefined;
 };
 
 // --- Navegadores ---
@@ -119,6 +121,33 @@ const CustomDrawerContent = (props: any) => {
     // Comentado para usar o valor padrão 'Admin' para teste
     getUserRole();
   }, [])
+
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      try {
+        // Busca tudo que está salvo sobre o usuário
+        const role = await AsyncStorage.getItem("userRole");
+        const token = await AsyncStorage.getItem("userToken");
+        const userId = await AsyncStorage.getItem("userId"); // Ou "user_id" ou "id" (depende de como seu LoginScreen salva)
+        const userData = await AsyncStorage.getItem("userData"); // Caso tenha salvo o objeto inteiro
+
+        console.log("\n=== QUEM ESTÁ LOGADO? ===");
+        console.log("🔐 Token existe?", !!token); // True ou False
+        console.log("🎭 Role (Papel):", role);
+        console.log("🆔 ID Salvo:", userId);
+        console.log("📄 Dados Completos:", userData);
+        console.log("=========================\n");
+
+        if (role && (role === "Admin" || role === "Fornecedor" || role === "Cliente")) {
+          setUserRole(role as UserRole);
+        }
+      } catch (error) {
+        console.error("Erro ao verificar login:", error);
+      }
+    };
+
+    checkLoginStatus();
+  }, []);
 
   const menuSections: MenuSection[] = useMemo(() => {
     const menuScreens = drawerScreenConfigs.filter((screen) => screen.showInMenu !== false)
@@ -525,6 +554,11 @@ const AppNavigator = () => {
               name="RelatorioAvaliacoes" 
               component={RelatorioAvaliacoesScreen} 
               options={{ title: 'Relatório Avaliações' }}
+            />
+            <Stack.Screen
+              name="AvaliacaoForm"
+              component={AvaliacaoFormScreen}
+              options={{ title: "Formulário de Avaliação" }}
             />
           </Stack.Navigator>
         </CartProvider>

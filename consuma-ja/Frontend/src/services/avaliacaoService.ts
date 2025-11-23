@@ -4,6 +4,7 @@ import { productApiClient } from '../api/client';
 // --- INTERFACES DE TIPO ---
 export interface CriarAvaliacaoPayload {
   venda_id: number;
+  pessoa_id: number;
   respostas: {
     pergunta_id: number;
     nota: number;
@@ -45,8 +46,8 @@ const handleRequest = async <T>(requestPromise: Promise<AxiosResponse<T>>): Prom
 };
 
 const avaliacaoService = {
-  enviarRespostas: (data: CriarAvaliacaoPayload): Promise<AvaliacaoResponse> => 
-    handleRequest(productApiClient.post<AvaliacaoResponse>('/avaliacoes', data)),
+  enviarRespostas: (data: CriarAvaliacaoPayload): Promise<any> => 
+    handleRequest(productApiClient.post('/avaliacoes', data)),
 
   buscarPorVendaId: (vendaId: number): Promise<AvaliacaoResponse | null> => 
     handleRequest(productApiClient.get(`/avaliacoes/venda/${vendaId}`)),

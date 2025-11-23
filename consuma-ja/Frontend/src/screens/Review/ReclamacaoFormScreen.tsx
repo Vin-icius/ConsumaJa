@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { orderApiClient } from '../../api/client';
+import reclamacaoService from '../../services/reclamacaoService';
 
 const ReclamacaoFormScreen = () => {
   const navigation = useNavigation();
@@ -54,36 +55,23 @@ const ReclamacaoFormScreen = () => {
 
     setLoading(true);
 
-    const dadosReclamacao = {
-      titulo,
-      descricao,
-      classificacao: nota,
-      venda_id: vendaId,
-      pessoa_id: pessoaId
-    };
-
-    console.log("Enviando dados:", dadosReclamacao);
-
     try {
-      // POST para /reclamacoes (A BaseURL já tem /api/order)
-      await orderApiClient.post('/reclamacoes', dadosReclamacao);
+      // A chamada agora usa o método do objeto reclamacaoService
+      await reclamacaoService.criarReclamacao({
+        titulo: titulo.trim(),
+        descricao: descricao.trim(),
+        classificacao: parseInt(classificacao),
+        venda_id: vendaId,
+        pessoa_id: pessoaId
+      });
       
-      Alert.alert('Sucesso', 'Sua reclamação foi registrada e será analisada.');
+      Alert.alert('Sucesso', 'Reclamação registrada com sucesso!');
       navigation.goBack();
 
-    } catch (error: any) {
-      console.error("ERRO AO SALVAR:", error);
-
-      if (error.response) {
-        // Erro vindo do Backend (ex: 400, 500)
-        const msg = error.response.data?.message || JSON.stringify(error.response.data);
-        Alert.alert('Erro no Servidor', `O servidor recusou o registro: ${msg}`);
-      } else if (error.request) {
-        // Erro de Rede (Backend desligado ou IP errado)
-        Alert.alert('Erro de Conexão', 'Não foi possível contatar o servidor. Verifique sua internet ou o IP configurado.');
-      } else {
-        Alert.alert('Erro', 'Ocorreu um erro inesperado.');
-      }
+    } catch (err: any) {
+      // O erro já vem tratado ou logado pelo handleRequest do service
+      const message = err.response?.data?.message || "Não foi possível registrar a reclamação.";
+      Alert.alert("Erro", message);
     } finally {
       setLoading(false);
     }

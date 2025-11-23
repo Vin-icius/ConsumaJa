@@ -12,6 +12,7 @@ import {
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import type { StackNavigationProp } from "@react-navigation/stack"
+import AsyncStorage from "@react-native-async-storage/async-storage" // <--- Importante
 import authService from "../../services/authService"
 import { styles } from "../../common/styles/Auth/loginScreen.styled"
 import { useCart } from "../../contexts/CartContext/cartContext"
@@ -33,7 +34,9 @@ interface LoginScreenProps {
 interface LoginResponse {
   token: string
   user: {
+    id: number
     tipo: string
+    pessoa_tipo?: string // Alguns backends retornam assim
     [key: string]: any
   }
 }
@@ -74,13 +77,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   // Funções de formatação CPF/CNPJ
   const formatCPF = (value: string): string => {
-    // Remove todos os caracteres não numéricos
     const cleaned = value.replace(/\D/g, "")
-
-    // Limita a 11 dígitos (CPF)
     const cpf = cleaned.slice(0, 11)
-
-    // Aplica a máscara de CPF
     if (cpf.length <= 3) return cpf
     if (cpf.length <= 6) return `${cpf.slice(0, 3)}.${cpf.slice(3)}`
     if (cpf.length <= 9) return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6)}`
@@ -88,13 +86,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   }
 
   const formatCNPJ = (value: string): string => {
-    // Remove todos os caracteres não numéricos
     const cleaned = value.replace(/\D/g, "")
-
-    // Limita a 14 dígitos (CNPJ)
     const cnpj = cleaned.slice(0, 14)
-
-    // Aplica a máscara de CNPJ
     if (cnpj.length <= 2) return cnpj
     if (cnpj.length <= 5) return `${cnpj.slice(0, 2)}.${cnpj.slice(2)}`
     if (cnpj.length <= 8) return `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5)}`
@@ -102,43 +95,28 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     return `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8, 12)}-${cnpj.slice(12)}`
   }
 
-  // Função para determinar se é um CPF ou CNPJ e aplicar a formatação correta
   const formatDocument = (value: string): string => {
-    // Remove todos os caracteres não numéricos
     const cleaned = value.replace(/\D/g, "")
-
-    // Se for um número de ID curto (até 3 dígitos), retorna sem formatação
     if (cleaned.length <= 3) return cleaned
-
-    // Se tiver até 11 dígitos, formata como CPF
     if (cleaned.length <= 11) return formatCPF(cleaned)
-
-    // Se tiver mais de 11 dígitos, formata como CNPJ
     return formatCNPJ(cleaned)
   }
 
-  // Atualiza state e aplica formatação
   const handleIdentifierChange = (text: string) => {
-    // Remove todos os caracteres não numéricos do texto inserido
     const onlyNumbers = text.replace(/\D/g, "")
-
-    // Se o usuário tentar inserir algo não numérico, ignoramos
     if (text !== onlyNumbers && !text.includes(".") && !text.includes("-") && !text.includes("/")) {
       return
     }
-
-    // Aplicamos a formatação adequada baseada no número de dígitos
     setIdentifier(formatDocument(onlyNumbers))
   }
 
-  // Função para focar no próximo input
   const focusNextInput = () => {
     if (passwordInputRef.current) {
       passwordInputRef.current.focus()
     }
   }
 
-  // Handler de login
+  // --- HANDLER DE LOGIN (AQUI ESTÁ A MÁGICA) ---
   const handleLogin = async () => {
     Keyboard.dismiss()
     setErrorMessage("")
@@ -163,22 +141,52 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       })) as LoginResponse
 
       const { token, user } = response
+      
       if (token && user?.id) {
-        await authService.storeAuthData(token, user)
+        // 1. Salvar Token (Isso o authService já deve fazer, mas garantimos aqui)
+        await AsyncStorage.setItem('userToken', token);
+        
+        // 2. Salvar ID do Usuário (CRUCIAL PARA AVALIAÇÃO/RECLAMAÇÃO)
+        await AsyncStorage.setItem('userId', String(user.id));
+
+        // 3. Definir o Papel (Role) para o Menu Lateral
+        // O banco retorna 'Fisica', 'Juridica' ou 'Admin'
+        // O menu espera 'Cliente', 'Fornecedor' ou 'Admin'
+        let roleParaMenu = 'Cliente'; // Padrão
+        const tipoDoBanco = user.tipo || user.pessoa_tipo;
+
+        if (tipoDoBanco === 'Juridica') roleParaMenu = 'Fornecedor';
+        if (tipoDoBanco === 'Admin') roleParaMenu = 'Admin';
+        if (tipoDoBanco === 'Fisica') roleParaMenu = 'Cliente';
+
+        await AsyncStorage.setItem('userRole', roleParaMenu);
+        
+        // 4. Salvar dados completos (Opcional, bom para debug)
+        await AsyncStorage.setItem('userData', JSON.stringify(user));
+
+        console.log(`[Login] Sucesso! ID: ${user.id}, Role: ${roleParaMenu}`);
+
+        // Atualizar carrinho
         try {
           await refreshCart()
         } catch (refreshError) {
           console.error("Falha ao sincronizar carrinho após login:", refreshError)
         }
-        navigation.replace("Dashboard")
+        
+        // Navegar para Dashboard (Resetando a pilha para não voltar pro login)
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'Dashboard' }],
+        });
+
       } else {
-        setErrorMessage("Erro inesperado na resposta do servidor.")
+        setErrorMessage("Erro inesperado: Token ou Usuário inválido.")
       }
     } catch (error: any) {
       const message =
         error.response?.data?.message ||
         error.message ||
-        "Erro ao tentar fazer login. Verifique suas credenciais ou conexão."
+        "Erro ao tentar fazer login. Verifique suas credenciais."
       setErrorMessage(message)
     } finally {
       setLoading(false)
@@ -190,20 +198,16 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     setForgotPasswordVisible(true)
   }
 
-  // Handler para enviar solicitação de redefinição de senha
   const handleResetPassword = () => {
     if (!resetEmail || !resetEmail.includes("@")) {
       Alert.alert("Erro", "Por favor, insira um email válido.")
       return
     }
-
-    // Aqui você implementaria a chamada à API quando estiver pronta
     Alert.alert(
       "Solicitação Enviada",
-      "Se este email estiver cadastrado em nosso sistema, você receberá instruções para redefinir sua senha.",
+      "Se este email estiver cadastrado, você receberá instruções.",
       [{ text: "OK", onPress: () => setForgotPasswordVisible(false) }],
     )
-
     setResetEmail("")
   }
 
@@ -211,13 +215,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
       <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
         <View style={styles.logoContainer}>
-          {/* <Image source={require('/home/Frontend/src/assets/logo.png')} style={styles.logoImage} /> */}
           <Text style={styles.title}>Bem-vindo</Text>
           <Text style={styles.subtitle}>Faça login para continuar</Text>
         </View>
 
         <View style={styles.formContainer}>
-          {/* Campo de identificação */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}> CPF / CNPJ</Text>
             <View style={styles.inputWrapper}>
@@ -227,7 +229,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 placeholder="Digite seu CPF/CNPJ"
                 value={identifier}
                 onChangeText={handleIdentifierChange}
-                maxLength={18} // Tamanho máximo para CNPJ formatado
+                maxLength={18}
                 keyboardType="numeric"
                 autoCapitalize="none"
                 autoComplete="username"
@@ -237,7 +239,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Campo de senha */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Senha</Text>
             <View style={styles.inputWrapper}>
@@ -259,7 +260,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Mensagem de erro */}
           {errorMessage ? (
             <View style={styles.errorContainer}>
               <Ionicons name="alert-circle-outline" size={18} color="#e74c3c" />
@@ -267,12 +267,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             </View>
           ) : null}
 
-          {/* Esqueci minha senha */}
           <TouchableOpacity style={styles.forgotPasswordLink} onPress={handleForgotPassword}>
             <Text style={styles.forgotPasswordText}>Esqueci minha senha</Text>
           </TouchableOpacity>
 
-          {/* Botão de login */}
           <TouchableOpacity
             style={[styles.loginButton, loading && styles.buttonDisabled]}
             onPress={handleLogin}
@@ -288,14 +286,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             )}
           </TouchableOpacity>
 
-          {/* Separador */}
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
             <Text style={styles.dividerText}>ou</Text>
             <View style={styles.dividerLine} />
           </View>
 
-          {/* Link para cadastro */}
           <View style={styles.registerContainer}>
             <Text style={styles.registerText}>É novo por aqui?</Text>
             <TouchableOpacity onPress={() => navigation.navigate("Cadastro")}>
@@ -305,7 +301,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         </View>
       </Animated.View>
 
-      {/* Modal de Esqueci Minha Senha */}
       {forgotPasswordVisible && (
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>

@@ -13,15 +13,32 @@ export class AvaliacaoController {
     }
 
     async criar(req: Request, res: Response, next: NextFunction): Promise<void> {
-        const pessoaId = 1; // Substituir pelo ID do usuário autenticado (req.user.id)
-        if (!pessoaId) return next(new AppError("Usuário não autenticado.", 401));
-
-        const dto = plainToClass(CreateAvaliacaoDto, req.body);
-        const errors = await validate(dto);
-        if (errors.length > 0) return next(errors);
-
         try {
-            const avaliacao = await this.avaliacaoService.criar(dto, pessoaId);
+            // 1. Tenta pegar o ID que o Frontend enviou no corpo
+            let pessoaId = req.body.pessoa_id;
+
+            // 2. Se não veio no corpo, tenta pegar do Token de Autenticação (fallback)
+            if (!pessoaId && (req as any).user) {
+                pessoaId = (req as any).user.id;
+            }
+
+            // 3. Se ainda assim não tiver ID, retorna erro
+            if (!pessoaId) {
+                return next(new AppError("ID do usuário não fornecido.", 400));
+            }
+
+            console.log(`[AvaliacaoController] Criando avaliação. Venda: ${req.body.venda_id}, Pessoa: ${pessoaId}`);
+
+            // Prepara o DTO
+            const dto = plainToClass(CreateAvaliacaoDto, req.body);
+            
+            // Validação do Class Validator
+            const errors = await validate(dto);
+            if (errors.length > 0) return next(errors);
+
+            // Chama o serviço passando o DTO e o ID correto
+            const avaliacao = await this.avaliacaoService.criar(dto, Number(pessoaId));
+            
             res.status(201).json(avaliacao);
         } catch (error) {
             next(error);

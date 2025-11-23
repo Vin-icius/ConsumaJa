@@ -32,8 +32,8 @@ const Estrelas: React.FC<EstrelasProps> = ({ rating, setRating, size = 35 }) => 
 // --- COMPONENTE PRINCIPAL DA TELA ---
 const AvaliacaoQuestionarioScreen: React.FC = () => {
   const navigation = useNavigation();
-  const route = useRoute<AvaliacaoScreenRouteProp>();
-  const { pedidoId } = route.params;
+  const route = useRoute<any>();
+  const { pedidoId, pessoaId } = route.params;
 
   // --- ESTADOS ---
   const [perguntas, setPerguntas] = useState<Pergunta[]>([]);
@@ -66,28 +66,63 @@ const AvaliacaoQuestionarioScreen: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    console.log("=== INÍCIO DO HANDLER ===");
+    console.log("Perguntas carregadas:", perguntas.length);
+    console.log("Respostas dadas:", Object.keys(respostas).length);
+    console.log("Pedido ID:", pedidoId);
+    console.log("Pessoa ID:", pessoaId);
+
+    // 1. Validação de Perguntas
+    if (perguntas.length === 0) {
+      console.log("ERRO: Nenhuma pergunta carregada na tela.");
+      Alert.alert("Erro", "O formulário não carregou as perguntas corretamente.");
+      return;
+    }
+
+    // 2. Validação de Respostas
     if (Object.keys(respostas).length !== perguntas.length) {
+      console.log("ERRO: Faltam respostas.");
       Alert.alert("Atenção", "Por favor, responda a todas as perguntas para continuar.");
       return;
     }
+    
+    // 3. Validação de Segurança
+    if (!pedidoId || !pessoaId) {
+        console.log("ERRO: ID faltando.", { pedidoId, pessoaId });
+        Alert.alert("Erro Técnico", "Faltam dados de identificação (Pedido ou Usuário).");
+        return;
+    }
+
+    console.log("Validações OK. Iniciando envio...");
     setSubmitLoading(true);
+    
     const respostasPayload = Object.entries(respostas).map(([pergunta_id, nota]) => ({
       pergunta_id: Number(pergunta_id),
       nota,
     }));
+
+    const payloadFinal = {
+      venda_id: pedidoId,
+      pessoa_id: pessoaId,
+      respostas: respostasPayload,
+    };
+
+    console.log("Payload Final:", JSON.stringify(payloadFinal, null, 2));
+
     try {
-      await avaliacaoService.enviarRespostas({
-        venda_id: pedidoId,
-        respostas: respostasPayload,
-      });
+      const response = await avaliacaoService.enviarRespostas(payloadFinal);
+      console.log("SUCESSO! Resposta:", response);
+      
       Alert.alert("Obrigado!", "Sua avaliação foi registrada com sucesso.", [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
     } catch (err: any) {
+      console.error("ERRO NA CHAMADA API:", err);
       const msg = err.response?.data?.message || "Ocorreu um erro ao enviar sua avaliação.";
       Alert.alert("Erro", msg);
     } finally {
       setSubmitLoading(false);
+      console.log("=== FIM DO HANDLER ===");
     }
   };
 
