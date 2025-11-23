@@ -49,6 +49,7 @@ import UserFormScreen from "../screens/User/userFormScreen"
 import AvaliacaoFormScreen from '../screens/Review/AvaliacaoFormScreen';
 import RelatorioAvaliacoesScreen from "../screens/Reports/RelatorioAvaliacoesScreen"
 import EntregasScreen from '../screens/Orders/entregasScreen';
+import DeliverySimulationScreen from '../screens/Orders/DeliverySimulationScreen';
 import ReclamacaoFormScreen from '../screens/Review/ReclamacaoFormScreen';
 import ReclamacaoAdminListScreen from '../screens/Review/ReclamacaoAdminListScreen';
 
@@ -385,6 +386,16 @@ const drawerScreenConfigs: DrawerScreenConfig[] = [
     renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
   },
   {
+    key: "DeliverySimulation", // Tela de Admin
+    name: "DeliverySimulation", // Deve bater com o nome no Stack.Screen
+    component: DeliverySimulationScreen,
+    title: "Simulador de Definir Entrega",
+    icon: getIconForScreen("DeliverySimulation"), // Adicionar ícone no menuConfig
+    roles: ["Admin", "Fornecedor", "Cliente"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
     key: "ReclamacaoList", // Tela de Admin
     name: "ReclamacaoAdminList", // Deve bater com o nome no Stack.Screen
     component: ReclamacaoAdminListScreen,
@@ -559,6 +570,11 @@ const AppNavigator = () => {
               name="AvaliacaoForm"
               component={AvaliacaoFormScreen}
               options={{ title: "Formulário de Avaliação" }}
+            />
+            <Stack.Screen 
+              name="DeliverySimulation" 
+              component={DeliverySimulationScreen} 
+              options={{ title: 'Definir Entrega' }} 
             />
           </Stack.Navigator>
         </CartProvider>

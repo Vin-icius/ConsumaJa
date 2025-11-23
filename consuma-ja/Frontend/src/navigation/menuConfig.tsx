@@ -29,6 +29,7 @@ export const createMenuSections = (screens: Record<string, MenuItem>): MenuSecti
     items: [
       screens['Inicio'],
       screens['Entregas'],
+      screens['DeliverySimulation'],
     ].filter(Boolean) as MenuItem[],
   },
   {
@@ -51,7 +52,6 @@ export const createMenuSections = (screens: Record<string, MenuItem>): MenuSecti
       screens['Cadastro Tipo'],
       screens['Aprovacao de Produtos'],
       screens['ReclamacaoAdminList'],
-      screens['Entregas'],
       screens['EstadoList'],
       screens['CidadeList'],
       screens['PessoaList'],
@@ -78,6 +78,7 @@ export const baseIconMap: Record<string, IconRender> = {
   'Cadastro Tipo': ({ color, size }) => <Ionicons name="file-tray-outline" color={color} size={size} />,
   'Aprovacao de Produtos': ({ color, size }) => <Ionicons name="checkmark-done-outline" color={color} size={size} />,
   Entregas: ({ color, size }) => <Ionicons name="cart-outline" color={color} size={size} />,
+  'DeliverySimulation': ({ color, size }) => <Ionicons name="bicycle-outline" color={color} size={size} />,
   ReclamacaoList: ({ color, size }) => <Ionicons name="alert-circle-outline" color={color} size={size} />,
   EstadoList: ({ color, size }) => <Ionicons name="map-outline" color={color} size={size} />,
   CidadeList: ({ color, size }) => <Ionicons name="business-outline" color={color} size={size} />,

@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { ReclamacaoRoutes } from './interfaces/routes/reclamacao.routes';
 import { pool } from './infrastructure/database/mysql.connection'; // Importar conexão
+import { EntregaRoutes } from './interfaces/routes/entrega.routes';
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ pool.getConnection()
 // --- Rotas ---
 const apiRouter = express.Router();
 apiRouter.use('/reclamacoes', new ReclamacaoRoutes().router);
+apiRouter.use('/entregas', new EntregaRoutes().router);
 
 app.use('/api/order', apiRouter);
 
