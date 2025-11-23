@@ -29,7 +29,7 @@ import LoginScreen from "../screens/Auth/LoginScreen"
 import CadastroScreen from "../screens/Auth/RegisterScreen"
 import LogoutScreen from "../screens/Auth/LogoutScreen"
 import ConfigScreen from "../screens/Core/configScreen"
-import RelatoriosScreen from "../screens/Reports/relatoriosScreen"
+import RelatoriosScreen from "../screens/Reports/RelatoriosScreen"
 import EstadoListScreen from "../screens/Location/EstadoListScreen"
 import EstadoFormScreen from "../screens/Location/EstadoFormScreen"
 import CidadeListScreen from "../screens/Location/cityListScreen"
@@ -47,6 +47,10 @@ import AprovacaoDetailScreen from "../screens/Product/AprovacaoDetailScreen"
 import UserListScreen from "../screens/User/userListScreen"
 import UserFormScreen from "../screens/User/userFormScreen"
 import AvaliacaoFormScreen from '../screens/Review/AvaliacaoFormScreen';
+import RelatorioAvaliacoesScreen from "../screens/Reports/RelatorioAvaliacoesScreen"
+import EntregasScreen from '../screens/Orders/entregasScreen';
+import ReclamacaoFormScreen from '../screens/Review/ReclamacaoFormScreen';
+import ReclamacaoAdminListScreen from '../screens/Review/ReclamacaoAdminListScreen';
 
 import PromotionDetailScreen from '../screens/Promotions/promotionDetailScreen'
 import ShoppingCartScreen from '../screens/Core/homeScreen/shoppingCart/shoppingCart'
@@ -59,7 +63,7 @@ import { navigatorStyles } from "../common/styles/appNavigator/appNavigator"
 import { SearchProvider } from '../contexts/SearchHomeContext/searchHomeContext'
 import CustomHeader from "../components/Common/customHeader/customHeader"
 import CustomHeaderPromotion from "../components/Common/customHeader/customHeaderPromotion"
-import InicioScreen from "../screens/Core/homeScreen/homeScreenLegacy"
+import InicioScreen from "../screens/Core/homeScreen/homeScreen"
 import { CartProvider } from "../contexts/CartContext/cartContext"
 import MobileBackHeader from "../components/Common/mobileHeader/mobileHeader"
 
@@ -113,7 +117,7 @@ const CustomDrawerContent = (props: any) => {
     }
 
     // Comentado para usar o valor padrão 'Admin' para teste
-    // getUserRole();
+    getUserRole();
   }, [])
 
   const menuSections: MenuSection[] = useMemo(() => {
@@ -342,6 +346,26 @@ const drawerScreenConfigs: DrawerScreenConfig[] = [
     renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
   },
   {
+    key: "Entregas", // Tela de Meus Pedidos
+    name: "Entregas", // Deve bater com o nome no Stack.Screen
+    component: EntregasScreen,
+    title: "Meus Pedidos",
+    icon: getIconForScreen("Entregas"), // Você precisará adicionar um ícone no menuConfig.ts
+    roles: ["Cliente", "Admin"], // Quem pode ver no menu
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "ReclamacaoList", // Tela de Admin
+    name: "ReclamacaoAdminList", // Deve bater com o nome no Stack.Screen
+    component: ReclamacaoAdminListScreen,
+    title: "Gerenciar Reclamações",
+    icon: getIconForScreen("ReclamacaoList"), // Adicionar ícone no menuConfig
+    roles: ["Admin"], // Apenas Admin vê no menu
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
     key: "Relatorios",
     name: "Relatorios",
     component: RelatoriosScreen,
@@ -485,6 +509,22 @@ const AppNavigator = () => {
               name="ShoppingCart"
               component={ShoppingCartScreen}
               options={{ title: "Carrinho de Compras" }}
+            />
+            <Stack.Screen name="Entregas" component={EntregasScreen} options={{ title: 'Meus Pedidos' }} />
+            <Stack.Screen 
+              name="ReclamacaoForm" 
+              component={ReclamacaoFormScreen} 
+              options={{ title: 'Relatar Problema' }}
+            />
+            <Stack.Screen 
+              name="ReclamacaoAdminList" 
+              component={ReclamacaoAdminListScreen} 
+              options={{ title: 'Gerenciar Reclamações' }}
+            />
+            <Stack.Screen 
+              name="RelatorioAvaliacoes" 
+              component={RelatorioAvaliacoesScreen} 
+              options={{ title: 'Relatório Avaliações' }}
             />
           </Stack.Navigator>
         </CartProvider>

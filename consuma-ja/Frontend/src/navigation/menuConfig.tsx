@@ -26,7 +26,10 @@ export const createMenuSections = (screens: Record<string, MenuItem>): MenuSecti
   {
     title: 'Geral',
     roles: ['Admin', 'Fornecedor', 'Cliente'],
-    items: [screens['Inicio']].filter(Boolean) as MenuItem[],
+    items: [
+      screens['Inicio'],
+      screens['Entregas'],
+    ].filter(Boolean) as MenuItem[],
   },
   {
     title: 'Fornecedor',
@@ -47,6 +50,8 @@ export const createMenuSections = (screens: Record<string, MenuItem>): MenuSecti
       screens['Cadastro Marca'],
       screens['Cadastro Tipo'],
       screens['Aprovacao de Produtos'],
+      screens['ReclamacaoAdminList'],
+      screens['Entregas'],
       screens['EstadoList'],
       screens['CidadeList'],
       screens['PessoaList'],
@@ -72,6 +77,8 @@ export const baseIconMap: Record<string, IconRender> = {
   'Cadastro Marca': ({ color, size }) => <Ionicons name="bookmark-outline" color={color} size={size} />,
   'Cadastro Tipo': ({ color, size }) => <Ionicons name="file-tray-outline" color={color} size={size} />,
   'Aprovacao de Produtos': ({ color, size }) => <Ionicons name="checkmark-done-outline" color={color} size={size} />,
+  Entregas: ({ color, size }) => <Ionicons name="cart-outline" color={color} size={size} />,
+  ReclamacaoList: ({ color, size }) => <Ionicons name="alert-circle-outline" color={color} size={size} />,
   EstadoList: ({ color, size }) => <Ionicons name="map-outline" color={color} size={size} />,
   CidadeList: ({ color, size }) => <Ionicons name="business-outline" color={color} size={size} />,
   PessoaList: ({ color, size }) => <Ionicons name="people-outline" color={color} size={size} />,

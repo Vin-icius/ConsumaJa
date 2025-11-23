@@ -1,6 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LOCATION_API_URL, PRODUCT_API_URL, PERSON_API_URL } from '../constants/api';
+import { LOCATION_API_URL, PRODUCT_API_URL, PERSON_API_URL, ORDER_API_URL } from '../constants/api';
 
 // --- Instância para Location Service ---
 const locationApiClient = axios.create({
@@ -20,6 +20,11 @@ const pessoaApiClient = axios.create({
   headers: { Accept: 'application/json' },
 });
 
+// --- Instância para Order Service ---
+const orderApiClient = axios.create({
+  baseURL: ORDER_API_URL, // <<< USA A NOVA URL BASE
+  headers: { Accept: 'application/json' },
+});
 
 // --- Interceptores ---
 
@@ -40,6 +45,7 @@ const addAuthTokenInterceptor = (client) => {
 // Aplicar interceptor aos clientes que acessarão rotas protegidas
 // addAuthTokenInterceptor(locationApiClient); // Aplicar se location tiver rotas protegidas
 addAuthTokenInterceptor(productApiClient); // Aplicar se product tiver rotas protegidas
+addAuthTokenInterceptor(orderApiClient);
 // Não aplicar em pessoaApiClient se /auth/login for a única rota ou se ele tiver rotas públicas e protegidas
 
 // Interceptor de Resposta para Erros
@@ -61,7 +67,8 @@ const setupErrorInterceptor = (client) => {
 setupErrorInterceptor(locationApiClient);
 setupErrorInterceptor(productApiClient);
 setupErrorInterceptor(pessoaApiClient);
+setupErrorInterceptor(orderApiClient);
 
 
 // --- Exportar as instâncias ---
-export { locationApiClient, productApiClient, pessoaApiClient };
+export { locationApiClient, productApiClient, pessoaApiClient, orderApiClient };
