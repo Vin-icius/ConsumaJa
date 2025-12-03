@@ -13,18 +13,29 @@ export class CategoriaMySQLRepository implements CategoriaRepository {
       const categoria: Categoria = {
           categoria_id: row.categoria_id,
           categoria_nome: row.categoria_nome,
+          fornecedor_pessoa_id: row.fornecedor_pessoa_id ?? null,
           ativo: Boolean(row.ativo),
       };
       return categoria; // Retorna a variável tipada
       // ------------------------------------------------------------------
   }
 
-  async findByNome(nome: string): Promise<Categoria | null> {
+  async findByNome(nome: string, fornecedorId?: number | null): Promise<Categoria | null> {
       // console.log('[Repo Categoria - findByNome] Verificando pool:', pool ? 'DEFINIDO' : '!!! INDEFINIDO !!!');
-      const query = "SELECT * FROM CATEGORIA_PRODUTO WHERE categoria_nome = ? AND ativo = TRUE LIMIT 1";
+      let query = "SELECT * FROM CATEGORIA_PRODUTO WHERE categoria_nome = ? AND ativo = TRUE";
+      const params: Array<string | number> = [nome];
+
+      if (fornecedorId === null) {
+          query += " AND fornecedor_pessoa_id IS NULL";
+      } else if (typeof fornecedorId === 'number') {
+          query += " AND fornecedor_pessoa_id = ?";
+          params.push(fornecedorId);
+      }
+
+      query += " LIMIT 1";
       try {
           if (!pool) throw new AppError("Pool de conexão não definido!", 500, false);
-          const [rows] = await pool.query<CategoriaRow[]>(query, [nome]);
+          const [rows] = await pool.query<CategoriaRow[]>(query, params);
           return rows.length > 0 ? this.mapRowToCategoria(rows[0]) : null;
       } catch (error: any) {
            console.error("[Repo] Erro ao buscar categoria por nome:", error);
@@ -34,11 +45,11 @@ export class CategoriaMySQLRepository implements CategoriaRepository {
 
   async criar(data: CreateCategoriaData): Promise<Categoria> {
     // console.log('[Repo Categoria - criar] Verificando pool:', pool ? 'DEFINIDO' : '!!! INDEFINIDO !!!');
-    const { categoria_nome } = data;
-    const query = "INSERT INTO CATEGORIA_PRODUTO (categoria_nome) VALUES (?)";
+    const { categoria_nome, fornecedor_pessoa_id } = data;
+    const query = "INSERT INTO CATEGORIA_PRODUTO (categoria_nome, fornecedor_pessoa_id) VALUES (?, ?)";
     try {
         if (!pool) throw new AppError("Pool de conexão não definido!", 500, false);
-        const [result] = await pool.query<ResultSetHeader>(query, [categoria_nome]);
+        const [result] = await pool.query<ResultSetHeader>(query, [categoria_nome, fornecedor_pessoa_id ?? null]);
         const insertedId = result.insertId;
         const novaCategoria = await this.buscarPorId(insertedId, true);
         if (!novaCategoria) throw new AppError("Falha ao buscar categoria após criação.", 500, false);

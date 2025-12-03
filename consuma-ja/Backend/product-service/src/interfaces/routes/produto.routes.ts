@@ -5,10 +5,11 @@ import { ProdutoMySQLRepository } from '../../infrastructure/repositories/produt
 import { CategoriaMySQLRepository } from '../../infrastructure/repositories/categoria.mysql.repository';
 import { MarcaMySQLRepository } from '../../infrastructure/repositories/marca.mysql.repository';
 import { TipoMySQLRepository } from '../../infrastructure/repositories/tipo.mysql.repository';
+// import { productImageUpload } from '../../config/product-images.config';
+import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = express.Router();
 
-// --- Instanciação (Idealmente usar DI) ---
 const categoriaRepository = new CategoriaMySQLRepository();
 const marcaRepository = new MarcaMySQLRepository();
 const tipoRepository = new TipoMySQLRepository();
@@ -21,25 +22,20 @@ const produtoService = new ProdutoService(
 );
 const produtoController = new ProdutoController(produtoService);
 
-// --- Rotas ---
+router.use(authMiddleware);
 
-// <<< ROTAS MAIS ESPECÍFICAS PRIMEIRO >>>
-router.get('/pendentes', /* authMiddleware, */ produtoController.listarPendentes);
+router.get('/pendentes', produtoController.listarPendentes);
 router.get('/para-selecao-promocao', produtoController.listarParaSelecao); // Para o formulário de promoção
-// ------------------------------------
 
-// Rota de listagem geral (pode ter query params, mas não params de rota conflitantes)
-router.get('/', /* authMiddleware, */ produtoController.listarProdutos);
+router.get('/', produtoController.listarProdutos);
 
-// Rotas de criação (sem ID na URL)
-router.post('/', /* authMiddleware, */ produtoController.criarProduto);
+router.post('/', produtoController.criarProduto);
+// router.post('/:id/imagem', productImageUpload.single('imagem'), produtoController.uploadImagem);
 
-// <<< ROTAS COM PARÂMETRO /:id VÊM DEPOIS DAS ESPECÍFICAS >>>
-router.get('/:id', /* authMiddleware, */ produtoController.buscarProdutoPorId);
-router.put('/:id', /* authMiddleware, */ produtoController.atualizarProduto);
-router.delete('/:id', /* authMiddleware, */ produtoController.excluirProduto); // Exclusão lógica
-router.patch('/:id/aprovar', /* authMiddleware, */ produtoController.aprovarProduto);
-router.patch('/:id/rejeitar', /* authMiddleware, */ produtoController.rejeitarProduto);
-// ---------------------------------------------------------
+router.get('/:id', produtoController.buscarProdutoPorId);
+router.put('/:id', produtoController.atualizarProduto);
+router.delete('/:id', produtoController.excluirProduto); // Exclusão lógica
+router.patch('/:id/aprovar', produtoController.aprovarProduto);
+router.patch('/:id/rejeitar', produtoController.rejeitarProduto);
 
 export default router;

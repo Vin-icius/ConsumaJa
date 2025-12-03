@@ -16,7 +16,16 @@ export const tableStyles = StyleSheet.create({
     margin: 10,
   },
   table: {
-    flex: 1,
+    flexGrow: 1,
+    minWidth: 900,
+    alignSelf: 'flex-start',
+  },
+  horizontalScroll: {
+    width: '100%',
+  },
+  horizontalScrollContent: {
+    flexGrow: 1,
+    minWidth: '100%',
   },
   head: {
     backgroundColor: '#f8f9fa',
@@ -74,6 +83,19 @@ export const tableStyles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     color: '#6c757d',
+  },
+  emptyState: {
+    minHeight: 240,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyMessage: {
+    textAlign: 'center',
+    color: '#adb5bd',
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   // Cell variants
   cellLimitWidth: {

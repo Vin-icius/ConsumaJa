@@ -1,17 +1,22 @@
 import express from 'express';
-// Importe as dependências de Avaliação que já criamos
 import { AvaliacaoMySQLRepository } from '../../infrastructure/repositories/avaliacao.mysql.repository';
 import { AvaliacaoService } from '../../application/services/avaliacao.service';
 import { AvaliacaoController } from '../controls/avaliacao.controller';
+import { VendaMySQLRepository } from '../../infrastructure/repositories/venda.mysql.repository';
+import { NotificationMySQLRepository } from '../../infrastructure/repositories/notification.mysql.repository';
+import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = express.Router();
 
-// Instanciação das dependências
 const avaliacaoRepository = new AvaliacaoMySQLRepository();
-const avaliacaoService = new AvaliacaoService(avaliacaoRepository);
+const vendaRepository = new VendaMySQLRepository();
+const notificationRepository = new NotificationMySQLRepository();
+const avaliacaoService = new AvaliacaoService(avaliacaoRepository, vendaRepository, notificationRepository);
 const avaliacaoController = new AvaliacaoController(avaliacaoService);
 
-// A rota agora é a raiz '/', pois o prefixo '/avaliacoes' será definido em main.ts
+router.use(authMiddleware);
+
+router.get('/', avaliacaoController.listar);
 router.post('/', avaliacaoController.criar);
 
 export default router;

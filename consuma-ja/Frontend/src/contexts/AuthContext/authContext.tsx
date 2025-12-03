@@ -1,169 +1,141 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import authService from '../../services/authService';
 import configService from '../../services/configService';
 import { useApplication } from '../ApplicationContext/ApplicationContext';
 
-interface User {
-  pessoa_id: number | null;
-  pessoa_nome: string | null;
-  pessoa_email: string | null;
-  tipo: string | null;
+type Nullable<T> = T | null;
+
+type AuthCredentials = {
+  login: string;
+  senha: string;
+};
+
+type User = {
+  pessoa_id: Nullable<number>;
+  pessoa_nome: Nullable<string>;
+  pessoa_email: Nullable<string>;
+  tipo: Nullable<string>;
   twoFactorEnabled?: boolean;
   twoFactorSecret?: string;
-}
+};
 
-interface AuthContextType {
-  user: User | null;
+type AuthContextValue = {
+  user: Nullable<User>;
   isAuthenticated: boolean;
   isLoading: boolean;
   twoFactorRequired: boolean;
   twoFactorPending: boolean;
-  pendingToken: string | null;
-  pendingUser: User | null;
-  login: (credentials: { login: string; senha: string }, skip2FACheck?: boolean) => Promise<void>;
+  pendingToken: Nullable<string>;
+  pendingUser: Nullable<User>;
+  login: (credentials: AuthCredentials, skip2FACheck?: boolean) => Promise<void>;
   checkTwoFactorStatus: (identifier: string) => Promise<boolean>;
   verifyTwoFactor: (code: string) => Promise<void>;
   logout: () => Promise<void>;
-  enableTwoFactor: () => Promise<{ qrCodeUrl: string; secret: string }>;
+  enableTwoFactor: () => Promise<{ qrCodeUrl: string; secret: string } | undefined>;
   disableTwoFactor: () => Promise<void>;
   confirmTwoFactorSetup: (code: string) => Promise<void>;
   refreshUser: () => Promise<void>;
-}
+};
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-interface AuthProviderProps {
+type AuthProviderProps = {
   children: ReactNode;
-}
+};
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const { userId, setUserData, clearUserData, refreshUserData } = useApplication();
+  const {
+    user: applicationUser,
+    setAuthenticatedUser,
+    setUserData,
+    clearSession: clearApplicationSession,
+    validateActiveSession,
+  } = useApplication();
 
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<Nullable<User>>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [twoFactorRequired, setTwoFactorRequired] = useState(false);
   const [twoFactorPending, setTwoFactorPending] = useState(false);
-  const [pendingToken, setPendingToken] = useState<string | null>(null);
-  const [pendingUser, setPendingUser] = useState<User | null>(null);
+  const [pendingToken, setPendingToken] = useState<Nullable<string>>(null);
+  const [pendingUser, setPendingUser] = useState<Nullable<User>>(null);
 
   useEffect(() => {
     checkAuthState();
   }, []);
 
+  useEffect(() => {
+    if (applicationUser) {
+      setUser(mapUserFromResponse(applicationUser));
+    } else {
+      setUser(null);
+    }
+  }, [applicationUser]);
+
   const checkAuthState = async () => {
     try {
-      const token = await authService.getToken();
-      const currentUser = await authService.getCurrentUser();
-
-      if (token && currentUser) {
-        setUser(currentUser);
-      }
+      await validateActiveSession();
     } catch (error) {
-      console.error('Error checking auth state:', error);
+      console.error('[AuthContext] Erro ao recuperar estado de autenticação:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const mapUserFromResponse = (rawUser: any): User => ({
+    pessoa_id: rawUser?.pessoa_id ?? rawUser?.id ?? null,
+    pessoa_nome: rawUser?.pessoa_nome ?? rawUser?.nome ?? null,
+    pessoa_email: rawUser?.pessoa_email ?? rawUser?.email ?? null,
+    tipo: rawUser?.tipo ?? null,
+  });
+
   const checkTwoFactorStatus = async (identifier: string): Promise<boolean> => {
     try {
-      console.log('[AuthContext] Verificando status 2FA para identificador:', identifier);
       const response = await configService.verificar2FAUsuario(identifier);
-      console.log('[AuthContext] Resposta completa do backend:', JSON.stringify(response));
-      const has2FA = response?.autenticacao_2fa || false;
-      console.log('[AuthContext] Status 2FA processado:', has2FA, 'tipo:', typeof has2FA);
-      return Boolean(has2FA);
+      return Boolean(response?.autenticacao_2fa);
     } catch (error) {
-      console.error('[AuthContext] Erro ao verificar status 2FA:', error);
-      // Em caso de erro, assume que não tem 2FA
+      console.error('[AuthContext] Erro ao verificar status de 2FA:', error);
       return false;
     }
   };
 
-  const login = async (credentials: { login: string; senha: string }, skip2FACheck: boolean = false) => {
+  const login = async (credentials: AuthCredentials, skip2FACheck = false) => {
     try {
       setIsLoading(true);
-      console.log('[AuthContext] Iniciando login para:', credentials.login, 'skip2FACheck:', skip2FACheck);
-
       const response = await authService.login(credentials);
-      console.log('[AuthContext] Login response:', response);
+      const mappedUser = mapUserFromResponse(response.user);
 
       if (skip2FACheck) {
-        // Pular verificação 2FA - login normal
-        console.log('[AuthContext] Pulando verificação 2FA, fazendo login normal');
-        await authService.storeAuthData(response.token, response.user);
-        setUser({
-          pessoa_id: response.user?.pessoa_id || response.user?.id,
-          tipo: response.user?.tipo,
-          pessoa_nome: response.user?.pessoa_nome || response.user?.nome,
-          pessoa_email: response.user?.pessoa_email || response.user?.email,
-        });
-        // Atualizar ApplicationContext
-        setUserData({
-          pessoa_id: response.user?.pessoa_id || response.user?.id,
-          tipo: response.user?.tipo,
-          pessoa_nome: response.user?.pessoa_nome || response.user?.nome,
-          pessoa_email: response.user?.pessoa_email || response.user?.email,
-          token: response.token
-        });
+        setAuthenticatedUser({ user: response.user, token: response.token, session: response.session });
+        setUser(mappedUser);
+        setTwoFactorRequired(false);
+        setTwoFactorPending(false);
+        setPendingToken(null);
+        setPendingUser(null);
         return;
       }
 
-      // SEMPRE verificar se usuário tem 2FA habilitado consultando configurações
-      let userHas2FA = false;
-      try {
-        // Mapear pessoa_id do usuário retornado pelo login
-        const userId = response.user?.pessoa_id || response.user?.id;
-        console.log('[AuthContext] Mapeando pessoa_id:', userId, 'de response.user:', response.user);
-
-        if (userId) {
-          console.log('[AuthContext] Consultando configurações para pessoa_id:', userId);
-          const configData = await configService.getConfiguracoesUsuario(userId);
-          userHas2FA = configData?.autenticacao_2fa || false;
-          console.log('[AuthContext] Status 2FA obtido:', userHas2FA, 'dados completos:', JSON.stringify(configData));
-        } else {
-          console.warn('[AuthContext] pessoa_id/id não encontrado na resposta do login');
+      if (response.twoFactorRequired) {
+        if (!response.twoFactorToken) {
+          throw new Error('Token de verificação 2FA não retornado pelo servidor.');
         }
-      } catch (configError) {
-        console.error('[AuthContext] Erro ao consultar configurações 2FA:', configError);
-        console.error('[AuthContext] Detalhes do erro:', (configError as any)?.response?.data || (configError as Error)?.message);
-        // Em caso de erro, assume que NÃO tem 2FA para não bloquear login
-        userHas2FA = false;
-      }
 
-      if (userHas2FA) {
-        // Usuário tem 2FA habilitado, SEMPRE forçar verificação
-        console.log('[AuthContext] Usuário tem 2FA habilitado - redirecionando para verificação 2FA');
         setTwoFactorRequired(true);
         setTwoFactorPending(true);
-        setPendingToken(response.token);
-        setPendingUser({
-          pessoa_id: response.user?.pessoa_id || response.user?.id,
-          tipo: response.user?.tipo,
-          pessoa_nome: response.user?.pessoa_nome || response.user?.nome,
-          pessoa_email: response.user?.pessoa_email || response.user?.email,
-        });
-        // NÃO completar o login ainda - aguardar validação 2FA
-      } else {
-        // Normal login without 2FA
-        console.log('[AuthContext] Usuário NÃO tem 2FA habilitado - completando login normal');
-        await authService.storeAuthData(response.token, response.user);
-        setUser({
-          pessoa_id: response.user?.pessoa_id || response.user?.id,
-          tipo: response.user?.tipo,
-          pessoa_nome: response.user?.pessoa_nome || response.user?.nome,
-          pessoa_email: response.user?.pessoa_email || response.user?.email,
-        });
-        // Atualizar ApplicationContext
-        setUserData({
-          pessoa_id: response.user?.pessoa_id || response.user?.id,
-          tipo: response.user?.tipo,
-          pessoa_nome: response.user?.pessoa_nome || response.user?.nome,
-          pessoa_email: response.user?.pessoa_email || response.user?.email,
-          token: response.token
-        });
+        setPendingToken(response.twoFactorToken);
+        setPendingUser(mappedUser);
+        return;
       }
+
+      if (!response.token) {
+        throw new Error('Token de autenticação não retornado pelo servidor.');
+      }
+
+      setAuthenticatedUser({ user: response.user, token: response.token, session: response.session });
+      setUser(mappedUser);
+      setTwoFactorRequired(false);
+      setTwoFactorPending(false);
+      setPendingToken(null);
+      setPendingUser(null);
     } catch (error) {
       console.error('[AuthContext] Erro no login:', error);
       throw error;
@@ -177,52 +149,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
 
       if (!pendingToken) {
-        throw new Error('No pending 2FA verification');
+        throw new Error('Nenhuma verificação de 2FA pendente.');
       }
 
-      // Se temos um tempToken (do backend), usar endpoint de verify-2fa
-      // Se temos um token completo (do frontend), usar endpoint de validar código 2FA
-      let response;
-      if (pendingToken && pendingToken.length < 100) { // tempToken é menor
-        response = await authService.verifyTwoFactor(pendingToken, code);
-      } else {
-        // Token completo - validar código 2FA diretamente
-        if (!pendingUser?.pessoa_id) {
-          throw new Error('User ID not available for 2FA validation');
-        }
-        const validationResponse = await configService.validarCodigo2FA(pendingUser.pessoa_id, code);
-        if (!validationResponse.valido) {
-          throw new Error('Código 2FA inválido');
-        }
-        // Simular resposta de login bem-sucedido
-        response = {
-          token: pendingToken,
-          user: pendingUser
-        };
+      const authResponse = await authService.verifyTwoFactor(pendingToken, code);
+
+      if (!authResponse?.token || !authResponse?.user) {
+        throw new Error('Resposta inválida do servidor ao confirmar 2FA.');
       }
 
-      // Store auth data and update state
-      await authService.storeAuthData(response.token, pendingUser!);
-      setUser(pendingUser);
+      const validatedUser = mapUserFromResponse(authResponse.user);
 
-      // Atualizar ApplicationContext
-      if (pendingUser) {
-        setUserData({
-          pessoa_id: pendingUser.pessoa_id,
-          tipo: pendingUser.tipo,
-          pessoa_nome: pendingUser.pessoa_nome,
-          pessoa_email: pendingUser.pessoa_email,
-          token: response.token
-        });
-      }
+      setAuthenticatedUser({ user: authResponse.user, token: authResponse.token, session: authResponse.session });
+      setUser(validatedUser);
 
-      // Reset 2FA states
       setTwoFactorRequired(false);
       setTwoFactorPending(false);
       setPendingToken(null);
       setPendingUser(null);
     } catch (error) {
-      console.error('2FA verification error:', error);
+      console.error('[AuthContext] Erro na verificação 2FA:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -231,141 +177,83 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      await authService.clearAuthData();
+      await clearApplicationSession();
       setUser(null);
       setTwoFactorRequired(false);
       setTwoFactorPending(false);
       setPendingToken(null);
       setPendingUser(null);
-
-      // Limpar ApplicationContext
-      setUserData({
-        pessoa_id: null,
-        tipo: null,
-        pessoa_nome: null,
-        pessoa_email: null,
-        token: undefined
-      });
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('[AuthContext] Erro ao fazer logout:', error);
       throw error;
     }
+  };
+
+  const resolveCurrentUserId = async (): Promise<number> => {
+    const currentUserId = applicationUser?.pessoa_id ?? user?.pessoa_id ?? null;
+
+    if (currentUserId) {
+      return currentUserId;
+    }
+
+    const latestUser = await validateActiveSession();
+    const refreshedId = latestUser?.pessoa_id ?? applicationUser?.pessoa_id ?? user?.pessoa_id ?? null;
+
+    if (!refreshedId) {
+      throw new Error('Usuário não autenticado.');
+    }
+
+    return refreshedId;
   };
 
   const enableTwoFactor = async () => {
-    try {
-      // Primeiro tentar usar userId do ApplicationContext
-      let currentUserId = userId;
+    const currentUserId = await resolveCurrentUserId();
+    const response = await configService.atualizarConfiguracao2FA(currentUserId, true);
 
-      // Se não estiver disponível, tentar usar do estado local do AuthContext
-      if (!currentUserId && user?.pessoa_id) {
-        currentUserId = user.pessoa_id;
-      }
-
-      // Se ainda não tiver, tentar recarregar dados do ApplicationContext
-      if (!currentUserId) {
-        await refreshUserData();
-        currentUserId = userId;
-      }
-
-      if (!currentUserId) {
-        throw new Error('Usuário não autenticado');
-      }
-
-      const response = await configService.atualizarConfiguracao2FA(currentUserId, true);
-
-      // Atualizar estado do usuário para refletir que 2FA está habilitado
-      if (user) {
-        setUser({ ...user, twoFactorEnabled: true });
-      }
-
-      return response;
-    } catch (error) {
-      console.error('Enable 2FA error:', error);
-      throw error;
+    if (user) {
+      setUser({ ...user, twoFactorEnabled: true });
     }
+
+    return response;
   };
 
   const disableTwoFactor = async () => {
-    try {
-      // Primeiro tentar usar userId do ApplicationContext
-      let currentUserId = userId;
+    const currentUserId = await resolveCurrentUserId();
+    await configService.atualizarConfiguracao2FA(currentUserId, false);
 
-      // Se não estiver disponível, tentar usar do estado local do AuthContext
-      if (!currentUserId && user?.pessoa_id) {
-        currentUserId = user.pessoa_id;
-      }
-
-      // Se ainda não tiver, tentar recarregar dados do ApplicationContext
-      if (!currentUserId) {
-        await refreshUserData();
-        currentUserId = userId;
-      }
-
-      if (!currentUserId) {
-        throw new Error('Usuário não autenticado');
-      }
-
-      await configService.atualizarConfiguracao2FA(currentUserId, false);
-      if (user) {
-        setUser({ ...user, twoFactorEnabled: false });
-      }
-    } catch (error) {
-      console.error('Disable 2FA error:', error);
-      throw error;
+    if (user) {
+      setUser({ ...user, twoFactorEnabled: false });
     }
   };
 
   const confirmTwoFactorSetup = async (code: string) => {
-    try {
-      // Primeiro tentar usar userId do ApplicationContext
-      let currentUserId = userId;
+    const currentUserId = await resolveCurrentUserId();
+    const response = await configService.validarCodigo2FA(currentUserId, code);
 
-      // Se não estiver disponível, tentar usar do estado local do AuthContext
-      if (!currentUserId && user?.pessoa_id) {
-        currentUserId = user.pessoa_id;
-      }
+    if (!response?.valido) {
+      throw new Error('Código 2FA inválido.');
+    }
 
-      // Se ainda não tiver, tentar recarregar dados do ApplicationContext
-      if (!currentUserId) {
-        await refreshUserData();
-        currentUserId = userId;
-      }
-
-      if (!currentUserId) {
-        throw new Error('Usuário não autenticado');
-      }
-
-      const response = await configService.validarCodigo2FA(currentUserId, code);
-      if (response.valido) {
-        if (user) {
-          setUser({ ...user, twoFactorEnabled: true });
-        }
-        return response;
-      } else {
-        throw new Error('Código 2FA inválido');
-      }
-    } catch (error) {
-      console.error('Confirm 2FA setup error:', error);
-      throw error;
+    if (user) {
+      setUser({ ...user, twoFactorEnabled: true });
     }
   };
 
   const refreshUser = async () => {
     try {
-      const currentUser = await authService.getCurrentUser();
-      if (currentUser) {
-        setUser(currentUser);
+      const current = await validateActiveSession();
+      if (current) {
+        setUser(mapUserFromResponse(current));
       }
     } catch (error) {
-      console.error('Refresh user error:', error);
+      console.error('[AuthContext] Erro ao atualizar dados do usuário:', error);
       throw error;
     }
   };
 
-  const value: AuthContextType = {
+  const value: AuthContextValue = {
     user,
-    isAuthenticated: !!user,
+    isAuthenticated: Boolean(user),
     isLoading,
     twoFactorRequired,
     twoFactorPending,
@@ -381,16 +269,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     refreshUser,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;

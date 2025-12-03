@@ -9,4 +9,6 @@ export interface LoteProd {
   ativo: boolean;
   // Opcional: adicionar nome do produto aqui para facilitar no picker
   produto_nome?: string;
+  fornecedor_pessoa_id: number;
+  fornecedor_nome?: string | null;
 }

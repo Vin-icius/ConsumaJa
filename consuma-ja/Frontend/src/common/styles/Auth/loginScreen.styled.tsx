@@ -213,4 +213,15 @@ export const styles = StyleSheet.create({
     color: "white",
     fontWeight: "500",
   },
+  twoFactorInput: {
+    flex: 1,
+    height: 50,
+    paddingHorizontal: 10,
+    fontSize: 22,
+    fontWeight: "600",
+    letterSpacing: 8,
+    color: "#333",
+    textAlign: "center",
+    backgroundColor: "transparent",
+  },
 })

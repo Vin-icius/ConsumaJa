@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator, Alert, ScrollView, Platform, Modal } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator, Alert, Modal } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import promocaoService from '../../services/promocaoService';
 import { Ionicons } from '@expo/vector-icons';
@@ -45,8 +45,6 @@ const PromotionDetailScreen = () => {
   const [promocao, setPromocao] = useState<PromocaoDetalhada | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [cart, setCart] = useState<ItemPromocaoParaDetalhe[]>([]); // Manter cart local
-
   // Estados para o modal de quantidade
   const [quantityModalVisible, setQuantityModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ItemPromocaoParaDetalhe | null>(null);
@@ -88,54 +86,104 @@ const PromotionDetailScreen = () => {
     setSelectedQuantity(1);
   };
 
-  const confirmAddToCart = () => {
-    if (!selectedItem) return;
+  const confirmAddToCart = async () => {
+    if (!selectedItem) {
+      return;
+    }
 
-    // Adicionar ao carrinho global usando o contexto
-    addToCartContext({
-      produto_id: selectedItem.produto.produto_id,
-      produto_nome: selectedItem.produto.produto_nome,
-      produto_imagem_url: selectedItem.produto.produto_imagem_url,
-      lote_id: selectedItem.LOTEPROD_lote_id,
-      lote_codigo: selectedItem.lote.lote_codigo,
-      itemPromocao_valor: selectedItem.itemPromocao_valor,
-      maxQuantidade: selectedItem.itemPromocao_qtde,
-      quantidade: selectedQuantity,
-      promocao_id: promocao?.promocao_id,
-      fornecedor_nome: promocao?.fornecedor.pessoa_nome,
-    });
+    const estoqueDisponivel = Math.min(
+      selectedItem.lote.lote_quantidade_atual,
+      selectedItem.itemPromocao_qtde,
+    );
+    const quantidadeEscolhida = Math.max(1, Math.min(selectedQuantity, estoqueDisponivel));
 
-    Alert.alert("Sucesso!", `${selectedItem.produto.produto_nome} adicionado ao carrinho (${selectedQuantity} unidade${selectedQuantity > 1 ? 's' : ''}).`);
-    closeQuantityModal();
-  };
+    try {
+      await addToCartContext({
+        produtoId: selectedItem.produto.produto_id,
+        loteId: selectedItem.LOTEPROD_lote_id,
+        promocaoId: promocao?.promocao_id ?? null,
+        quantidade: quantidadeEscolhida,
+      });
 
-  const addToCart = (item: ItemPromocaoParaDetalhe) => {
-    if (item.lote.lote_quantidade_atual <= 0) { Alert.alert("Indisponível", "Este item do lote está esgotado."); return; }
-    setCart(prevCart => [...prevCart, item]);
-    Alert.alert("Adicionado!", `${item.produto.produto_nome} adicionado ao carrinho.`);
+      Alert.alert(
+        'Sucesso!',
+        `${selectedItem.produto.produto_nome} adicionado ao carrinho (${quantidadeEscolhida} unidade${quantidadeEscolhida > 1 ? 's' : ''}).`,
+      );
+      closeQuantityModal();
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || 'Não foi possível adicionar ao carrinho.';
+      Alert.alert('Erro', message);
+    }
   };
 
   const renderProductItem = ({ item }: { item: ItemPromocaoParaDetalhe }) => {
     const nomeCompleto = `${item.produto.produto_nome}${item.produto.marca?.marca_nome ? `, ${item.produto.marca.marca_nome}` : ''}${item.produto.categoria?.categoria_nome ? `, ${item.produto.categoria.categoria_nome}` : ''}${item.produto.tipo?.tipo_nome ? `, ${item.produto.tipo.tipo_nome}` : ''}`;
     const validadeString = item.lote.lote_validade ? new Date(item.lote.lote_validade).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'N/A';
+    const loteDisponivel = Math.max(0, item.lote.lote_quantidade_atual);
+    const ofertado = Math.max(0, item.itemPromocao_qtde);
+    const saldoDisponivel = Math.min(loteDisponivel, ofertado || loteDisponivel);
+    const disponibilidadeLote = `${loteDisponivel} un`;
+    const disponibilidadePromo = `${ofertado} un`;
+    const disponibilidadeTotal = `${saldoDisponivel} un`;
 
     return (
-        <View style={promotionDetailStyles.productItem}>
+      <View style={promotionDetailStyles.productItem}>
+        <View style={promotionDetailStyles.productHeaderRow}>
           <Image
             source={item.produto.produto_imagem_url ? { uri: item.produto.produto_imagem_url } : require('../../assets/placeholder.png')}
             style={promotionDetailStyles.productImage}
             resizeMode="contain"
           />
+
           <View style={promotionDetailStyles.productInfo}>
             <Text style={promotionDetailStyles.productName}>{nomeCompleto}</Text>
             <Text style={promotionDetailStyles.productMeasure}>Medida: {item.produto.produto_medida || 'N/A'}</Text>
+
+            <View style={promotionDetailStyles.infoChipsRow}>
+              {item.produto.marca?.marca_nome && (
+                <Text style={promotionDetailStyles.infoChip}>Marca: {item.produto.marca.marca_nome}</Text>
+              )}
+              {item.produto.categoria?.categoria_nome && (
+                <Text style={promotionDetailStyles.infoChip}>Categoria: {item.produto.categoria.categoria_nome}</Text>
+              )}
+              {item.produto.tipo?.tipo_nome && (
+                <Text style={promotionDetailStyles.infoChip}>Tipo: {item.produto.tipo.tipo_nome}</Text>
+              )}
+            </View>
+
             {item.produto.produto_precoOriginal != null && (
-                <Text style={promotionDetailStyles.originalPrice}>De: R$ {Number(item.produto.produto_precoOriginal).toFixed(2)}</Text>
+              <Text style={promotionDetailStyles.originalPrice}>
+                De: R$ {Number(item.produto.produto_precoOriginal).toFixed(2)}
+              </Text>
             )}
-            <Text style={promotionDetailStyles.promoPrice}>Por: R$ {Number(item.itemPromocao_valor).toFixed(2)}</Text>
-            <Text style={promotionDetailStyles.productStock}>Disponível (lote): {item.lote.lote_quantidade_atual} / Ofertado (promo): {item.itemPromocao_qtde}</Text>
-            <Text style={promotionDetailStyles.productValidity}>Validade Lote: {validadeString}</Text>
           </View>
+        </View>
+
+        <View style={promotionDetailStyles.productStatsRow}>
+          <View style={promotionDetailStyles.statBubble}>
+            <Text style={promotionDetailStyles.statLabel}>Lote disponível</Text>
+            <Text style={promotionDetailStyles.statValue}>{disponibilidadeLote}</Text>
+          </View>
+          <View style={promotionDetailStyles.statBubble}>
+            <Text style={promotionDetailStyles.statLabel}>Ofertado na promoção</Text>
+            <Text style={promotionDetailStyles.statValue}>{disponibilidadePromo}</Text>
+          </View>
+          <View style={promotionDetailStyles.statBubble}>
+            <Text style={promotionDetailStyles.statLabel}>Restante</Text>
+            <Text style={promotionDetailStyles.statValue}>{disponibilidadeTotal}</Text>
+          </View>
+          <View style={promotionDetailStyles.statBubble}>
+            <Text style={promotionDetailStyles.statLabel}>Validade</Text>
+            <Text style={promotionDetailStyles.statValue}>{validadeString}</Text>
+          </View>
+        </View>
+
+        <View style={promotionDetailStyles.productFooterRow}>
+          <View style={promotionDetailStyles.priceGroup}>
+            <Text style={promotionDetailStyles.priceLabel}>Preço promocional</Text>
+            <Text style={promotionDetailStyles.promoPrice}>R$ {Number(item.itemPromocao_valor).toFixed(2)}</Text>
+          </View>
+
           <TouchableOpacity
             style={[promotionDetailStyles.addToCartButton, item.lote.lote_quantidade_atual <= 0 && promotionDetailStyles.disabledButton]}
             onPress={() => openQuantityModal(item)}
@@ -145,6 +193,7 @@ const PromotionDetailScreen = () => {
             <Text style={promotionDetailStyles.addToCartButtonText}>Adicionar</Text>
           </TouchableOpacity>
         </View>
+      </View>
     );
   };
 

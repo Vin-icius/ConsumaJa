@@ -1,149 +1,168 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useContext, useMemo, useState, useCallback, ReactNode } from 'react';
+import authService from '../../services/authService';
+import { setAuthToken } from '../../utils/authTokenStore';
 
-interface User {
-  pessoa_id: number | null;
-  tipo: string | null;
-  pessoa_nome: string | null;
-  pessoa_email: string | null;
-  twoFactorEnabled?: boolean;
+type Nullable<T> = T | null;
+
+type PessoaTipo = 'Fisica' | 'Juridica' | 'Admin' | '';
+
+interface ApplicationUser {
+  id: Nullable<number>;
+  pessoa_id: Nullable<number>;
+  nome: string;
+  pessoa_nome: string;
+  email: string;
+  pessoa_email: string;
+  tipo: PessoaTipo;
+  pessoa_tipo: PessoaTipo;
+  [key: string]: any;
 }
 
-interface ApplicationContextType {
-  // Dados do usuário logado
-  userId: number | null;
-  userType: string | null;
-  userName: string | null;
-  userEmail: string | null;
+interface SetAuthenticatedUserPayload {
+  user: Record<string, unknown>;
+  token: string;
+  session?: {
+    id?: string;
+    expiraEm?: string;
+    dadosUsuario?: Record<string, unknown> | null;
+  } | null;
+}
+
+interface ApplicationContextValue {
+  user: Nullable<ApplicationUser>;
+  token: Nullable<string>;
+  sessionId: Nullable<string>;
+  sessionExpiresAt: Nullable<string>;
   isAuthenticated: boolean;
-
-  // Token de autenticação
-  token: string | null;
-
-  // Métodos para atualizar dados
-  setUserData: (userData: Partial<User & { token?: string }>) => void;
-  clearUserData: () => void;
-  refreshUserData: () => Promise<void>;
+  isValidatingSession: boolean;
+  setAuthenticatedUser: (payload: SetAuthenticatedUserPayload) => void;
+  setUserData: (userData: Record<string, unknown>) => void;
+  clearSession: (notifyServer?: boolean) => Promise<void>;
+  validateActiveSession: () => Promise<Nullable<ApplicationUser>>;
 }
 
-const ApplicationContext = createContext<ApplicationContextType | undefined>(undefined);
+const ApplicationContext = createContext<ApplicationContextValue | undefined>(undefined);
 
 interface ApplicationProviderProps {
   children: ReactNode;
 }
 
-export const ApplicationProvider: React.FC<ApplicationProviderProps> = ({ children }) => {
-  const [userId, setUserId] = useState<number | null>(null);
-  const [userType, setUserType] = useState<string | null>(null);
-  const [userName, setUserName] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+const normalizeUserFields = (raw: Record<string, unknown> = {}): ApplicationUser => {
+  const numericId = raw?.pessoa_id ?? raw?.id;
+  const resolvedId = numericId === null || numericId === undefined ? null : Number(numericId);
 
-  // Carregar dados do usuário do AsyncStorage quando o app inicia
-  useEffect(() => {
-    loadUserDataFromStorage();
+  const nomeValue = String(raw?.pessoa_nome ?? raw?.nome ?? '').trim();
+  const emailValue = String(raw?.pessoa_email ?? raw?.email ?? '').trim();
+  const tipoValue = (raw?.pessoa_tipo ?? raw?.tipo ?? '') as PessoaTipo;
+
+  return {
+    id: resolvedId,
+    pessoa_id: resolvedId,
+    nome: nomeValue,
+    pessoa_nome: nomeValue,
+    email: emailValue,
+    pessoa_email: emailValue,
+    tipo: tipoValue,
+    pessoa_tipo: tipoValue,
+    ...raw,
+  } as ApplicationUser;
+};
+
+export const ApplicationProvider: React.FC<ApplicationProviderProps> = ({ children }) => {
+  const [user, setUser] = useState<Nullable<ApplicationUser>>(null);
+  const [token, setToken] = useState<Nullable<string>>(null);
+  const [sessionId, setSessionId] = useState<Nullable<string>>(null);
+  const [sessionExpiresAt, setSessionExpiresAt] = useState<Nullable<string>>(null);
+  const [isValidatingSession, setIsValidatingSession] = useState(false);
+
+  const setUserData = useCallback((userData: Record<string, unknown>) => {
+    setUser((prev) => {
+      const merged = {
+        ...(prev ?? {}),
+        ...(userData ?? {}),
+      } as Record<string, unknown>;
+      return normalizeUserFields(merged);
+    });
   }, []);
 
-  const loadUserDataFromStorage = async () => {
-    try {
-      const [
-        storedToken,
-        storedUserId,
-        storedUserType,
-        storedUserName,
-        storedUserEmail
-      ] = await AsyncStorage.multiGet([
-        'userToken',
-        'userId',
-        'userType',
-        'userName',
-        'userEmail'
-      ]);
-
-      setToken(storedToken[1]);
-      setUserId(storedUserId[1] ? parseInt(storedUserId[1]) : null);
-      setUserType(storedUserType[1]);
-      setUserName(storedUserName[1]);
-      setUserEmail(storedUserEmail[1]);
-
-      console.log('[ApplicationContext] Dados carregados:', {
-        userId: storedUserId[1],
-        userType: storedUserType[1],
-        userName: storedUserName[1],
-        userEmail: storedUserEmail[1],
-        hasToken: !!storedToken[1]
-      });
-    } catch (error) {
-      console.error('[ApplicationContext] Erro ao carregar dados:', error);
-    }
-  };
-
-  const setUserData = (userData: Partial<User & { token?: string }>) => {
-    console.log('[ApplicationContext] Atualizando dados:', userData);
-
-    if (userData.pessoa_id !== undefined) setUserId(userData.pessoa_id);
-    if (userData.tipo !== undefined) setUserType(userData.tipo);
-    if (userData.pessoa_nome !== undefined) setUserName(userData.pessoa_nome);
-    if (userData.pessoa_email !== undefined) setUserEmail(userData.pessoa_email);
-    if (userData.token !== undefined) setToken(userData.token);
-
-    // Salvar no AsyncStorage
-    if (userData.pessoa_id !== undefined && userData.pessoa_id !== null) {
-      AsyncStorage.setItem('userId', userData.pessoa_id.toString());
-    }
-    if (userData.tipo !== undefined && userData.tipo !== null) {
-      AsyncStorage.setItem('userType', userData.tipo);
-    }
-    if (userData.pessoa_nome !== undefined && userData.pessoa_nome !== null) {
-      AsyncStorage.setItem('userName', userData.pessoa_nome);
-    }
-    if (userData.pessoa_email !== undefined && userData.pessoa_email !== null) {
-      AsyncStorage.setItem('userEmail', userData.pessoa_email);
-    }
-    if (userData.token !== undefined && userData.token !== null) {
-      AsyncStorage.setItem('userToken', userData.token);
-    }
-  };
-
-  const clearUserData = () => {
-    console.log('[ApplicationContext] Limpando dados do usuário');
-
-    setUserId(null);
-    setUserType(null);
-    setUserName(null);
-    setUserEmail(null);
-    setToken(null);
-
-    // Limpar AsyncStorage
-    AsyncStorage.multiRemove(['userToken', 'userId', 'userType', 'userName', 'userEmail']);
-  };
-
-  const refreshUserData = async () => {
-    await loadUserDataFromStorage();
-  };
-
-  const value: ApplicationContextType = {
-    userId,
-    userType,
-    userName,
-    userEmail,
-    token,
-    isAuthenticated: !!(userId && token),
-    setUserData,
-    clearUserData,
-    refreshUserData,
-  };
-
-  return (
-    <ApplicationContext.Provider value={value}>
-      {children}
-    </ApplicationContext.Provider>
+  const setAuthenticatedUser = useCallback(
+    ({ user: rawUser, token: rawToken, session }: SetAuthenticatedUserPayload) => {
+      const sourceUser = (session?.dadosUsuario ?? rawUser) as Record<string, unknown>;
+      const normalizedUser = normalizeUserFields(sourceUser);
+      setUser(normalizedUser);
+      setToken(rawToken ?? null);
+      setAuthToken(rawToken ?? null);
+      setSessionId(session?.id ?? null);
+      setSessionExpiresAt(session?.expiraEm ?? null);
+    },
+    [],
   );
+
+  const clearSession = useCallback(
+    async (notifyServer = true) => {
+      if (notifyServer && sessionId) {
+        try {
+          await authService.encerrarSessao(sessionId);
+        } catch (error) {
+          console.warn('[ApplicationContext] Falha ao encerrar sessão no servidor:', error);
+        }
+      }
+
+      setAuthToken(null);
+      setUser(null);
+      setToken(null);
+      setSessionId(null);
+      setSessionExpiresAt(null);
+      setIsValidatingSession(false);
+    },
+    [sessionId],
+  );
+
+  const validateActiveSession = useCallback(async () => {
+    if (!sessionId) {
+      return null;
+    }
+
+    setIsValidatingSession(true);
+
+    try {
+  const validation = await authService.validarSessao(sessionId);
+  const sessionUser = (validation.session?.dadosUsuario ?? validation.user) as Record<string, unknown>;
+  const normalizedUser = normalizeUserFields(sessionUser ?? {});
+      setUser(normalizedUser);
+      setSessionExpiresAt(validation.session?.expiraEm ?? null);
+      return normalizedUser;
+    } catch (error) {
+      console.error('[ApplicationContext] Sessão inválida ou expirada:', error);
+      await clearSession(false);
+      return null;
+    } finally {
+      setIsValidatingSession(false);
+    }
+  }, [sessionId, clearSession]);
+
+  const contextValue = useMemo<ApplicationContextValue>(
+    () => ({
+      user,
+      token,
+      sessionId,
+      sessionExpiresAt,
+      isAuthenticated: Boolean(user && token && sessionId),
+      isValidatingSession,
+      setAuthenticatedUser,
+      setUserData,
+      clearSession,
+      validateActiveSession,
+    }),
+    [user, token, sessionId, sessionExpiresAt, isValidatingSession, setAuthenticatedUser, setUserData, clearSession, validateActiveSession],
+  );
+
+  return <ApplicationContext.Provider value={contextValue}>{children}</ApplicationContext.Provider>;
 };
 
 export const useApplication = () => {
   const context = useContext(ApplicationContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useApplication must be used within an ApplicationProvider');
   }
   return context;

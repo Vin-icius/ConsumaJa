@@ -3,7 +3,7 @@ import { useState, useEffect } from "react"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { createDrawerNavigator } from "@react-navigation/drawer"
 import { Ionicons } from "@expo/vector-icons"
-import { View, Text, TouchableOpacity, ScrollView, Platform } from "react-native"
+import { View, Text, TouchableOpacity, ScrollView, useWindowDimensions } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
 // Dynamic import for SafeArea components to avoid bundling issues on web
@@ -51,6 +51,11 @@ import AvaliacaoFormScreen from '../screens/Review/AvaliacaoFormScreen';
 import PromotionListItem from '../screens/Promotions/promotionListScreen'
 import PromotionDetailScreen from '../screens/Promotions/promotionDetailScreen'
 import ShoppingCartScreen from '../screens/Core/homeScreen/shoppingCart/shoppingCart'
+import CheckoutAddressScreen from '../screens/Orders/CheckoutAddressScreen'
+import CheckoutPaymentScreen from '../screens/Orders/CheckoutPaymentScreen'
+import OrderProgressScreen from '../screens/Orders/OrderProgressScreen'
+import HistoricoVendasScreen from '../screens/Orders/HistoricoVendasScreen'
+import MinhasComprasScreen from '../screens/Orders/MinhasComprasScreen'
 import PromotionFormScreen from '../screens/Promotions/promotionFormScreen'
 import PromotionComponent from '../screens/Promotions/promotionComponent'
 import PromotionScreenWrapper from '../screens/Promotions/promotionScreenWrapper'
@@ -63,9 +68,40 @@ import CustomHeader from "../components/Common/customHeader/customHeader"
 import CustomHeaderPromotion from "../components/Common/customHeader/customHeaderPromotion"
 import InicioScreen from "../screens/Core/homeScreen/homeScreen"
 import { CartProvider } from "../contexts/CartContext/cartContext"
-import { ConfigProvider } from "../contexts/ConfigContext/configContext"
-import { AuthProvider, useAuth } from "../contexts/AuthContext/authContext"
-import { ApplicationProvider } from "../contexts/ApplicationContext/ApplicationContext"
+import { NotificationProvider } from "../contexts/NotificationContext/notificationContext"
+import { baseIconMap } from "./menuConfig"
+import { useAuth } from "../contexts/AuthContext/authContext"
+
+const MobileBackHeader: React.FC<{ title?: string; onBack?: () => void }> = ({ title, onBack }) => {
+  const insets = useSafeAreaInsets ? useSafeAreaInsets() : { top: 0, bottom: 0, left: 0, right: 0 }
+
+  return (
+    <SafeAreaView style={{ backgroundColor: "#ffffff" }}>
+      <View
+        style={{
+          paddingTop: insets.top,
+          paddingHorizontal: 16,
+          paddingBottom: 12,
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: "#ffffff",
+        }}
+      >
+        <TouchableOpacity
+          onPress={onBack}
+          style={{ padding: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
+        >
+          <Ionicons name="arrow-back" size={24} color="#2F4F4F" />
+        </TouchableOpacity>
+        {title ? (
+          <Text style={{ marginLeft: 12, fontSize: 16, fontWeight: "600", color: "#2F4F4F" }}>{title}</Text>
+        ) : null}
+      </View>
+    </SafeAreaView>
+  )
+}
 
 export type RootStackParamList = {
   Login: undefined;
@@ -136,9 +172,7 @@ const CustomDrawerContent = (props: any) => {
         console.error("Erro ao buscar papel do usuário:", error)
       }
     }
-
-    // Comentado para usar o valor padrão 'Admin' para teste
-    // getUserRole();
+    getUserRole();
   }, [])
 
   // Definição das seções e itens do menu
@@ -353,6 +387,192 @@ const CustomDrawerContent = (props: any) => {
   )
 }
 
+interface DrawerScreenConfig extends MenuItem {
+  renderDesktopHeader?: () => React.ReactNode
+  renderMobileHeader?: (navigation: any) => React.ReactNode
+  extraOptions?: any
+  showInMenu?: boolean
+}
+
+const fallbackIcon: MenuItem["icon"] = ({ color, size }) => (
+  <Ionicons name="ellipse-outline" color={color} size={size} />
+)
+
+const getIconForScreen = (name: string): MenuItem["icon"] => baseIconMap[name] ?? fallbackIcon
+
+const drawerScreenConfigs: DrawerScreenConfig[] = [
+  {
+    key: "Inicio",
+    name: "Inicio",
+    component: InicioScreen,
+    title: "Início",
+    icon: getIconForScreen("Inicio"),
+    roles: ["Admin", "Fornecedor", "Cliente"],
+    renderDesktopHeader: () => <CustomHeader showFilter={true} />,
+  },
+  {
+    key: "HistoricoVendas",
+    name: "HistoricoVendas",
+    component: HistoricoVendasScreen,
+    title: "Histórico de Vendas",
+    icon: getIconForScreen("HistoricoVendas"),
+    roles: ["Admin", "Fornecedor"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "MinhasCompras",
+    name: "MinhasCompras",
+    component: MinhasComprasScreen,
+    title: "Minhas Compras",
+    icon: getIconForScreen("MinhasCompras"),
+    roles: ["Admin", "Cliente"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "Cadastro Produto",
+    name: "Cadastro Produto",
+    component: ProductListScreen,
+    title: "Gerenciar Produtos",
+    icon: getIconForScreen("Cadastro Produto"),
+    roles: ["Admin", "Fornecedor"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "PromocaoList",
+    name: "PromocaoList",
+    component: PromotionScreenWrapper,
+    title: "Gerenciar Promoções",
+    icon: getIconForScreen("PromocaoList"),
+    roles: ["Admin", "Fornecedor"],
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "LoteList",
+    name: "LoteList",
+    component: LotListScreen,
+    title: "Gerenciar lotes",
+    icon: getIconForScreen("LoteList"),
+    roles: ["Admin", "Fornecedor"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "LoteForm",
+    name: "LoteForm",
+    component: LotFormScreen,
+    title: "Formulário de lotes",
+    icon: getIconForScreen("LoteForm"),
+    roles: ["Admin", "Fornecedor"],
+    showInMenu: false,
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "Cadastro Categoria",
+    name: "Cadastro Categoria",
+    component: CategoriaListScreen,
+    title: "Gerenciar Categorias",
+    icon: getIconForScreen("Cadastro Categoria"),
+    roles: ["Admin"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "Cadastro Marca",
+    name: "Cadastro Marca",
+    component: MarcaListScreen,
+    title: "Gerenciar Marcas",
+    icon: getIconForScreen("Cadastro Marca"),
+    roles: ["Admin"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "Cadastro Tipo",
+    name: "Cadastro Tipo",
+    component: TipoListScreen,
+    title: "Gerenciar Tipos",
+    icon: getIconForScreen("Cadastro Tipo"),
+    roles: ["Admin"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "Aprovacao de Produtos",
+    name: "Aprovacao de Produtos",
+    component: AprovacaoListScreen,
+    title: "Aprovar Produtos",
+    icon: getIconForScreen("Aprovacao de Produtos"),
+    roles: ["Admin"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "EstadoList",
+    name: "EstadoList",
+    component: EstadoListScreen,
+    title: "Gerenciar Estados",
+    icon: getIconForScreen("EstadoList"),
+    roles: ["Admin"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "CidadeList",
+    name: "CidadeList",
+    component: CidadeListScreen,
+    title: "Gerenciar Cidades",
+    icon: getIconForScreen("CidadeList"),
+    roles: ["Admin"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "PessoaList",
+    name: "PessoaList",
+    component: UserListScreen,
+    title: "Gerenciar Usuários",
+    icon: getIconForScreen("PessoaList"),
+    roles: ["Admin"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "Relatorios",
+    name: "Relatorios",
+    component: RelatoriosScreen,
+    title: "Relatórios",
+    icon: getIconForScreen("Relatorios"),
+    roles: ["Admin", "Fornecedor", "Cliente"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "Configuracoes",
+    name: "Configuracoes",
+    component: ConfigScreen,
+    title: "Configurações",
+    icon: getIconForScreen("Configuracoes"),
+    roles: ["Admin", "Fornecedor", "Cliente"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "Sair",
+    name: "Sair",
+    component: LogoutScreen,
+    title: "Sair",
+    icon: getIconForScreen("Sair"),
+    roles: ["Admin", "Fornecedor", "Cliente"],
+    showInMenu: false,
+    extraOptions: { drawerItemStyle: { display: "none" } },
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+]
+
 // --- Componente que define o Drawer Navigator ---
 const MainAppDrawer = () => {
   // Definição das telas do Drawer
@@ -523,19 +743,74 @@ const MainAppDrawer = () => {
 
 // --- Navegador Principal da Aplicação ---
 const AppNavigator = () => {
+  const { width } = useWindowDimensions()
+  const isDesktop = width >= 1024
+
   return (
     <SafeAreaProvider>
-      <ApplicationProvider>
-        <AuthProvider>
-          <SearchProvider>
-            <CartProvider>
-              <ConfigProvider>
-                <AuthNavigator />
-              </ConfigProvider>
-            </CartProvider>
-          </SearchProvider>
-        </AuthProvider>
-      </ApplicationProvider>
+      <SearchProvider>
+        <CartProvider>
+          <NotificationProvider>
+          <Stack.Navigator
+            initialRouteName="Login"
+            screenOptions={({ navigation, route }) => {
+              if (isDesktop) {
+                return {}
+              }
+
+              if (route.name === "Login" || route.name === "Dashboard") {
+                return { headerShown: false }
+              }
+
+              return {
+                headerShown: true,
+                header: () => <MobileBackHeader onBack={() => navigation.goBack()} />,
+              }
+            }}
+          >
+            {/* Telas fora do Drawer */}
+            <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Cadastro" component={CadastroScreen} options={{ title: "Criar Conta" }} />
+
+            {/* Tela que contém o Drawer */}
+            <Stack.Screen name="Dashboard" component={MainAppDrawer} options={{ headerShown: false }} />
+
+            {/* Telas de Formulário/Detalhe chamadas de dentro do Drawer */}
+            <Stack.Screen name="EstadoForm" component={EstadoFormScreen} options={{ title: "Formulário de Estado" }} />
+            <Stack.Screen name="CidadeForm" component={CityFormScreen} options={{ title: "Formulário de Cidade" }} />
+            <Stack.Screen
+              name="CategoriaForm"
+              component={CategoriaFormScreen}
+              options={{ title: "Formulário de Categoria" }}
+            />
+            <Stack.Screen name="MarcaForm" component={MarcaFormScreen} options={{ title: "Formulário de Marca" }} />
+            <Stack.Screen name="TipoForm" component={TipoFormScreen} options={{ title: "Formulário de Tipo" }} />
+            <Stack.Screen name="ProductForm" component={ProductFormScreen} options={{ title: "Formulário de Produto" }} />
+            <Stack.Screen
+              name="AprovacaoDetail"
+              component={AprovacaoDetailScreen}
+              options={{ title: "Aprovar/Rejeitar Produto" }}
+            />
+            <Stack.Screen name="PessoaForm" component={UserFormScreen} options={{ title: "Editar Usuário" }} />
+            <Stack.Screen name="PromocaoForm" component={PromotionFormScreen} options={{ title: "Formulário de Promoção" }} />
+            <Stack.Screen name="PromocaoDetail" component={PromotionDetailScreen} options={{ title: "Detalhes da Promoção" }} />
+            <Stack.Screen
+              name="ShoppingCart"
+              component={ShoppingCartScreen}
+              options={{ title: "Carrinho de Compras" }}
+            />
+            <Stack.Screen name="CheckoutAddress" component={CheckoutAddressScreen} options={{ title: 'Confirmar Endereço' }} />
+            <Stack.Screen name="CheckoutPayment" component={CheckoutPaymentScreen} options={{ title: 'Pagamento' }} />
+            <Stack.Screen name="OrderProgress" component={OrderProgressScreen} options={{ title: 'Progresso do Pedido' }} />
+            <Stack.Screen
+              name="AvaliacaoQuestionario"
+              component={AvaliacaoFormScreen}
+              options={{ title: 'Avaliar Compra' }}
+            />
+          </Stack.Navigator>
+          </NotificationProvider>
+        </CartProvider>
+      </SearchProvider>
     </SafeAreaProvider>
   )
 }

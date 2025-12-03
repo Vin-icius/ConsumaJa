@@ -14,19 +14,26 @@ export class LoteProdService {
         private produtoRepository: ProdutoRepository
     ) {}
 
-    private async validarProduto(produtoId: number): Promise<void> {
-        const produto = await this.produtoRepository.buscarPorId(produtoId, true); // Apenas ativo
+    async criarLote(dto: CreateLoteProdDto, contextoFornecedorId?: number): Promise<LoteProd> {
+        console.log("[Service LoteProd] Criando lote para produto ID:", dto.produto_id);
+        const produto = await this.produtoRepository.buscarPorId(dto.produto_id, true);
         if (!produto) {
-            throw new AppError(`Produto com ID ${produtoId} não encontrado ou inativo.`, 400);
+            throw new AppError(`Produto com ID ${dto.produto_id} não encontrado ou inativo.`, 400);
         }
         if (produto.produto_status !== 'APROVADO') {
-            throw new AppError(`Produto "${produto.produto_nome}" (ID: ${produtoId}) não está APROVADO. Lotes só podem ser de produtos aprovados.`, 400);
+            throw new AppError(`Produto "${produto.produto_nome}" (ID: ${dto.produto_id}) não está APROVADO. Lotes só podem ser de produtos aprovados.`, 400);
         }
-    }
 
-    async criarLote(dto: CreateLoteProdDto): Promise<LoteProd> {
-        console.log("[Service LoteProd] Criando lote para produto ID:", dto.produto_id);
-        await this.validarProduto(dto.produto_id);
+        if (contextoFornecedorId !== undefined && contextoFornecedorId !== null) {
+            if (produto.fornecedor_pessoa_id !== contextoFornecedorId) {
+                throw new AppError('Fornecedor não autorizado a criar lote para este produto.', 403);
+            }
+        }
+
+        const fornecedorId = produto.fornecedor_pessoa_id;
+        if (!fornecedorId) {
+            throw new AppError('Produto não possui fornecedor associado.', 400);
+        }
 
         const loteExistente = await this.loteProdRepository.findByCodigoAndProdutoId(dto.lote_codigo, dto.produto_id);
         if (loteExistente) {
@@ -46,6 +53,7 @@ export class LoteProdService {
             lote_quantidade_atual: dto.lote_quantidade_atual ?? dto.lote_quantidade_inicial,
             data_entrada: new Date(),
             ativo: true,
+            fornecedor_pessoa_id: fornecedorId,
         };
         try {
             const novoLote = await this.loteProdRepository.criar(dataRepo);

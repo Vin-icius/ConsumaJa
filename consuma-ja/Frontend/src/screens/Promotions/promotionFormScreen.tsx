@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect, useRef } from "react"
+import { useState, useCallback, useEffect, useMemo, useRef } from "react"
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import {
   Image,
   Keyboard,
   Platform,
+  KeyboardAvoidingView,
+  useWindowDimensions,
 } from "react-native"
 import { Picker } from "@react-native-picker/picker"
 import DatePicker from '../../components/Common/datePicker/DatePicker';
@@ -21,11 +23,15 @@ import { useNavigation, useRoute } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import promocaoService from "../../services/promocaoService"
 import { promotionFormStyles } from "../../common/styles/Promotions/promotionFormScreen.styled"
+import { resolveProductImageUrl } from "../../utils/image"
+import { useApplication } from "../../contexts/ApplicationContext/ApplicationContext"
 
 // Tipos
 interface Fornecedor {
   pessoa_id: number
   pessoa_nome: string
+  pessoa_tipo?: string
+  fornecedor_num?: number | null
 }
 
 interface Endereco {
@@ -77,8 +83,63 @@ interface PromocaoForm {
 
 const ITEMS_PER_PAGE = 10
 const MAX_PRODUTOS = 15
+const FALLBACK_PRODUCT_IMAGE = require("../../assets/placeholder.png")
 
 const generateTempId = () => `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+type SweetAlertIcon = "success" | "error" | "warning" | "info" | "question"
+
+let sweetAlertInstance: any = null
+let sweetAlertStylesInjected = false
+
+const ensureSweetAlertStyles = () => {
+  if (sweetAlertStylesInjected || typeof document === "undefined") {
+    return
+  }
+
+  const style = document.createElement("style")
+  style.id = "consumaja-swal-styles"
+  style.innerHTML = `
+    .swal2-container.consumaja-swal-container {
+      z-index: 9999 !important;
+    }
+  `
+  document.head.appendChild(style)
+  sweetAlertStylesInjected = true
+}
+
+const showSweetAlert = async ({
+  title,
+  text,
+  icon = "warning",
+}: {
+  title: string
+  text: string
+  icon?: SweetAlertIcon
+}) => {
+  if (Platform.OS === "web") {
+    if (!sweetAlertInstance) {
+      const module = await import("sweetalert2")
+      sweetAlertInstance = module.default
+    }
+
+    ensureSweetAlertStyles()
+
+    await sweetAlertInstance.fire({
+      title,
+      text,
+      icon,
+      confirmButtonText: "Ok",
+      heightAuto: false,
+      customClass: {
+        container: "consumaja-swal-container",
+      },
+    })
+    return
+  }
+
+  Alert.alert(title, text)
+}
 
 const PromotionFormScreen = () => {
   const navigation = useNavigation<any>()
@@ -86,6 +147,31 @@ const PromotionFormScreen = () => {
   const promocaoIdParaEditar = route.params?.promocaoId
   const isEditing = !!promocaoIdParaEditar
   const dateInputRefValidade = useRef<TextInput>(null)
+  const { width } = useWindowDimensions()
+  const { user: applicationUser } = useApplication()
+
+  const layoutPreset = useMemo(() => {
+    if (width >= 1100) return "desktop"
+    if (width >= 768) return "tablet"
+    return "mobile"
+  }, [width])
+
+  const isDesktopLayout = layoutPreset === "desktop"
+
+  const loggedSupplier = useMemo<Fornecedor | null>(() => {
+    if (!applicationUser?.pessoa_id || applicationUser?.pessoa_tipo !== "Juridica") {
+      return null
+    }
+
+    return {
+      pessoa_id: Number(applicationUser.pessoa_id),
+      pessoa_nome: applicationUser.pessoa_nome || "Fornecedor",
+      pessoa_tipo: applicationUser.pessoa_tipo,
+      fornecedor_num: applicationUser.fornecedor_num ?? null,
+    }
+  }, [applicationUser])
+
+  const isSupplierLocked = Boolean(loggedSupplier?.pessoa_id)
 
   // Estado principal do formulário
   const [formData, setFormData] = useState<PromocaoForm>({
@@ -144,10 +230,36 @@ const PromotionFormScreen = () => {
   const [showBatchDatePicker, setShowBatchDatePicker] = useState(false)
   const [batchValidadeInput, setBatchValidadeInput] = useState("")
 
+  // Mantém a seleção de lote consistente quando os dados mudam
+  useEffect(() => {
+    if (createBatchMode) {
+      if (loteSelecionado) {
+        setLoteSelecionado(null)
+      }
+      return
+    }
+
+    if (!lotesDoProduto.length) {
+      if (loteSelecionado) {
+        setLoteSelecionado(null)
+      }
+      return
+    }
+
+    const loteAindaDisponivel = loteSelecionado
+      ? lotesDoProduto.some((lote) => lote.lote_id === loteSelecionado.lote_id)
+      : false
+
+    if (!loteAindaDisponivel) {
+      setLoteSelecionado(lotesDoProduto[0])
+    }
+  }, [createBatchMode, lotesDoProduto, loteSelecionado])
+
   // Estado de loading geral
   const [loading, setLoading] = useState(false)
   const [loadingSubmit, setLoadingSubmit] = useState(false)
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
+  const [imageFallbacks, setImageFallbacks] = useState<Record<string, boolean>>({})
 
   // Carregar dados iniciais para edição
   useEffect(() => {
@@ -159,6 +271,17 @@ const PromotionFormScreen = () => {
           const promoDetalhes = await promocaoService.getPromocaoDetalhes(promocaoIdParaEditar)
 
           if (promoDetalhes) {
+            if (
+              isSupplierLocked &&
+              loggedSupplier?.pessoa_id &&
+              promoDetalhes.JURIDICA_PESSOA_pessoa_id &&
+              promoDetalhes.JURIDICA_PESSOA_pessoa_id !== loggedSupplier.pessoa_id
+            ) {
+              Alert.alert("Permissão negada", "Você só pode gerenciar promoções do seu fornecedor.")
+              navigation.goBack()
+              return
+            }
+
             const fornecedorAtual =
               promoDetalhes.fornecedor ||
               (promoDetalhes.JURIDICA_PESSOA_pessoa_id
@@ -220,11 +343,17 @@ const PromotionFormScreen = () => {
     }
 
     loadInitialData()
-  }, [isEditing, promocaoIdParaEditar, navigation])
+  }, [isEditing, promocaoIdParaEditar, navigation, isSupplierLocked, loggedSupplier])
 
   // Buscar fornecedores
   const buscarFornecedores = useCallback(
     async (page = 1, append = false) => {
+      if (isSupplierLocked) {
+        setFornecedores(loggedSupplier ? [loggedSupplier] : [])
+        setShowFornecedores(false)
+        return
+      }
+
       if (!fornecedorQuery.trim() && page === 1 && !isEditing) {
         setFornecedores([])
         setShowFornecedores(false)
@@ -237,16 +366,19 @@ const PromotionFormScreen = () => {
         if (fornecedorQuery.trim()) params.nomeQuery = fornecedorQuery.trim()
 
         const result = await promocaoService.listarFornecedoresAtivos(params)
+        const fornecedoresJuridicos = Array.isArray(result?.data)
+          ? result.data.filter((item: Fornecedor) => item?.pessoa_tipo === "Juridica")
+          : []
 
-        if (result && result.data && result.data.length > 0) {
-          setFornecedores(append ? [...fornecedores, ...result.data] : result.data)
+        if (fornecedoresJuridicos.length > 0) {
+          setFornecedores(append ? [...fornecedores, ...fornecedoresJuridicos] : fornecedoresJuridicos)
           setFornecedorPage(result.page || 1)
           setFornecedorTotalPages(result.totalPages || 0)
-          setFornecedorTotal(result.total || 0)
+          setFornecedorTotal(result.total || fornecedoresJuridicos.length)
           setShowFornecedores(true)
         } else if (!append) {
           setFornecedores([])
-          Alert.alert("Busca", "Nenhum fornecedor encontrado.")
+          Alert.alert("Busca", "Nenhum fornecedor jurídico encontrado.")
         }
       } catch (error) {
         console.error("Erro ao buscar fornecedores:", error)
@@ -256,65 +388,107 @@ const PromotionFormScreen = () => {
         setLoadingFornecedores(false)
       }
     },
-    [fornecedorQuery, fornecedores, isEditing],
+    [fornecedorQuery, fornecedores, isEditing, isSupplierLocked, loggedSupplier],
   )
 
   // Buscar endereços do fornecedor
-  const buscarEnderecos = useCallback(
-    async (fornecedorId: number) => {
-      if (!fornecedorId) return
+  const buscarEnderecos = useCallback(async (fornecedorId: number) => {
+    if (!fornecedorId) return
 
-      setLoadingEnderecos(true)
-      try {
-        const result = await promocaoService.listarEnderecosPorFornecedor(fornecedorId)
+    setLoadingEnderecos(true)
+    try {
+      const result = await promocaoService.listarEnderecosPorFornecedor(fornecedorId)
+      let enderecosData: Endereco[] = []
 
-        // Tratamento para diferentes formatos de resposta da API
-        let enderecosData: Endereco[] = []
-
-        if (Array.isArray(result)) {
-          // Se a API retornar diretamente um array de endereços
-          enderecosData = result
-        } else if (result && result.data && Array.isArray(result.data)) {
-          // Se a API retornar um objeto com propriedade data contendo o array
-          enderecosData = result.data
-        } else if (result && typeof result === "object") {
-          // Caso seja um único objeto de endereço
-          enderecosData = [result]
-        }
-
-        console.log(`[PromocaoForm] Endereços carregados: ${enderecosData.length}`)
-        setEnderecos(enderecosData)
-
-        // Se houver apenas um endereço, seleciona automaticamente
-        if (enderecosData.length === 1) {
-          setFormData((prev) => ({
-            ...prev,
-            endereco_id: enderecosData[0].endereco_id,
-          }))
-        }
-        // Se houver múltiplos endereços e nenhum selecionado, seleciona o primeiro
-        else if (enderecosData.length > 0 && !formData.endereco_id) {
-          setFormData((prev) => ({
-            ...prev,
-            endereco_id: enderecosData[0].endereco_id,
-          }))
-        }
-      } catch (error) {
-        console.error("Erro ao buscar endereços:", error)
-        Alert.alert("Erro", "Não foi possível carregar os endereços do fornecedor.")
-        setEnderecos([])
-      } finally {
-        setLoadingEnderecos(false)
+      if (Array.isArray(result)) {
+        enderecosData = result
+      } else if (result && result.data && Array.isArray(result.data)) {
+        enderecosData = result.data
+      } else if (result && typeof result === "object") {
+        enderecosData = [result]
       }
-    },
-    [formData.endereco_id],
-  )
+
+      console.log(`[PromocaoForm] Endereços carregados: ${enderecosData.length}`)
+      setEnderecos(enderecosData)
+
+      setFormData((prev) => {
+        if (!enderecosData.length) {
+          return prev
+        }
+
+        const firstEnderecoId = enderecosData[0].endereco_id
+
+        if (enderecosData.length === 1) {
+          if (prev.endereco_id === firstEnderecoId) {
+            return prev
+          }
+          return {
+            ...prev,
+            endereco_id: firstEnderecoId,
+          }
+        }
+
+        if (!prev.endereco_id) {
+          return {
+            ...prev,
+            endereco_id: firstEnderecoId,
+          }
+        }
+
+        const enderecoAindaDisponivel = enderecosData.some((item) => item.endereco_id === prev.endereco_id)
+        if (!enderecoAindaDisponivel) {
+          return {
+            ...prev,
+            endereco_id: firstEnderecoId,
+          }
+        }
+
+        return prev
+      })
+    } catch (error) {
+      console.error("Erro ao buscar endereços:", error)
+      Alert.alert("Erro", "Não foi possível carregar os endereços do fornecedor.")
+      setEnderecos([])
+    } finally {
+      setLoadingEnderecos(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isSupplierLocked || !loggedSupplier?.pessoa_id) {
+      return
+    }
+
+    setFornecedores([loggedSupplier])
+    setFornecedorSelecionado((prev) => {
+      if (prev?.pessoa_id === loggedSupplier.pessoa_id) {
+        return { ...prev, ...loggedSupplier }
+      }
+      return loggedSupplier
+    })
+
+    setFormData((prev) => {
+      if (prev.JURIDICA_PESSOA_pessoa_id === loggedSupplier.pessoa_id) {
+        return prev
+      }
+
+      return {
+        ...prev,
+        JURIDICA_PESSOA_pessoa_id: loggedSupplier.pessoa_id,
+        endereco_id: undefined,
+        itens: [],
+      }
+    })
+
+    setShowFornecedores(false)
+    buscarEnderecos(loggedSupplier.pessoa_id)
+  }, [isSupplierLocked, loggedSupplier, buscarEnderecos])
 
   // Buscar produtos
   const buscarProdutos = useCallback(
     async (page = 1, append = false) => {
       if (!formData.JURIDICA_PESSOA_pessoa_id) {
-        Alert.alert("Atenção", "Selecione um fornecedor primeiro.")
+        Alert.alert("Atenção", "Não foi possível identificar o fornecedor logado. Tente novamente.")
         return
       }
 
@@ -358,6 +532,16 @@ const PromotionFormScreen = () => {
 
   // Selecionar fornecedor
   const selecionarFornecedor = (fornecedor: Fornecedor) => {
+    if (isSupplierLocked) {
+      Alert.alert("Ação não permitida", "O fornecedor desta conta é fixo.")
+      return
+    }
+
+    if (fornecedor.pessoa_tipo && fornecedor.pessoa_tipo !== "Juridica") {
+      Alert.alert("Fornecedor inválido", "Somente pessoas jurídicas podem criar promoções.")
+      return
+    }
+
     setFornecedorSelecionado(fornecedor)
     setFormData((prev) => ({
       ...prev,
@@ -368,14 +552,18 @@ const PromotionFormScreen = () => {
     setShowFornecedores(false)
     setFornecedorQuery("")
     handleFornecedorChange(fornecedor.pessoa_id, true)
-    // Usando a API Keyboard padrão do React Native
     Keyboard.dismiss()
   }
 
   // Atualizar dados após selecionar fornecedor
   const handleFornecedorChange = useCallback(
     async (fornecedorId: number, resetItens = true) => {
-      const fornecedorSelecionadoObj = fornecedores.find((f) => f.pessoa_id === fornecedorId) || fornecedorSelecionado
+      if (isSupplierLocked && loggedSupplier?.pessoa_id && fornecedorId !== loggedSupplier.pessoa_id) {
+        Alert.alert("Ação não permitida", "Você só pode gerenciar promoções do seu fornecedor.")
+        return
+      }
+
+      const fornecedorSelecionadoObj = fornecedores.find((f) => f.pessoa_id === fornecedorId) || fornecedorSelecionado || loggedSupplier || null
       setFornecedorSelecionado(fornecedorSelecionadoObj)
 
       setFormData((prev) => ({
@@ -390,15 +578,19 @@ const PromotionFormScreen = () => {
       setProdutoQuery("")
 
       if (fornecedorId) {
-        // Buscar endereços do fornecedor
         await buscarEnderecos(fornecedorId)
       }
     },
-    [fornecedores, fornecedorSelecionado, buscarEnderecos],
+    [fornecedores, fornecedorSelecionado, buscarEnderecos, isSupplierLocked, loggedSupplier],
   )
 
   // Remover fornecedor
   const removerFornecedor = () => {
+    if (isSupplierLocked) {
+      Alert.alert("Ação não permitida", "O fornecedor desta conta é definido automaticamente.")
+      return
+    }
+
     setFornecedorSelecionado(null)
     setFormData((prev) => ({
       ...prev,
@@ -429,6 +621,23 @@ const PromotionFormScreen = () => {
 
     return enderecoFormatado
   }
+
+  const getProductImageSource = useCallback(
+    (imageUrl?: string | null, cacheKey?: string | number) => {
+      if (cacheKey && imageFallbacks[String(cacheKey)]) {
+        return FALLBACK_PRODUCT_IMAGE
+      }
+
+      const resolvedUrl = resolveProductImageUrl(imageUrl || undefined)
+      return resolvedUrl ? { uri: resolvedUrl } : FALLBACK_PRODUCT_IMAGE
+    },
+    [imageFallbacks],
+  )
+
+  const handleImageError = useCallback((cacheKey?: string | number) => {
+    if (cacheKey === undefined || cacheKey === null) return
+    setImageFallbacks((prev) => ({ ...prev, [cacheKey.toString()]: true }))
+  }, [])
 
   // Abrir modal para adicionar produto
   const abrirModalProduto = useCallback(
@@ -549,35 +758,42 @@ const PromotionFormScreen = () => {
   // Criar novo lote
   const criarNovoLote = async () => {
     if (!produtoSelecionado || !formData.JURIDICA_PESSOA_pessoa_id) {
-      Alert.alert("Erro", "Produto ou fornecedor não selecionado.")
+      await showSweetAlert({ title: "Erro", text: "Produto ou fornecedor não selecionado.", icon: "error" })
       return
     }
 
-    // Validação básica
-    if (!batchFormData.lote_codigo.trim()) {
-      Alert.alert("Erro", "Código do lote é obrigatório.")
-      return
-    }
+    const missingFields: string[] = []
 
-    if (!batchFormData.lote_validade) {
-      Alert.alert("Erro", "Data de validade é obrigatória.")
+    if (!batchFormData.lote_codigo.trim()) missingFields.push("Código do lote")
+    if (!batchFormData.lote_validade) missingFields.push("Data de validade")
+    if (!batchFormData.lote_quantidade_inicial.trim()) missingFields.push("Quantidade inicial")
+    if (!batchFormData.lote_quantidade_atual.trim()) missingFields.push("Quantidade atual")
+    if (!itemQuantidade.trim()) missingFields.push("Quantidade para Promoção")
+    if (!itemValor.trim()) missingFields.push("Valor Promocional")
+
+    if (missingFields.length > 0) {
+      await showSweetAlert({
+        title: "Campos obrigatórios",
+        text: `Preencha: ${missingFields.join(", ")}`,
+        icon: "warning",
+      })
       return
     }
 
     const qtdInicial = Number.parseFloat(batchFormData.lote_quantidade_inicial.replace(",", "."))
     if (isNaN(qtdInicial) || qtdInicial <= 0) {
-      Alert.alert("Erro", "Quantidade inicial deve ser um número positivo.")
+      await showSweetAlert({ title: "Erro", text: "Quantidade inicial deve ser um número positivo.", icon: "error" })
       return
     }
 
     const qtdAtual = Number.parseFloat(batchFormData.lote_quantidade_atual.replace(",", "."))
     if (isNaN(qtdAtual) || qtdAtual < 0) {
-      Alert.alert("Erro", "Quantidade atual deve ser um número não negativo.")
+      await showSweetAlert({ title: "Erro", text: "Quantidade atual deve ser um número não negativo.", icon: "error" })
       return
     }
 
     if (qtdAtual > qtdInicial) {
-      Alert.alert("Erro", "Quantidade atual não pode ser maior que a inicial.")
+      await showSweetAlert({ title: "Erro", text: "Quantidade atual não pode ser maior que a inicial.", icon: "error" })
       return
     }
 
@@ -616,13 +832,13 @@ const PromotionFormScreen = () => {
         setLoteSelecionado(novoLote)
         setCreateBatchMode(false)
 
-        Alert.alert("Sucesso", "Lote criado com sucesso!")
+        await showSweetAlert({ title: "Sucesso", text: "Lote criado com sucesso!", icon: "success" })
       } else {
         throw new Error("Falha ao criar lote.")
       }
     } catch (error) {
       console.error("Erro ao criar lote:", error)
-      Alert.alert("Erro", "Ocorreu um erro ao criar o lote.")
+      await showSweetAlert({ title: "Erro", text: "Ocorreu um erro ao criar o lote.", icon: "error" })
     } finally {
       setLoading(false)
     }
@@ -639,9 +855,9 @@ const PromotionFormScreen = () => {
   }
 
   // Adicionar ou editar item
-  const adicionarOuEditarItem = () => {
+  const adicionarOuEditarItem = async () => {
     if (createBatchMode) {
-      criarNovoLote()
+      await criarNovoLote()
       return
     }
 
@@ -771,18 +987,15 @@ const PromotionFormScreen = () => {
   // Validar formulário
   const validarFormulario = (): boolean => {
     const erros: { [key: string]: string } = {}
+    const enderecoId = Number(formData.endereco_id)
 
     // Descrição é opcional conforme DTO do backend
     if (formData.promocao_descricao && formData.promocao_descricao.trim().length > 0 && formData.promocao_descricao.trim().length < 5) {
       erros.descricao = "Descrição deve ter pelo menos 5 caracteres"
     }
 
-    if (!formData.JURIDICA_PESSOA_pessoa_id) {
-      erros.fornecedor = "Selecione um fornecedor"
-    }
-
-    if (!formData.endereco_id) {
-      erros.endereco = "Selecione um endereço"
+    if (!Number.isFinite(enderecoId) || enderecoId <= 0) {
+      erros.endereco = "Selecione um endereço válido"
     }
 
     if (formData.inicio > formData.fim) {
@@ -810,20 +1023,24 @@ const PromotionFormScreen = () => {
       return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     };
 
+    const fornecedorId = Number(formData.JURIDICA_PESSOA_pessoa_id)
+    const enderecoId = Number(formData.endereco_id)
+
     // Validar e formatar itens para o formato esperado pela API
     const itensFormatados = formData.itens
       .map((item) => {
+        const loteId = Number(item.LOTEPROD_lote_id)
         const qtd = Number.parseFloat(item.itemPromocao_qtde.replace(",", "."));
         const valor = Number.parseFloat(item.itemPromocao_valor.replace(",", "."));
 
         // Validar se os valores são números válidos
-        if (isNaN(qtd) || isNaN(valor) || qtd <= 0 || valor <= 0) {
-          console.error(`Item inválido: ${item.produto_nome}, qtd: ${qtd}, valor: ${valor}`);
+        if (!Number.isFinite(loteId) || loteId <= 0 || isNaN(qtd) || isNaN(valor) || qtd <= 0 || valor <= 0) {
+          console.error(`Item inválido: ${item.produto_nome}, lote: ${item.LOTEPROD_lote_id}, qtd: ${qtd}, valor: ${valor}`);
           return null;
         }
 
         return {
-          LOTEPROD_lote_id: item.LOTEPROD_lote_id,
+          LOTEPROD_lote_id: loteId,
           itemPromocao_qtde: qtd,
           itemPromocao_valor: valor,
         };
@@ -834,8 +1051,8 @@ const PromotionFormScreen = () => {
       promocao_descricao: formData.promocao_descricao?.trim() || null,
       inicio: formatarDataParaBackend(formData.inicio),
       fim: formData.fim ? formatarDataParaBackend(formData.fim) : null,
-      JURIDICA_PESSOA_pessoa_id: formData.JURIDICA_PESSOA_pessoa_id,
-      endereco_id: formData.endereco_id,
+      JURIDICA_PESSOA_pessoa_id: fornecedorId,
+      endereco_id: enderecoId,
       itens: itensFormatados,
     };
   }
@@ -907,20 +1124,59 @@ const PromotionFormScreen = () => {
     }
   }
 
+  const contentContainerStyles = useMemo(() => {
+    const stylesArray = [promotionFormStyles.contentContainer]
+    if (layoutPreset !== "mobile") {
+      stylesArray.push(promotionFormStyles.contentContainerWide)
+    }
+    return stylesArray
+  }, [layoutPreset])
+
   if (loading && isEditing && !modalVisible) {
     return <ActivityIndicator size="large" style={promotionFormStyles.centered} />
   }
 
   return (
-    <ScrollView
-      style={promotionFormStyles.container}
-      contentContainerStyle={promotionFormStyles.contentContainer}
-      keyboardShouldPersistTaps="handled"
+    <KeyboardAvoidingView
+      style={promotionFormStyles.screen}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
     >
-      <Text style={promotionFormStyles.title}>{isEditing ? "Editar Promoção" : "Nova Promoção"}</Text>
+      <ScrollView
+        style={promotionFormStyles.container}
+        contentContainerStyle={contentContainerStyles}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={[promotionFormStyles.heroCard, isDesktopLayout && promotionFormStyles.heroCardWide]}>
+          <View style={promotionFormStyles.heroTextBlock}>
+            <Text style={promotionFormStyles.heroBadge}>{isEditing ? "Edição" : "Rascunho"}</Text>
+            <Text style={promotionFormStyles.heroTitle}>{isEditing ? "Editar Promoção" : "Nova Promoção"}</Text>
+            <Text style={promotionFormStyles.heroSubtitle}>
+              {isEditing
+                ? "Revise lotes, datas e fornecedores antes de publicar."
+                : "Defina fornecedor, período e produtos para lançar uma campanha."}
+            </Text>
+          </View>
+          <View style={promotionFormStyles.heroStats}>
+            <View style={promotionFormStyles.heroStat}>
+              <Text style={promotionFormStyles.heroStatLabel}>Produtos</Text>
+              <Text style={promotionFormStyles.heroStatValue}>{formData.itens.length}/{MAX_PRODUTOS}</Text>
+            </View>
+            <View style={promotionFormStyles.heroStat}>
+              <Text style={promotionFormStyles.heroStatLabel}>Período</Text>
+              <Text style={promotionFormStyles.heroStatValue}>
+                {formData.inicio.toLocaleDateString()} - {formData.fim.toLocaleDateString()}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <Text style={promotionFormStyles.title}>{isEditing ? "Editar Promoção" : "Nova Promoção"}</Text>
+
+        <View style={[promotionFormStyles.formGrid, layoutPreset !== "mobile" && promotionFormStyles.formGridWide]}>
 
       {/* Descrição */}
-      <View style={promotionFormStyles.formGroup}>
+      <View style={[promotionFormStyles.formGroup, layoutPreset !== "mobile" && promotionFormStyles.formGroupHalf]}>
         <Text style={promotionFormStyles.label}>Descrição da Promoção (opcional):</Text>
         <TextInput
           style={[promotionFormStyles.input, errors.descricao ? promotionFormStyles.inputError : null]}
@@ -932,17 +1188,27 @@ const PromotionFormScreen = () => {
       </View>
 
       {/* Fornecedor */}
-      <View style={promotionFormStyles.formGroup}>
+      <View style={[promotionFormStyles.formGroup, layoutPreset !== "mobile" && promotionFormStyles.formGroupHalf]}>
         <Text style={promotionFormStyles.label}>Fornecedor:</Text>
         {fornecedorSelecionado ? (
           <View style={promotionFormStyles.selectedItem}>
-            <Text style={promotionFormStyles.selectedItemText}>{fornecedorSelecionado.pessoa_nome}</Text>
-            {!isEditing && (
+            <View style={{ flex: 1 }}>
+              <Text style={promotionFormStyles.selectedItemText}>{fornecedorSelecionado.pessoa_nome}</Text>
+              {fornecedorSelecionado.fornecedor_num ? (
+                <Text style={promotionFormStyles.infoText}>Código fornecedor: {fornecedorSelecionado.fornecedor_num}</Text>
+              ) : null}
+              {isSupplierLocked && (
+                <Text style={promotionFormStyles.disabledText}>Fornecedor vinculado à conta atual.</Text>
+              )}
+            </View>
+            {!isSupplierLocked && !isEditing && (
               <TouchableOpacity onPress={removerFornecedor} style={promotionFormStyles.removeButton}>
                 <Ionicons name="close-circle" size={24} color="#dc3545" />
               </TouchableOpacity>
             )}
           </View>
+        ) : isSupplierLocked ? (
+          <Text style={promotionFormStyles.disabledText}>Carregando fornecedor vinculado...</Text>
         ) : (
           <>
             <View style={promotionFormStyles.searchContainer}>
@@ -970,7 +1236,7 @@ const PromotionFormScreen = () => {
           </>
         )}
 
-        {showFornecedores && !isEditing && (
+        {showFornecedores && !isEditing && !isSupplierLocked && (
           <View style={promotionFormStyles.resultsContainer}>
             <FlatList
               data={fornecedores}
@@ -1005,7 +1271,7 @@ const PromotionFormScreen = () => {
       </View>
 
       {/* Endereço (Habilitado) */}
-      <View style={promotionFormStyles.formGroup}>
+      <View style={[promotionFormStyles.formGroup, layoutPreset !== "mobile" && promotionFormStyles.formGroupHalf]}>
         <Text style={promotionFormStyles.label}>Endereço:</Text>
         {loadingEnderecos ? (
           <View style={promotionFormStyles.loadingContainer}>
@@ -1045,7 +1311,7 @@ const PromotionFormScreen = () => {
       </View>
 
       {/* Datas */}
-      <View style={promotionFormStyles.formGroup}>
+      <View style={[promotionFormStyles.formGroup, layoutPreset !== "mobile" && promotionFormStyles.formGroupHalf]}>
         <Text style={promotionFormStyles.label}>Período da Promoção:</Text>
         <View style={promotionFormStyles.dateContainer}>
           <DatePicker
@@ -1064,6 +1330,8 @@ const PromotionFormScreen = () => {
         </View>
         {errors.datas ? <Text style={promotionFormStyles.errorText}>{errors.datas}</Text> : null}
       </View>
+
+        </View>
 
       {/* Produtos */}
       <View style={promotionFormStyles.formGroup}>
@@ -1103,9 +1371,12 @@ const PromotionFormScreen = () => {
                   renderItem={({ item }) => (
                     <TouchableOpacity style={promotionFormStyles.resultItem} onPress={() => abrirModalProduto(item)}>
                       <View style={promotionFormStyles.produtoInfo}>
-                        {item.produto_imagem_url && (
-                          <Image source={{ uri: item.produto_imagem_url }} style={promotionFormStyles.produtoImagem} />
-                        )}
+                        <Image
+                          source={getProductImageSource(item.produto_imagem_url, item.produto_id)}
+                          style={promotionFormStyles.produtoImagem}
+                          onError={() => handleImageError(item.produto_id)}
+                          resizeMode="cover"
+                        />
                         <Text style={promotionFormStyles.resultItemText}>{item.produto_nome}</Text>
                       </View>
                       <Ionicons name="add-circle" size={24} color="#28a745" />
@@ -1190,26 +1461,39 @@ const PromotionFormScreen = () => {
         {errors.itens ? <Text style={promotionFormStyles.errorText}>{errors.itens}</Text> : null}
       </View>
 
-      {/* Botão Cancelar */}
-      <TouchableOpacity
-        style={[promotionFormStyles.cancelButton]}
-        onPress={() => navigation.goBack()}
+      <View
+        style={[
+          promotionFormStyles.actionsRow,
+          layoutPreset === "mobile" && promotionFormStyles.actionsRowStacked,
+        ]}
       >
-        <Text style={promotionFormStyles.cancelButtonText}>Cancelar</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            promotionFormStyles.cancelButton,
+            layoutPreset === "mobile" && promotionFormStyles.actionsRowStackedButton,
+          ]}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={promotionFormStyles.cancelButtonText}>Cancelar</Text>
+        </TouchableOpacity>
 
-      {/* Botão Salvar */}
-      <TouchableOpacity
-        style={[promotionFormStyles.submitButton, (loadingSubmit || loading) && promotionFormStyles.buttonDisabled]}
-        onPress={enviarFormulario}
-        disabled={loadingSubmit || loading}
-      >
-        {loadingSubmit ? (
-          <ActivityIndicator size="small" color="#fff" />
-        ) : (
-          <Text style={promotionFormStyles.submitButtonText}>{isEditing ? "Atualizar Promoção" : "Salvar Promoção"}</Text>
-        )}
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            promotionFormStyles.submitButton,
+            layoutPreset === "mobile" && promotionFormStyles.actionsRowStackedButton,
+            layoutPreset === "mobile" && promotionFormStyles.actionsRowStackedButtonLast,
+            (loadingSubmit || loading) && promotionFormStyles.buttonDisabled,
+          ]}
+          onPress={enviarFormulario}
+          disabled={loadingSubmit || loading}
+        >
+          {loadingSubmit ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={promotionFormStyles.submitButtonText}>{isEditing ? "Atualizar Promoção" : "Salvar Promoção"}</Text>
+          )}
+        </TouchableOpacity>
+      </View>
 
       {/* Modal para adicionar/editar produto */}
       <Modal
@@ -1219,14 +1503,33 @@ const PromotionFormScreen = () => {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={promotionFormStyles.modalOverlay}>
-          <View style={promotionFormStyles.modalContent}>
+          <KeyboardAvoidingView
+            style={promotionFormStyles.modalWrapper}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
+          >
+            <View
+              style={[
+                promotionFormStyles.modalContent,
+                layoutPreset !== "mobile" && promotionFormStyles.modalContentWide,
+              ]}
+            >
+              <ScrollView
+                style={promotionFormStyles.modalScrollArea}
+                contentContainerStyle={promotionFormStyles.modalScrollContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
             <Text style={promotionFormStyles.modalTitle}>{editingItemId ? "Editar Produto" : "Adicionar Produto"}</Text>
 
             {produtoSelecionado && (
               <View style={promotionFormStyles.modalProdutoInfo}>
-                {produtoSelecionado.produto_imagem_url && (
-                  <Image source={{ uri: produtoSelecionado.produto_imagem_url }} style={promotionFormStyles.modalProdutoImagem} />
-                )}
+                <Image
+                  source={getProductImageSource(produtoSelecionado.produto_imagem_url, produtoSelecionado.produto_id)}
+                  style={promotionFormStyles.modalProdutoImagem}
+                  onError={() => handleImageError(produtoSelecionado.produto_id)}
+                  resizeMode="cover"
+                />
                 <Text style={promotionFormStyles.modalProdutoNome}>{produtoSelecionado.produto_nome}</Text>
               </View>
             )}
@@ -1382,28 +1685,48 @@ const PromotionFormScreen = () => {
               </View>
             )}
 
-            <View style={promotionFormStyles.modalButtons}>
-              <TouchableOpacity
-                style={[promotionFormStyles.modalButton, promotionFormStyles.modalCancelButton]}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={promotionFormStyles.modalButtonText}>Cancelar</Text>
-              </TouchableOpacity>
+              </ScrollView>
 
-              <TouchableOpacity
-                style={[promotionFormStyles.modalButton, promotionFormStyles.modalConfirmButton]}
-                onPress={adicionarOuEditarItem}
-                disabled={!createBatchMode && !loteSelecionado}
+              <View
+                style={[
+                  promotionFormStyles.modalFooter,
+                  layoutPreset === "mobile" && promotionFormStyles.modalFooterStacked,
+                ]}
               >
-                <Text style={promotionFormStyles.modalButtonText}>Confirmar</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    promotionFormStyles.modalButton,
+                    promotionFormStyles.modalCancelButton,
+                    ...(layoutPreset === "mobile" ? [promotionFormStyles.modalFooterStackedButton] : []),
+                  ]}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={promotionFormStyles.modalButtonText}>Cancelar</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    promotionFormStyles.modalButton,
+                    promotionFormStyles.modalConfirmButton,
+                    ...(layoutPreset === "mobile"
+                      ? [
+                          promotionFormStyles.modalFooterStackedButton,
+                          promotionFormStyles.modalFooterStackedButtonLast,
+                        ]
+                      : []),
+                  ]}
+                  onPress={adicionarOuEditarItem}
+                  disabled={!createBatchMode && !loteSelecionado}
+                >
+                  <Text style={promotionFormStyles.modalButtonText}>Confirmar</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
-
-
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 

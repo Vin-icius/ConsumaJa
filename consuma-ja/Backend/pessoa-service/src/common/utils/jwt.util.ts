@@ -3,6 +3,7 @@ import type { Secret, SignOptions } from 'jsonwebtoken';
 import { AppError } from '../errors/app-error';
 
 export interface JwtPayload { id: number; tipo: string; email?: string; nome?: string; }
+export interface TwoFactorJwtPayload { pessoaId: number; scope: '2fa'; }
 
 const jwtSecretFromEnv = process.env.JWT_SECRET;
 const jwtExpiresInSeconds: number = process.env.JWT_EXPIRES_IN
@@ -43,6 +44,35 @@ export class JwtUtil {
             if (error instanceof jwt.JsonWebTokenError) { throw new AppError('Token inválido.', 401); }
             console.error("[JwtUtil] Erro ao verificar token:", error);
             throw new AppError('Falha na autenticação.', 500, false);
+        }
+    }
+
+    static generateTwoFactorToken(pessoaId: number, expiresInSeconds = 300): string {
+        try {
+            const payload: TwoFactorJwtPayload = { pessoaId, scope: '2fa' };
+            return jwt.sign(payload, jwtSecret, { expiresIn: expiresInSeconds });
+        } catch (error: any) {
+            console.error('[JwtUtil] Erro ao gerar token de 2FA:', error);
+            throw new AppError('Erro interno ao iniciar verificação 2FA.', 500, false);
+        }
+    }
+
+    static verifyTwoFactorToken(token: string): TwoFactorJwtPayload {
+        try {
+            const decoded = jwt.verify(token, jwtSecret) as TwoFactorJwtPayload;
+            if (!decoded || decoded.scope !== '2fa' || typeof decoded.pessoaId !== 'number') {
+                throw new AppError('Token 2FA inválido.', 401);
+            }
+            return decoded;
+        } catch (error: any) {
+            if (error instanceof jwt.TokenExpiredError) {
+                throw new AppError('Código 2FA expirado. Inicie o processo novamente.', 401);
+            }
+            if (error instanceof jwt.JsonWebTokenError) {
+                throw new AppError('Token 2FA inválido.', 401);
+            }
+            console.error('[JwtUtil] Erro ao validar token de 2FA:', error);
+            throw new AppError('Falha ao validar código 2FA.', 500, false);
         }
     }
 }

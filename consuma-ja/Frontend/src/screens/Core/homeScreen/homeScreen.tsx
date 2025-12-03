@@ -9,10 +9,15 @@ import PromocaoCard from "../../../components/Promotions/PromocaoCard"
 import { homeStyles } from "../../../common/styles/Core/homeScreenLegacy.styled"
 import { CategoriaItem, Promocao } from "./homeScreen.constants"
 import { useSearch } from "../../../contexts/SearchHomeContext/searchHomeContext"
+import MobileFooterNav from "../../../components/Common/mobileFooter/mobileFooter"
+import { useApplication } from "../../../contexts/ApplicationContext/ApplicationContext"
 
 const InicioScreen = () => {
   const navigation = useNavigation<any>()
   const { width } = useWindowDimensions()
+  const isDesktop = width >= 768
+  const { user } = useApplication()
+  const isClient = user?.pessoa_tipo === 'Fisica'
   const [numColumns, setNumColumns] = useState(1)
   const [cardWidth, setCardWidth] = useState(0)
 
@@ -119,9 +124,19 @@ const InicioScreen = () => {
     navigation.navigate("PromocaoDetail", { promocaoId: promocaoId })
   }
 
+  const goToMinhasCompras = () => {
+    navigation.navigate('MinhasCompras')
+  }
+
   // --- Renderização ---
   const renderHeader = () => (
     <View style={homeStyles.headerContainer}>
+      {!isDesktop && isClient && (
+        <TouchableOpacity style={homeStyles.minhasComprasButton} onPress={goToMinhasCompras} activeOpacity={0.85}>
+          <Ionicons name="list-outline" size={18} color="#fff" />
+          <Text style={homeStyles.minhasComprasText}>Minhas compras</Text>
+        </TouchableOpacity>
+      )}
       {/* Filtro movido para o header global */}
     </View>
   )

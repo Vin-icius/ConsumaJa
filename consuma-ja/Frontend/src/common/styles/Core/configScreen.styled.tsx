@@ -93,6 +93,12 @@ export const configStyles = StyleSheet.create({
     borderBottomColor: "#eee",
     paddingBottom: 5,
   },
+  sectionDescription: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 20,
+    lineHeight: 20,
+  },
   divider: {
     height: 1,
     backgroundColor: "#eee",
@@ -136,6 +142,11 @@ export const configStyles = StyleSheet.create({
     color: "red",
     fontSize: 12,
     marginTop: 3,
+  },
+  successText: {
+    color: "#2e7d32",
+    fontSize: 13,
+    marginTop: 6,
   },
   loadingText: {
     marginTop: 10,
@@ -227,19 +238,99 @@ export const configStyles = StyleSheet.create({
   },
 
   // Cartões de pagamento
-  paymentCard: {
+  paymentSection: {
+    marginTop: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderRadius: 12,
+    backgroundColor: "#fafafa",
+  },
+  paymentSectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 15,
+    marginBottom: 8,
+  },
+  paymentSectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#333",
+  },
+  paymentCancelEditButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#eee",
-    borderRadius: 8,
+    borderColor: "#d32f2f",
+    backgroundColor: "#fff5f5",
+    marginLeft: 12,
+  },
+  paymentCancelEditText: {
+    marginLeft: 6,
+    color: "#d32f2f",
+    fontWeight: "600",
+    fontSize: 12,
+  },
+  paymentEditingContext: {
+    fontSize: 13,
+    color: "#555",
     marginBottom: 10,
+  },
+  paymentInfoText: {
+    fontSize: 13,
+    color: "#666",
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  paymentTypeRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 16,
+  },
+  paymentTypeButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#4CAF50",
+    marginRight: 8,
+    marginBottom: 8,
+    backgroundColor: "#fff",
+  },
+  paymentTypeButtonActive: {
+    backgroundColor: "#4CAF50",
+  },
+  paymentTypeButtonText: {
+    color: "#4CAF50",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  paymentTypeButtonTextActive: {
+    color: "#fff",
+  },
+  paymentFormActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 12,
+  },
+  paymentList: {
+    marginTop: 20,
+  },
+  paymentCard: {
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderRadius: 12,
+    marginBottom: 12,
+    backgroundColor: "#fff",
   },
   paymentCardInfo: {
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: 12,
   },
   paymentCardIcon: {
     width: 40,
@@ -250,30 +341,75 @@ export const configStyles = StyleSheet.create({
     alignItems: "center",
     marginRight: 15,
   },
+  paymentCardText: {
+    flex: 1,
+  },
   paymentCardTitle: {
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "600",
     color: "#333",
   },
-  paymentCardNumber: {
-    fontSize: 14,
+  paymentCardDetail: {
+    fontSize: 13,
     color: "#666",
-  },
-  paymentCardExpiry: {
-    fontSize: 12,
-    color: "#999",
     marginTop: 2,
   },
-  paymentCardAction: {
-    paddingHorizontal: 15,
+  paymentBadge: {
+    marginTop: 8,
+    alignSelf: "flex-start",
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: "#4CAF50",
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  paymentBadgeEditing: {
+    backgroundColor: "#fff3cd",
+    color: "#8a6d3b",
+  },
+  paymentCardActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
+    alignItems: "center",
+  },
+  paymentActionButton: {
     paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: "#4CAF50",
-    borderRadius: 5,
+    marginLeft: 10,
+    marginTop: 6,
+    backgroundColor: "#fff",
   },
-  paymentCardActionText: {
+  paymentActionButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
     color: "#4CAF50",
-    fontSize: 14,
+  },
+  paymentActionButtonPrimary: {
+    borderColor: "#2e7d32",
+    backgroundColor: "#e8f5e9",
+  },
+  paymentActionButtonPrimaryText: {
+    color: "#2e7d32",
+  },
+  paymentActionButtonDanger: {
+    borderColor: "#d32f2f",
+    backgroundColor: "#fff5f5",
+  },
+  paymentActionButtonDangerText: {
+    color: "#d32f2f",
+  },
+  paymentActionButtonDisabled: {
+    opacity: 0.5,
+  },
+  paymentCardEditing: {
+    borderColor: "#81C784",
+    backgroundColor: "#f3fbf5",
   },
   addPaymentButton: {
     flexDirection: "row",
@@ -291,34 +427,143 @@ export const configStyles = StyleSheet.create({
     marginLeft: 5,
     fontSize: 16,
   },
-
-  // Histórico de pagamentos
-  paymentHistoryItem: {
+  inlineFeedback: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  feedbackText: {
+    marginLeft: 8,
+    color: "#4CAF50",
+    fontSize: 14,
+  },
+  twoFactorStatusCard: {
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 10,
+    backgroundColor: "#f1f8f4",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  twoFactorStatusTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  twoFactorStatusTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2e7d32",
+  },
+  twoFactorStatusDescription: {
+    fontSize: 13,
+    color: "#4f624f",
+    marginTop: 4,
+  },
+  twoFactorSecondaryButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#4CAF50",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  twoFactorSecondaryButtonText: {
+    color: "#4CAF50",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  twoFactorContainer: {
+    marginTop: 18,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderRadius: 12,
+    backgroundColor: "#fafafa",
+  },
+  twoFactorTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 12,
+  },
+  twoFactorInstructions: {
+    fontSize: 14,
+    color: "#555",
+    marginBottom: 10,
+    lineHeight: 20,
+  },
+  qrCodeImage: {
+    alignSelf: "center",
+    width: 180,
+    height: 180,
+    marginVertical: 12,
+  },
+  twoFactorLoader: {
+    marginVertical: 20,
+  },
+  secretContainer: {
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "#eef7ee",
+  },
+  secretLabel: {
+    fontSize: 13,
+    color: "#2e7d32",
+    marginBottom: 4,
+    fontWeight: "600",
+  },
+  secretValue: {
+    fontSize: 16,
+    letterSpacing: 1,
+    color: "#1b5e20",
+    fontWeight: "700",
+  },
+  twoFactorCodeInput: {
+    textAlign: "center",
+    fontSize: 20,
+    letterSpacing: 8,
+    fontWeight: "600",
+    backgroundColor: "#fff",
+  },
+  twoFactorButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    padding: 15,
-    borderWidth: 1,
-    borderColor: "#eee",
-    borderRadius: 8,
-    marginBottom: 8,
+    marginTop: 18,
   },
-  paymentHistoryInfo: {
+  twoFactorCancelButton: {
     flex: 1,
+    marginRight: 10,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#d32f2f",
+    alignItems: "center",
+    backgroundColor: "#fff",
   },
-  paymentHistoryTitle: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#333",
-  },
-  paymentHistoryDate: {
+  twoFactorCancelText: {
+    color: "#d32f2f",
+    fontWeight: "600",
     fontSize: 14,
-    color: "#666",
-    marginTop: 2,
   },
-  paymentHistoryAmount: {
-    fontSize: 16,
-    fontWeight: "bold",
+  twoFactorCancelNeutral: {
+    borderColor: "#4CAF50",
+  },
+  twoFactorCancelNeutralText: {
     color: "#4CAF50",
+  },
+  twoFactorConfirmButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: "#4CAF50",
+    alignItems: "center",
+  },
+  twoFactorButtonDisabled: {
+    opacity: 0.6,
+  },
+  twoFactorConfirmButtonDisabled: {
+    backgroundColor: "#A5D6A7",
   },
 })

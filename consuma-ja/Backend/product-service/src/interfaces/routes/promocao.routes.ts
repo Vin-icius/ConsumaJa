@@ -10,7 +10,6 @@ import { VendaMySQLRepository } from '../../infrastructure/repositories/venda.my
 
 const router = express.Router();
 
-// Instanciação (Idealmente usar DI)
 const promocaoRepository = new PromocaoMySQLRepository();
 const loteProdRepository = new LoteProdMySQLRepository();
 const produtoRepository = new ProdutoMySQLRepository();
@@ -18,19 +17,16 @@ const produtoRepository = new ProdutoMySQLRepository();
 const promocaoService = new PromocaoService(promocaoRepository, loteProdRepository, produtoRepository);
 const promocaoController = new PromocaoController(promocaoService);
 
-// Para venda
 const vendaRepository = new VendaMySQLRepository();
 const vendaService = new VendaService(vendaRepository, promocaoRepository, loteProdRepository);
 const vendaController = new VendaController(vendaService);
 
-// Rotas
 router.post('/', /* authMiddleware, */ promocaoController.criar);
 router.get('/', promocaoController.listar); // Lista ativas com filtros
 router.get('/:id', promocaoController.buscarPorId);
 router.put('/:id', /* authMiddleware, */ promocaoController.atualizar);
 router.delete('/:id', /* authMiddleware, */ promocaoController.excluir);
 
-// Rota para venda
 router.post('/sale', /* authMiddleware, */ vendaController.criar);
 
 export default router;

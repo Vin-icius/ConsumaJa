@@ -24,15 +24,18 @@ export class LoteProdMySQLRepository implements LoteProdRepository {
             data_entrada: new Date(row.data_entrada),
             ativo: row.ativo !== undefined ? Boolean(row.ativo) : true,
             produto_nome: row.produto_nome, // Para o picker
+            fornecedor_pessoa_id: row.fornecedor_pessoa_id,
+            fornecedor_nome: row.fornecedor_nome ?? null,
         };
     }
 
     async buscarPorId(lote_id: number, apenasAtivo = true): Promise<LoteProd | null> {
         // Query para buscar lote e nome do produto associado
         let query = `
-            SELECT lp.*, p.produto_nome
+            SELECT lp.*, p.produto_nome, forn.pessoa_nome AS fornecedor_nome
             FROM LOTEPROD lp
             JOIN PRODUTO p ON lp.produto_id = p.produto_id
+            LEFT JOIN PESSOA forn ON forn.pessoa_id = lp.fornecedor_pessoa_id
             WHERE lp.lote_id = ?
         `;
         const params: any[] = [lote_id];
@@ -53,9 +56,10 @@ export class LoteProdMySQLRepository implements LoteProdRepository {
 
     async listarDisponiveis(filtros: ListarLotesDisponiveisFiltros): Promise<LoteProd[]> {
         let query = `
-            SELECT lp.*, p.produto_nome
+            SELECT lp.*, p.produto_nome, forn.pessoa_nome AS fornecedor_nome
             FROM LOTEPROD lp
             JOIN PRODUTO p ON lp.produto_id = p.produto_id
+            LEFT JOIN PESSOA forn ON forn.pessoa_id = lp.fornecedor_pessoa_id
         `;
         const conditions: string[] = [];
         const params: any[] = [];
@@ -79,14 +83,9 @@ export class LoteProdMySQLRepository implements LoteProdRepository {
         }
         // -----------------------------------------
 
-        // Filtro por fornecedorId (se aplicável e se Produto ou LoteProd tiverem essa FK)
         if (filtros.fornecedorId) {
-            // Exemplo: Assumindo que PRODUTO tem uma FK para o fornecedor.
-            // Se LOTEPROD tiver a FK, seria 'lp.SUA_COLUNA_FK_FORNECEDOR_EM_LOTEPROD = ?'
-            // Adicione o JOIN necessário se a FK estiver em outra tabela ligada a Produto/Lote
-            // conditions.push("p.JURIDICA_PESSOA_pessoa_id = ?"); // Ajuste nome_da_coluna_fk_fornecedor_em_produto
-            // params.push(filtros.fornecedorId);
-            console.warn(`[Repo LoteProd] Filtro por fornecedorId (${filtros.fornecedorId}) em listarDisponiveis depende de como Produto/Lote está ligado ao Fornecedor no DB.`);
+            conditions.push("lp.fornecedor_pessoa_id = ?");
+            params.push(filtros.fornecedorId);
         }
 
 
@@ -141,15 +140,15 @@ export class LoteProdMySQLRepository implements LoteProdRepository {
     }
 
     async criar(data: CreateLoteProdRepoData): Promise<LoteProd> {
-        const { produto_id, lote_codigo, lote_validade, lote_quantidade_inicial, lote_quantidade_atual, data_entrada, ativo } = data;
+        const { produto_id, fornecedor_pessoa_id, lote_codigo, lote_validade, lote_quantidade_inicial, lote_quantidade_atual, data_entrada, ativo } = data;
         const query = `
-            INSERT INTO LOTEPROD (produto_id, lote_codigo, lote_validade, lote_quantidade_inicial, lote_quantidade_atual, data_entrada, ativo)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO LOTEPROD (produto_id, fornecedor_pessoa_id, lote_codigo, lote_validade, lote_quantidade_inicial, lote_quantidade_atual, data_entrada, ativo)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `;
         try {
             if (!pool) throw new AppError("Pool...", 500, false);
             const [result] = await pool.query<ResultSetHeader>(query, [
-                produto_id, lote_codigo, lote_validade, lote_quantidade_inicial, lote_quantidade_atual, data_entrada, ativo
+                produto_id, fornecedor_pessoa_id, lote_codigo, lote_validade, lote_quantidade_inicial, lote_quantidade_atual, data_entrada, ativo
             ]);
             const insertedId = result.insertId;
             const novoLote = await this.buscarPorId(insertedId, false); // Busca qualquer status para confirmar
@@ -168,8 +167,8 @@ export class LoteProdMySQLRepository implements LoteProdRepository {
     }
 
     async listar(filtros: ListarLotesQueryDto): Promise<PaginatedRepositoryResponse<LoteProd>> {
-        let dataQuery = `SELECT lp.*, p.produto_nome FROM LOTEPROD lp JOIN PRODUTO p ON lp.produto_id = p.produto_id`;
-        let countQuery = `SELECT COUNT(lp.lote_id) as total FROM LOTEPROD lp JOIN PRODUTO p ON lp.produto_id = p.produto_id`;
+        let dataQuery = `SELECT lp.*, p.produto_nome, forn.pessoa_nome AS fornecedor_nome FROM LOTEPROD lp JOIN PRODUTO p ON lp.produto_id = p.produto_id LEFT JOIN PESSOA forn ON forn.pessoa_id = lp.fornecedor_pessoa_id`;
+        let countQuery = `SELECT COUNT(lp.lote_id) as total FROM LOTEPROD lp JOIN PRODUTO p ON lp.produto_id = p.produto_id LEFT JOIN PESSOA forn ON forn.pessoa_id = lp.fornecedor_pessoa_id`;
         const conditions: string[] = [];
         const paramsSql: any[] = [];
 
@@ -179,6 +178,7 @@ export class LoteProdMySQLRepository implements LoteProdRepository {
         if (filtros.validadeAntes) { conditions.push("lp.lote_validade <= ?"); paramsSql.push(filtros.validadeAntes); }
         if (filtros.apenasComEstoque === 'true') { conditions.push("lp.lote_quantidade_atual > 0"); }
         if (filtros.ativo !== undefined) { conditions.push("lp.ativo = ?"); paramsSql.push(filtros.ativo === 'true'); }
+        if (filtros.fornecedorId) { conditions.push("lp.fornecedor_pessoa_id = ?"); paramsSql.push(filtros.fornecedorId); }
 
         if (conditions.length > 0) {
             const whereClause = " WHERE " + conditions.join(" AND ");

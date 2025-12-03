@@ -49,6 +49,14 @@ export const SearchProvider: React.FC<SearchProviderProps> = ({ children }) => {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  useEffect(() => {
+    const hasFornecedorFilter = selectedFilters.includes('fornecedor');
+    const selectedCategories = selectedFilters.filter(value => typeof value === 'number');
+
+    setSearchType(hasFornecedorFilter ? 'fornecedor' : 'promocao');
+    setSelectedCategoriaId(selectedCategories[0]);
+  }, [selectedFilters]);
+
   return (
     <SearchContext.Provider value={{ searchQuery, setSearchQuery, debouncedQuery, searchType, setSearchType, performSearch, setPerformSearch, selectedCategoriaId, setSelectedCategoriaId, categoriasFiltro, setCategoriasFiltro, selectedFilters, setSelectedFilters }}>
       {children}

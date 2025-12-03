@@ -8,15 +8,18 @@ export class CategoriaService {
   constructor(private categoriaRepository: CategoriaRepository) {}
 
   async criarCategoria(createDto: CreateCategoriaDto): Promise<Categoria> {
+      const fornecedorId = createDto.fornecedor_pessoa_id ?? null;
       // Validação de Unicidade ANTES de tentar criar
-      const nomeExistente = await this.categoriaRepository.findByNome(createDto.categoria_nome);
+      const nomeExistente = await this.categoriaRepository.findByNome(createDto.categoria_nome, fornecedorId);
       if (nomeExistente) {
           throw new AppError(`A categoria "${createDto.categoria_nome}" já existe (ID: ${nomeExistente.categoria_id}).`, 409);
       }
 
       try {
-          // O DTO já tem o formato esperado por CreateCategoriaData
-          const novaCategoria = await this.categoriaRepository.criar(createDto);
+          const novaCategoria = await this.categoriaRepository.criar({
+              categoria_nome: createDto.categoria_nome,
+              fornecedor_pessoa_id: fornecedorId,
+          });
           return novaCategoria;
       } catch (error) {
           if (error instanceof AppError) throw error;
@@ -53,7 +56,10 @@ export class CategoriaService {
       const categoriaExistente = await this.buscarCategoriaPorId(id);
 
       if (updateDto.categoria_nome && updateDto.categoria_nome !== categoriaExistente.categoria_nome) {
-          const outraCategoriaComNome = await this.categoriaRepository.findByNome(updateDto.categoria_nome);
+          const outraCategoriaComNome = await this.categoriaRepository.findByNome(
+              updateDto.categoria_nome,
+              categoriaExistente.fornecedor_pessoa_id ?? null
+          );
           if (outraCategoriaComNome && outraCategoriaComNome.categoria_id !== id) {
                throw new AppError(`O nome de categoria "${updateDto.categoria_nome}" já está em uso pela categoria ID ${outraCategoriaComNome.categoria_id}.`, 409);
           }

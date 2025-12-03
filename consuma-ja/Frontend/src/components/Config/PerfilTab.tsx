@@ -1,70 +1,74 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useConfig } from '../../contexts/ConfigContext/configContext';
 
-export const PerfilTab = () => {
-  const { nome, email, telefone, tipoUsuario, cpf, cnpj, fornecedorNum, loadingData, handleUpdatePerfilCompleto } = useConfig();
+const maskDocumento = (value: string) => {
+  const cleanValue = value.replace(/\D/g, '');
+
+  if (cleanValue.length === 11) {
+    return cleanValue.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  }
+
+  if (cleanValue.length === 14) {
+    return cleanValue.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+  }
+
+  return value;
+};
+
+export const PerfilTab: React.FC = () => {
+  const {
+    nome,
+    email,
+    telefone,
+    tipoUsuario,
+    cpf,
+    cnpj,
+    fornecedorNum,
+    loadingData,
+    handleUpdatePerfilCompleto,
+  } = useConfig();
+
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    nome: '',
-    email: '',
-    telefone: ''
-  });
+  const [formData, setFormData] = useState({ nome: '', email: '', telefone: '' });
 
   useEffect(() => {
-    setFormData({
-      nome: nome || '',
-      email: email || '',
-      telefone: telefone || ''
-    });
+    setFormData({ nome: nome || '', email: email || '', telefone: telefone || '' });
   }, [nome, email, telefone]);
 
-  const formatDocumento = (doc: string) => {
-    const cleanDoc = doc.replace(/\D/g, '');
+  const handleChange = (field: 'nome' | 'email' | 'telefone', value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
-    if (cleanDoc.length === 11) {
-      // Formatar CPF: 000.000.000-00
-      return cleanDoc.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-    } else if (cleanDoc.length === 14) {
-      // Formatar CNPJ: 00.000.000/0000-00
-      return cleanDoc.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
-    }
-
-    return doc;
+  const handleCancel = () => {
+    setFormData({ nome: nome || '', email: email || '', telefone: telefone || '' });
+    setIsEditing(false);
   };
 
   const handleSave = async () => {
     if (!formData.nome.trim()) {
-      Alert.alert('Erro', 'Nome é obrigatório');
+      Alert.alert('Erro', 'Nome é obrigatório.');
       return;
     }
 
     if (!formData.email.trim() || !formData.email.includes('@')) {
-      Alert.alert('Erro', 'Email válido é obrigatório');
+      Alert.alert('Erro', 'Email válido é obrigatório.');
       return;
     }
 
     if (!formData.telefone.trim() || formData.telefone.replace(/\D/g, '').length < 10) {
-      Alert.alert('Erro', 'Telefone válido é obrigatório');
+      Alert.alert('Erro', 'Telefone válido é obrigatório.');
       return;
     }
 
     try {
       await handleUpdatePerfilCompleto(formData.nome.trim(), formData.email.trim(), formData.telefone.trim());
       setIsEditing(false);
-      Alert.alert('Sucesso', 'Dados atualizados com sucesso');
+      Alert.alert('Sucesso', 'Dados atualizados com sucesso.');
     } catch (error) {
-      Alert.alert('Erro', 'Falha ao atualizar dados');
+      console.error('[PerfilTab] Erro ao salvar perfil:', error);
+      Alert.alert('Erro', 'Falha ao atualizar dados.');
     }
-  };
-
-  const handleCancel = () => {
-    setFormData({
-      nome: nome || '',
-      email: email || '',
-      telefone: telefone || ''
-    });
-    setIsEditing(false);
   };
 
   if (loadingData) {
@@ -76,6 +80,9 @@ export const PerfilTab = () => {
     );
   }
 
+  const documentoLabel = tipoUsuario === 'Fisica' ? 'CPF' : tipoUsuario === 'Juridica' ? 'CNPJ' : 'Documento';
+  const documentoValue = tipoUsuario === 'Fisica' ? cpf : tipoUsuario === 'Juridica' ? cnpj : '';
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Informações Pessoais</Text>
@@ -86,7 +93,7 @@ export const PerfilTab = () => {
           <TextInput
             style={styles.input}
             value={formData.nome}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, nome: text }))}
+            onChangeText={(value) => handleChange('nome', value)}
             placeholder="Digite seu nome"
           />
         ) : (
@@ -100,7 +107,7 @@ export const PerfilTab = () => {
           <TextInput
             style={styles.input}
             value={formData.email}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, email: text }))}
+            onChangeText={(value) => handleChange('email', value)}
             placeholder="Digite seu email"
             keyboardType="email-address"
             autoCapitalize="none"
@@ -116,7 +123,7 @@ export const PerfilTab = () => {
           <TextInput
             style={styles.input}
             value={formData.telefone}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, telefone: text }))}
+            onChangeText={(value) => handleChange('telefone', value)}
             placeholder="Digite seu telefone"
             keyboardType="phone-pad"
           />
@@ -127,14 +134,14 @@ export const PerfilTab = () => {
 
       <View style={styles.fieldContainer}>
         <Text style={styles.label}>Tipo de Usuário</Text>
-        <Text style={styles.value}>{tipoUsuario === 'Fisica' ? 'Pessoa Física' : tipoUsuario === 'Juridica' ? 'Pessoa Jurídica' : 'Admin'}</Text>
+        <Text style={styles.value}>
+          {tipoUsuario === 'Fisica' ? 'Pessoa Física' : tipoUsuario === 'Juridica' ? 'Pessoa Jurídica' : 'Admin'}
+        </Text>
       </View>
 
       <View style={styles.fieldContainer}>
-        <Text style={styles.label}>Documento ({tipoUsuario === 'Fisica' ? 'CPF' : 'CNPJ'})</Text>
-        <Text style={styles.value}>
-          {tipoUsuario === 'Fisica' ? (cpf ? formatDocumento(cpf) : 'Não informado') : (cnpj ? formatDocumento(cnpj) : 'Não informado')}
-        </Text>
+        <Text style={styles.label}>Documento ({documentoLabel})</Text>
+        <Text style={styles.value}>{documentoValue ? maskDocumento(documentoValue) : 'Não informado'}</Text>
       </View>
 
       {tipoUsuario === 'Juridica' && (
@@ -144,19 +151,19 @@ export const PerfilTab = () => {
         </View>
       )}
 
-      <View style={styles.buttonContainer}>
+      <View style={styles.buttonRow}>
         {isEditing ? (
           <>
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>Salvar</Text>
+            <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handleSave}>
+              <Text style={styles.buttonText}>Salvar</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
+            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleCancel}>
+              <Text style={styles.buttonText}>Cancelar</Text>
             </TouchableOpacity>
           </>
         ) : (
-          <TouchableOpacity style={styles.editButton} onPress={() => setIsEditing(true)}>
-            <Text style={styles.editButtonText}>Editar</Text>
+          <TouchableOpacity style={[styles.button, styles.editButton]} onPress={() => setIsEditing(true)}>
+            <Text style={styles.buttonText}>Editar</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -172,9 +179,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    justifyContent: 'center',
   },
   loadingText: {
     marginTop: 10,
@@ -198,10 +204,10 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 16,
-    color: '#666',
+    color: '#555',
+    backgroundColor: '#f5f5f5',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
   },
   input: {
@@ -212,49 +218,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#fff',
   },
-  buttonContainer: {
+  buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 20,
   },
+  button: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
   editButton: {
     backgroundColor: '#007AFF',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    flex: 1,
-    marginRight: 10,
-  },
-  editButtonText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '600',
   },
   saveButton: {
     backgroundColor: '#28a745',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    flex: 1,
-    marginRight: 10,
-  },
-  saveButtonText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '600',
   },
   cancelButton: {
     backgroundColor: '#dc3545',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    flex: 1,
   },
-  cancelButtonText: {
+  buttonText: {
     color: '#fff',
-    textAlign: 'center',
     fontSize: 16,
     fontWeight: '600',
   },

@@ -28,14 +28,18 @@ interface ProdutoRow extends RowDataPacket {
     CATEGORIA_PRODUTO_categoria_id: number;
     MARCA_PRODUTO_marca_id: number;
     TIPO_PRODUTO_tipo_id: number;
+    fornecedor_pessoa_id: number;
 
     // Campos das tabelas relacionadas (com alias)
     categoria_nome: string | null;
     categoria_ativo: boolean | null;
+    categoria_fornecedor_pessoa_id: number | null;
     marca_nome: string | null;
     marca_ativo: boolean | null;
     tipo_nome: string | null;
     tipo_ativo: boolean | null;
+    tipo_fornecedor_pessoa_id: number | null;
+    fornecedor_nome: string | null;
 }
 
 
@@ -48,6 +52,7 @@ export class ProdutoMySQLRepository implements ProdutoRepository {
              categoria_id: row.CATEGORIA_PRODUTO_categoria_id,
              categoria_nome: row.categoria_nome!, // Usa '!' pois JOIN garante que não será null se ativo=true
              ativo: true,
+             fornecedor_pessoa_id: row.categoria_fornecedor_pessoa_id ?? null,
          } : null;
 
          const marca: Marca | null = row.MARCA_PRODUTO_marca_id && row.marca_ativo ? {
@@ -60,6 +65,13 @@ export class ProdutoMySQLRepository implements ProdutoRepository {
              tipo_id: row.TIPO_PRODUTO_tipo_id,
              tipo_nome: row.tipo_nome!,
              ativo: true,
+             fornecedor_pessoa_id: row.tipo_fornecedor_pessoa_id ?? null,
+         } : null;
+
+         const fornecedorId = row.fornecedor_pessoa_id ?? null;
+         const fornecedor = fornecedorId ? {
+             pessoa_id: fornecedorId,
+             pessoa_nome: row.fornecedor_nome ?? null,
          } : null;
 
          // Cria objeto Produto (usando 'as Produto' para garantir tipo)
@@ -79,10 +91,12 @@ export class ProdutoMySQLRepository implements ProdutoRepository {
             CATEGORIA_PRODUTO_categoria_id: row.CATEGORIA_PRODUTO_categoria_id,
             MARCA_PRODUTO_marca_id: row.MARCA_PRODUTO_marca_id,
             TIPO_PRODUTO_tipo_id: row.TIPO_PRODUTO_tipo_id,
+            fornecedor_pessoa_id: fornecedorId,
 
             categoria: categoria,
             marca: marca,
             tipo: tipo,
+            fornecedor,
         } as Produto;
         return produto;
     }
@@ -90,13 +104,15 @@ export class ProdutoMySQLRepository implements ProdutoRepository {
     private readonly BASE_SELECT_QUERY = `
         SELECT
             p.*, p.ativo as produto_ativo,
-            c.categoria_nome, c.ativo as categoria_ativo,
+            c.categoria_nome, c.ativo as categoria_ativo, c.fornecedor_pessoa_id as categoria_fornecedor_pessoa_id,
             m.marca_nome, m.ativo as marca_ativo,
-            t.tipo_nome, t.ativo as tipo_ativo
+            t.tipo_nome, t.ativo as tipo_ativo, t.fornecedor_pessoa_id as tipo_fornecedor_pessoa_id,
+            forn.pessoa_nome as fornecedor_nome
         FROM PRODUTO p
         LEFT JOIN CATEGORIA_PRODUTO c ON p.CATEGORIA_PRODUTO_categoria_id = c.categoria_id
         LEFT JOIN MARCA_PRODUTO m ON p.MARCA_PRODUTO_marca_id = m.marca_id
         LEFT JOIN TIPO_PRODUTO t ON p.TIPO_PRODUTO_tipo_id = t.tipo_id
+        LEFT JOIN PESSOA forn ON forn.pessoa_id = p.fornecedor_pessoa_id
     `;
 
     // Método para buscar por nome
@@ -190,22 +206,35 @@ export class ProdutoMySQLRepository implements ProdutoRepository {
 
     async criar(data: CreateProdutoData): Promise<Produto> {
         const {
-            produto_nome, produto_medida, produto_precoOriginal, descricao,
-            CATEGORIA_PRODUTO_categoria_id, MARCA_PRODUTO_marca_id, TIPO_PRODUTO_tipo_id
+            produto_nome,
+            produto_medida,
+            produto_precoOriginal,
+            descricao,
+            CATEGORIA_PRODUTO_categoria_id,
+            MARCA_PRODUTO_marca_id,
+            TIPO_PRODUTO_tipo_id,
+            fornecedor_pessoa_id,
         } = data;
 
         const query = `
             INSERT INTO PRODUTO (
                 produto_nome, produto_status, produto_medida, produto_precoOriginal,
                 descricao, data_registro, ativo,
+                fornecedor_pessoa_id,
                 CATEGORIA_PRODUTO_categoria_id, MARCA_PRODUTO_marca_id, TIPO_PRODUTO_tipo_id
-            ) VALUES (?, 'PENDENTE', ?, ?, ?, NOW(), TRUE, ?, ?, ?)
+            ) VALUES (?, 'PENDENTE', ?, ?, ?, NOW(), TRUE, ?, ?, ?, ?)
         `;
         try {
             if (!pool) throw new AppError("Pool de conexão não definido!", 500, false);
             const [result] = await pool.query<ResultSetHeader>(query, [
-                produto_nome, produto_medida, produto_precoOriginal, descricao,
-                CATEGORIA_PRODUTO_categoria_id, MARCA_PRODUTO_marca_id, TIPO_PRODUTO_tipo_id
+                produto_nome,
+                produto_medida,
+                produto_precoOriginal,
+                descricao,
+                fornecedor_pessoa_id,
+                CATEGORIA_PRODUTO_categoria_id,
+                MARCA_PRODUTO_marca_id,
+                TIPO_PRODUTO_tipo_id,
             ]);
             const insertedId = result.insertId;
             const novoProduto = await this.buscarPorId(insertedId, true);
@@ -227,9 +256,16 @@ export class ProdutoMySQLRepository implements ProdutoRepository {
             LEFT JOIN CATEGORIA_PRODUTO cat ON p.CATEGORIA_PRODUTO_categoria_id = cat.categoria_id
             LEFT JOIN MARCA_PRODUTO mar ON p.MARCA_PRODUTO_marca_id = mar.marca_id
             LEFT JOIN TIPO_PRODUTO tip ON p.TIPO_PRODUTO_tipo_id = tip.tipo_id
+            LEFT JOIN PESSOA forn ON forn.pessoa_id = cat.fornecedor_pessoa_id
         `;
         let countSelectQuery = `SELECT COUNT(DISTINCT p.produto_id) as total ${baseFromClause}`;
-        let dataSelectQuery = `SELECT DISTINCT p.*, cat.categoria_nome, mar.marca_nome, tip.tipo_nome ${baseFromClause}`;
+        let dataSelectQuery = `SELECT DISTINCT 
+            p.*, 
+            cat.categoria_nome, cat.ativo as categoria_ativo, cat.fornecedor_pessoa_id as categoria_fornecedor_pessoa_id,
+            mar.marca_nome, mar.ativo as marca_ativo,
+            tip.tipo_nome, tip.ativo as tipo_ativo, tip.fornecedor_pessoa_id as tipo_fornecedor_pessoa_id,
+            forn.pessoa_nome as fornecedor_nome
+            ${baseFromClause}`;
     
         const conditions: string[] = [];
         const params: any[] = [];
@@ -257,6 +293,10 @@ export class ProdutoMySQLRepository implements ProdutoRepository {
         if (filtros.produto_status) {
             conditions.push("p.produto_status = ?");
             params.push(filtros.produto_status);
+        }
+        if (filtros.fornecedorId) {
+            conditions.push("p.fornecedor_pessoa_id = ?");
+            params.push(filtros.fornecedorId);
         }
     
         // Tratamento do filtro 'ativo' (string "true" ou "false")

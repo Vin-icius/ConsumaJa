@@ -1,8 +1,16 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ActivityIndicator, Keyboard } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useConfig } from '../../contexts/ConfigContext/configContext';
 
-export const EnderecoTab = () => {
+const formatCep = (value: string) => {
+  const cleanValue = value.replace(/\D/g, '');
+  if (cleanValue.length <= 5) {
+    return cleanValue;
+  }
+  return `${cleanValue.slice(0, 5)}-${cleanValue.slice(5, 8)}`;
+};
+
+export const EnderecoTab: React.FC = () => {
   const {
     cep,
     setCep,
@@ -24,20 +32,21 @@ export const EnderecoTab = () => {
     errors,
     handleCepBlur,
     handleSubmitEndereco,
-    clearErrors
+    clearErrors,
   } = useConfig();
 
-  const handleCepChange = (text: string) => {
-    // Formatar CEP: 00000-000
-    const formatted = text.replace(/\D/g, '').replace(/(\d{5})(\d{1,3})/, '$1-$2');
-    setCep(formatted);
+  const handleCepChange = (value: string) => {
+    setCep(formatCep(value));
     if (errors.cep) {
       clearErrors();
     }
   };
 
-  const handleSubmit = () => {
-    handleSubmitEndereco();
+  const handleChange = (setter: (value: string) => void, field: string, value: string) => {
+    setter(value);
+    if (errors[field]) {
+      clearErrors();
+    }
   };
 
   if (loadingData) {
@@ -55,23 +64,20 @@ export const EnderecoTab = () => {
 
       <View style={styles.fieldContainer}>
         <Text style={styles.label}>CEP</Text>
-        <TextInput
-          style={[styles.input, errors.cep && styles.inputError]}
-          value={cep}
-          onChangeText={handleCepChange}
-          onBlur={handleCepBlur}
-          placeholder="00000-000"
-          keyboardType="numeric"
-          maxLength={9}
-          editable={!loadingCep}
-        />
+        <View style={styles.cepRow}>
+          <TextInput
+            style={[styles.input, errors.cep && styles.inputError]}
+            value={cep}
+            onChangeText={handleCepChange}
+            onBlur={handleCepBlur}
+            placeholder="00000-000"
+            keyboardType="numeric"
+            maxLength={9}
+            editable={!loadingCep}
+          />
+          {loadingCep && <ActivityIndicator size="small" color="#007AFF" style={styles.cepLoader} />}
+        </View>
         {errors.cep && <Text style={styles.errorText}>{errors.cep}</Text>}
-        {loadingCep && (
-          <View style={styles.loadingCepContainer}>
-            <ActivityIndicator size="small" color="#007AFF" />
-            <Text style={styles.loadingCepText}>Buscando CEP...</Text>
-          </View>
-        )}
       </View>
 
       <View style={styles.fieldContainer}>
@@ -79,32 +85,26 @@ export const EnderecoTab = () => {
         <TextInput
           style={[styles.input, errors.rua && styles.inputError]}
           value={rua}
-          onChangeText={(text) => {
-            setRua(text);
-            if (errors.rua) clearErrors();
-          }}
+          onChangeText={(value) => handleChange(setRua, 'rua', value)}
           placeholder="Nome da rua"
         />
         {errors.rua && <Text style={styles.errorText}>{errors.rua}</Text>}
       </View>
 
-      <View style={styles.rowContainer}>
-        <View style={[styles.fieldContainer, { flex: 1, marginRight: 10 }]}>
+      <View style={styles.row}>
+        <View style={[styles.fieldContainer, styles.flexOne, styles.marginRight]}>
           <Text style={styles.label}>Número</Text>
           <TextInput
             style={[styles.input, errors.numero && styles.inputError]}
             value={numero}
-            onChangeText={(text) => {
-              setNumero(text);
-              if (errors.numero) clearErrors();
-            }}
-            placeholder="123"
+            onChangeText={(value) => handleChange(setNumero, 'numero', value)}
+            placeholder="Número"
             keyboardType="numeric"
           />
           {errors.numero && <Text style={styles.errorText}>{errors.numero}</Text>}
         </View>
 
-        <View style={[styles.fieldContainer, { flex: 2 }]}>
+        <View style={[styles.fieldContainer, styles.flexOne]}>
           <Text style={styles.label}>Complemento</Text>
           <TextInput
             style={styles.input}
@@ -120,39 +120,30 @@ export const EnderecoTab = () => {
         <TextInput
           style={[styles.input, errors.bairro && styles.inputError]}
           value={bairro}
-          onChangeText={(text) => {
-            setBairro(text);
-            if (errors.bairro) clearErrors();
-          }}
-          placeholder="Nome do bairro"
+          onChangeText={(value) => handleChange(setBairro, 'bairro', value)}
+          placeholder="Bairro"
         />
         {errors.bairro && <Text style={styles.errorText}>{errors.bairro}</Text>}
       </View>
 
-      <View style={styles.rowContainer}>
-        <View style={[styles.fieldContainer, { flex: 2, marginRight: 10 }]}>
+      <View style={styles.row}>
+        <View style={[styles.fieldContainer, styles.flexTwo, styles.marginRight]}>
           <Text style={styles.label}>Cidade</Text>
           <TextInput
             style={[styles.input, errors.cidade && styles.inputError]}
             value={cidade}
-            onChangeText={(text) => {
-              setCidade(text);
-              if (errors.cidade) clearErrors();
-            }}
-            placeholder="Nome da cidade"
+            onChangeText={(value) => handleChange(setCidade, 'cidade', value)}
+            placeholder="Cidade"
           />
           {errors.cidade && <Text style={styles.errorText}>{errors.cidade}</Text>}
         </View>
 
-        <View style={[styles.fieldContainer, { flex: 1 }]}>
+        <View style={[styles.fieldContainer, styles.flexOne]}>
           <Text style={styles.label}>Estado</Text>
           <TextInput
             style={[styles.input, errors.estado && styles.inputError]}
             value={estado}
-            onChangeText={(text) => {
-              setEstado(text);
-              if (errors.estado) clearErrors();
-            }}
+            onChangeText={(value) => handleChange(setEstado, 'estado', value)}
             placeholder="UF"
             maxLength={2}
             autoCapitalize="characters"
@@ -162,8 +153,8 @@ export const EnderecoTab = () => {
       </View>
 
       <TouchableOpacity
-        style={[styles.saveButton, loadingSubmit && styles.saveButtonDisabled]}
-        onPress={handleSubmit}
+        style={[styles.saveButton, loadingSubmit && styles.buttonDisabled]}
+        onPress={handleSubmitEndereco}
         disabled={loadingSubmit}
       >
         {loadingSubmit ? (
@@ -202,10 +193,6 @@ const styles = StyleSheet.create({
   fieldContainer: {
     marginBottom: 20,
   },
-  rowContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
   label: {
     fontSize: 16,
     fontWeight: '600',
@@ -228,15 +215,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 4,
   },
-  loadingCepContainer: {
+  cepRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
   },
-  loadingCepText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#666',
+  cepLoader: {
+    marginLeft: 10,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  flexOne: {
+    flex: 1,
+  },
+  flexTwo: {
+    flex: 2,
+  },
+  marginRight: {
+    marginRight: 10,
   },
   saveButton: {
     backgroundColor: '#28a745',
@@ -245,7 +242,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20,
   },
-  saveButtonDisabled: {
+  buttonDisabled: {
     backgroundColor: '#6c757d',
   },
   saveButtonText: {

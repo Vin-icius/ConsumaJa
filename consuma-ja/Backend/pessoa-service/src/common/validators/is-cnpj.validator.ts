@@ -23,36 +23,28 @@ export class IsCnpjConstraint implements ValidatorConstraintInterface {
       return false;
     }
 
-    let sum = 0;
-    let pos = cleanCnpj.length - 2;
-    let result;
+    const calculateDigit = (length: number): number => {
+      let sum = 0;
+      let factor = length - 7; // Sequência oficial (5..2,9..2)
 
-    // Validação do primeiro dígito verificador
-    for (let i = 0; i < cleanCnpj.length - 2; i++) {
-      sum += parseInt(cleanCnpj.charAt(i)) * (pos--);
-      if (pos < 2) {
-        pos = 9;
+      for (let i = 0; i < length; i++) {
+        sum += parseInt(cleanCnpj.charAt(i), 10) * factor--;
+        if (factor < 2) {
+          factor = 9;
+        }
       }
-    }
 
-    result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
-    if (result !== parseInt(cleanCnpj.charAt(12))) {
+      const mod = sum % 11;
+      return mod < 2 ? 0 : 11 - mod;
+    };
+
+    const firstDigit = calculateDigit(12);
+    if (firstDigit !== parseInt(cleanCnpj.charAt(12), 10)) {
       return false;
     }
 
-    sum = 0;
-    pos = cleanCnpj.length - 1;
-
-    // Validação do segundo dígito verificador
-    for (let i = 0; i < cleanCnpj.length - 1; i++) {
-      sum += parseInt(cleanCnpj.charAt(i)) * (pos--);
-      if (pos < 2) {
-        pos = 9;
-      }
-    }
-
-    result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
-    if (result !== parseInt(cleanCnpj.charAt(13))) {
+    const secondDigit = calculateDigit(13);
+    if (secondDigit !== parseInt(cleanCnpj.charAt(13), 10)) {
       return false;
     }
 

@@ -12,6 +12,15 @@ export interface PaginatedRepositoryResponse<T> {
     total: number; // Total de itens que correspondem ao filtro (sem paginação)
   }
 
+export interface UpdateEnderecoData {
+    endereco_cep: string;
+    endereco_rua: string;
+    endereco_numero: string;
+    endereco_bairro: string;
+    endereco_complemento?: string | null;
+    cidade_id?: number | null;
+}
+
   export type CreatePessoaData =
   Omit<Pessoa, 'pessoa_id' | 'data_criacao' | 'ativo' | 'fisica' | 'juridica' | 'enderecos'> // Omitir 'enderecos' se for um array na entidade Pessoa
   & {
@@ -50,5 +59,6 @@ export interface PessoaRepository {
     }): Promise<boolean>;
     excluir(id: number): Promise<boolean>; // Exclusão Lógica
     atualizarCaminhosFotos(pessoaId: number, paths: { foto_selfie_path?: string; foto_documento_path?: string }): Promise<boolean>;
+    upsertEndereco(pessoaId: number, endereco: UpdateEnderecoData): Promise<void>;
     listar(filtros: ListarPessoasQueryDto): Promise<PaginatedRepositoryResponse<Pessoa>>;
 }

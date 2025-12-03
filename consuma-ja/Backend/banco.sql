@@ -72,9 +72,9 @@ DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
--- -----------------------------------------------------
--- Table `ConsumaJaDB`.`endereco`
--- -----------------------------------------------------
+--- -----------------------------------------------------
+--- Table `ConsumaJaDB`.`SESSOES_USUARIO`
+--- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`ENDERECO` (
   `endereco_id` INT NOT NULL AUTO_INCREMENT,
   `rua` VARCHAR(60) NOT NULL,
@@ -86,17 +86,17 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`ENDERECO` (
   `PESSOA_pessoa_id` INT UNSIGNED NOT NULL,
   `ativo` TINYINT(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`endereco_id`),
-  INDEX `fk_ENDERECO_CIDADE1_idx` (`CIDADE_cidade_id` ASC) VISIBLE,
-  INDEX `fk_ENDERECO_PESSOA1_idx` (`PESSOA_pessoa_id` ASC) VISIBLE,
+  INDEX `fk_ENDERECO_CIDADE1_idx` (`CIDADE_cidade_id`),
+  INDEX `fk_ENDERECO_PESSOA1_idx` (`PESSOA_pessoa_id`),
   CONSTRAINT `fk_ENDERECO_CIDADE1`
     FOREIGN KEY (`CIDADE_cidade_id`)
     REFERENCES `ConsumaJaDB`.`CIDADE` (`cidade_id`),
   CONSTRAINT `fk_ENDERECO_PESSOA1`
     FOREIGN KEY (`PESSOA_pessoa_id`)
-    REFERENCES `ConsumaJaDB`.`PESSOA` (`pessoa_id`))
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_0900_ai_ci;
+    REFERENCES `ConsumaJaDB`.`PESSOA` (`pessoa_id`)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
@@ -106,6 +106,8 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`JURIDICA` (
   `cnpj` VARCHAR(18) NOT NULL,
   `fornecedor_num` INT NULL DEFAULT NULL,
   `PESSOA_pessoa_id` INT UNSIGNED NOT NULL,
+  `taxa_entrega` DECIMAL(10,2) NULL DEFAULT NULL,
+  `parcelas_config` JSON NULL DEFAULT NULL,
   PRIMARY KEY (`PESSOA_pessoa_id`),
   UNIQUE INDEX `pessoa_cnpj_UNIQUE` (`cnpj` ASC) VISIBLE,
   CONSTRAINT `fk_JURIDICA_PESSOA1`
@@ -149,26 +151,111 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`VENDA` (
   `venda_data` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `venda_total` DECIMAL(10,2) NOT NULL,
   `venda_status` ENUM('EM ANDAMENTO', 'CONCLUIDA', 'CANCELADA') NOT NULL DEFAULT 'EM ANDAMENTO',
+  `venda_etapa` ENUM('SEPARANDO_PRODUTOS', 'LOGISTICA_TRANSPORTADORA', 'PRODUTOS_A_CAMINHO', 'PRODUTOS_ENTREGUES') NOT NULL DEFAULT 'SEPARANDO_PRODUTOS',
   `PROMOCAO_promocao_id` INT NULL DEFAULT NULL,
   `PESSOA_pessoa_id` INT UNSIGNED NOT NULL,
-  `ENDERECO_endereco_id` INT NOT NULL,
+  `fornecedor_pessoa_id` INT UNSIGNED NOT NULL,
+  `ENDERECO_endereco_id` INT NULL DEFAULT NULL,
+  `retirada_no_fornecedor` TINYINT(1) NOT NULL DEFAULT '0',
+  `metodo_pagamento` VARCHAR(50) NULL DEFAULT NULL,
+  `parcelas` TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  `detalhes_pagamento` JSON NULL DEFAULT NULL,
   PRIMARY KEY (`venda_id`),
   UNIQUE INDEX `idVENDA_UNIQUE` (`venda_id` ASC) VISIBLE,
   INDEX `fk_VENDA_PROMOCAO1_idx` (`PROMOCAO_promocao_id` ASC) VISIBLE,
   INDEX `fk_VENDA_PESSOA1_idx` (`PESSOA_pessoa_id` ASC) VISIBLE,
+  INDEX `fk_VENDA_FORNECEDOR_idx` (`fornecedor_pessoa_id` ASC) VISIBLE,
   INDEX `fk_VENDA_ENDERECO1_idx` (`ENDERECO_endereco_id` ASC) VISIBLE,
   CONSTRAINT `fk_VENDA_ENDERECO1`
     FOREIGN KEY (`ENDERECO_endereco_id`)
-    REFERENCES `ConsumaJaDB`.`ENDERECO` (`endereco_id`),
+    REFERENCES `ConsumaJaDB`.`ENDERECO` (`endereco_id`)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE,
   CONSTRAINT `fk_VENDA_PESSOA1`
     FOREIGN KEY (`PESSOA_pessoa_id`)
-    REFERENCES `ConsumaJaDB`.`PESSOA` (`pessoa_id`),
+    REFERENCES `ConsumaJaDB`.`PESSOA` (`pessoa_id`)
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_VENDA_FORNECEDOR`
+    FOREIGN KEY (`fornecedor_pessoa_id`)
+    REFERENCES `ConsumaJaDB`.`JURIDICA` (`PESSOA_pessoa_id`)
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE,
   CONSTRAINT `fk_VENDA_PROMOCAO1`
     FOREIGN KEY (`PROMOCAO_promocao_id`)
     REFERENCES `ConsumaJaDB`.`PROMOCAO` (`promocao_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
+
+-- Histórico de pagamentos
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`HISTORICO_PAGAMENTOS` (
+  `historico_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `VENDA_venda_id` INT UNSIGNED NOT NULL,
+  `PESSOA_pessoa_id` INT UNSIGNED NOT NULL,
+  `metodo` VARCHAR(50) NOT NULL,
+  `detalhes` JSON NULL DEFAULT NULL,
+  `valor` DECIMAL(10,2) NOT NULL,
+  `data` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`historico_id`),
+  INDEX `fk_HIST_PAG_VENDA_idx` (`VENDA_venda_id` ASC) VISIBLE,
+  CONSTRAINT `fk_HIST_PAG_VENDA`
+    FOREIGN KEY (`VENDA_venda_id`)
+    REFERENCES `ConsumaJaDB`.`VENDA` (`venda_id`)
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Notificações para usuários
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`NOTIFICACAO` (
+  `notificacao_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `PESSOA_pessoa_id` INT UNSIGNED NOT NULL,
+  `titulo` VARCHAR(255) NOT NULL,
+  `mensagem` TEXT NOT NULL,
+  `notificacao_tipo` ENUM('VENDA_NOVA', 'VENDA_ATUALIZADA', 'VENDA_CONCLUIDA', 'VENDA_NOVA_FORNECEDOR', 'VENDA_ETAPA_ATUALIZADA', 'VENDA_RECLAMACAO', 'VENDA_RECLAMACAO_ATUALIZADA', 'VENDA_AVALIACAO') NOT NULL DEFAULT 'VENDA_NOVA',
+  `destinatario_tipo` ENUM('CLIENTE', 'FORNECEDOR', 'ADMIN') NOT NULL DEFAULT 'CLIENTE',
+  `venda_id` INT UNSIGNED NULL DEFAULT NULL,
+  `rota_destino` VARCHAR(120) NULL DEFAULT NULL,
+  `payload` JSON NULL DEFAULT NULL,
+  `lida` TINYINT(1) NOT NULL DEFAULT 0,
+  `data_criacao` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`notificacao_id`),
+  INDEX `fk_NOT_PESSOA_idx` (`PESSOA_pessoa_id` ASC) VISIBLE,
+  INDEX `fk_NOT_VENDA_idx` (`venda_id` ASC) VISIBLE,
+  CONSTRAINT `fk_NOT_PESSOA`
+    FOREIGN KEY (`PESSOA_pessoa_id`)
+    REFERENCES `ConsumaJaDB`.`PESSOA` (`pessoa_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_NOT_VENDA`
+    FOREIGN KEY (`venda_id`)
+    REFERENCES `ConsumaJaDB`.`VENDA` (`venda_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `ConsumaJaDB`.`VENDA_ETAPA_HISTORICO`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`VENDA_ETAPA_HISTORICO` (
+  `historico_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `VENDA_venda_id` INT UNSIGNED NOT NULL,
+  `etapa` ENUM('SEPARANDO_PRODUTOS', 'LOGISTICA_TRANSPORTADORA', 'PRODUTOS_A_CAMINHO', 'PRODUTOS_ENTREGUES') NOT NULL,
+  `descricao` VARCHAR(255) NULL DEFAULT NULL,
+  `registrado_por` INT UNSIGNED NULL DEFAULT NULL,
+  `data_registro` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`historico_id`),
+  INDEX `fk_HIST_VENDA_idx` (`VENDA_venda_id` ASC) VISIBLE,
+  CONSTRAINT `fk_HIST_VENDA`
+    FOREIGN KEY (`VENDA_venda_id`)
+    REFERENCES `ConsumaJaDB`.`VENDA` (`venda_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_HIST_PESSOA`
+    FOREIGN KEY (`registrado_por`)
+    REFERENCES `ConsumaJaDB`.`PESSOA` (`pessoa_id`)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
@@ -206,9 +293,16 @@ COLLATE = utf8mb4_0900_ai_ci;
 CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`CATEGORIA_PRODUTO` (
   `categoria_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `categoria_nome` VARCHAR(255) NOT NULL,
+  `fornecedor_pessoa_id` INT UNSIGNED NULL DEFAULT NULL,
   `ativo` TINYINT(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`categoria_id`),
-  UNIQUE INDEX `categoria_nome_UNIQUE` (`categoria_nome` ASC) VISIBLE)
+  UNIQUE INDEX `idx_categoria_fornecedor_nome` (`fornecedor_pessoa_id` ASC, `categoria_nome` ASC) VISIBLE,
+  INDEX `fk_CATEGORIA_FORNECEDOR_idx` (`fornecedor_pessoa_id` ASC) VISIBLE,
+  CONSTRAINT `fk_CATEGORIA_FORNECEDOR`
+    FOREIGN KEY (`fornecedor_pessoa_id`)
+    REFERENCES `ConsumaJaDB`.`JURIDICA` (`PESSOA_pessoa_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
@@ -274,9 +368,16 @@ COLLATE = utf8mb4_0900_ai_ci;
 CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`TIPO_PRODUTO` (
   `tipo_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `tipo_nome` VARCHAR(255) NOT NULL,
+  `fornecedor_pessoa_id` INT UNSIGNED NULL DEFAULT NULL,
   `ativo` TINYINT(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`tipo_id`),
-  UNIQUE INDEX `tipo_nome_UNIQUE` (`tipo_nome` ASC) VISIBLE)
+  UNIQUE INDEX `idx_tipo_fornecedor_nome` (`fornecedor_pessoa_id` ASC, `tipo_nome` ASC) VISIBLE,
+  INDEX `fk_TIPO_FORNECEDOR_idx` (`fornecedor_pessoa_id` ASC) VISIBLE,
+  CONSTRAINT `fk_TIPO_FORNECEDOR`
+    FOREIGN KEY (`fornecedor_pessoa_id`)
+    REFERENCES `ConsumaJaDB`.`JURIDICA` (`PESSOA_pessoa_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
@@ -290,6 +391,7 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`PRODUTO` (
   `MARCA_PRODUTO_marca_id` INT UNSIGNED NOT NULL,
   `TIPO_PRODUTO_tipo_id` INT UNSIGNED NOT NULL,
   `CATEGORIA_PRODUTO_categoria_id` INT UNSIGNED NOT NULL,
+  `fornecedor_pessoa_id` INT UNSIGNED NOT NULL,
   `produto_nome` VARCHAR(255) NOT NULL,
   `produto_status` ENUM('APROVADO', 'PENDENTE', 'REJEITADO') NOT NULL DEFAULT 'PENDENTE',
   `produto_medida` VARCHAR(45) NOT NULL,
@@ -306,6 +408,7 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`PRODUTO` (
   INDEX `fk_PRODUTO_MARCA_PRODUTO1_idx` (`MARCA_PRODUTO_marca_id` ASC) VISIBLE,
   INDEX `fk_PRODUTO_TIPO_PRODUTO1_idx` (`TIPO_PRODUTO_tipo_id` ASC) VISIBLE,
   INDEX `fk_PRODUTO_CATEGORIA_PRODUTO1_idx` (`CATEGORIA_PRODUTO_categoria_id` ASC) VISIBLE,
+  INDEX `fk_PRODUTO_FORNECEDOR_idx` (`fornecedor_pessoa_id` ASC) VISIBLE,
   CONSTRAINT `fk_PRODUTO_CATEGORIA_PRODUTO1`
     FOREIGN KEY (`CATEGORIA_PRODUTO_categoria_id`)
     REFERENCES `ConsumaJaDB`.`CATEGORIA_PRODUTO` (`categoria_id`),
@@ -314,7 +417,12 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`PRODUTO` (
     REFERENCES `ConsumaJaDB`.`MARCA_PRODUTO` (`marca_id`),
   CONSTRAINT `fk_PRODUTO_TIPO_PRODUTO1`
     FOREIGN KEY (`TIPO_PRODUTO_tipo_id`)
-    REFERENCES `ConsumaJaDB`.`TIPO_PRODUTO` (`tipo_id`))
+    REFERENCES `ConsumaJaDB`.`TIPO_PRODUTO` (`tipo_id`),
+  CONSTRAINT `fk_PRODUTO_FORNECEDOR`
+    FOREIGN KEY (`fornecedor_pessoa_id`)
+    REFERENCES `ConsumaJaDB`.`JURIDICA` (`PESSOA_pessoa_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
@@ -326,6 +434,7 @@ COLLATE = utf8mb4_0900_ai_ci;
 CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`LOTEPROD` (
   `lote_id` INT NOT NULL AUTO_INCREMENT,
   `produto_id` INT UNSIGNED NOT NULL,
+  `fornecedor_pessoa_id` INT UNSIGNED NOT NULL,
   `lote_codigo` VARCHAR(100) NOT NULL,
   `lote_validade` DATE NOT NULL,
   `lote_quantidade_inicial` INT UNSIGNED NOT NULL,
@@ -335,9 +444,15 @@ CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`LOTEPROD` (
   PRIMARY KEY (`lote_id`),
   UNIQUE INDEX `idx_lote_unico_produto` (`produto_id` ASC, `lote_codigo` ASC) VISIBLE,
   INDEX `fk_LOTEPROD_PRODUTO1_idx` (`produto_id` ASC) VISIBLE,
+  INDEX `fk_LOTEPROD_FORNECEDOR_idx` (`fornecedor_pessoa_id` ASC) VISIBLE,
   CONSTRAINT `fk_LOTEPROD_PRODUTO1`
     FOREIGN KEY (`produto_id`)
-    REFERENCES `ConsumaJaDB`.`PRODUTO` (`produto_id`))
+    REFERENCES `ConsumaJaDB`.`PRODUTO` (`produto_id`),
+  CONSTRAINT `fk_LOTEPROD_FORNECEDOR`
+    FOREIGN KEY (`fornecedor_pessoa_id`)
+    REFERENCES `ConsumaJaDB`.`JURIDICA` (`PESSOA_pessoa_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;

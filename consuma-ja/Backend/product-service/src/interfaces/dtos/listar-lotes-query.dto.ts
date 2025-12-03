@@ -27,6 +27,12 @@ export class ListarLotesQueryDto {
     @IsBooleanString()
     ativo?: string; // "true" ou "false" para filtrar por status do lote
 
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt({ message: 'ID do fornecedor deve ser um número inteiro.' })
+    @Min(1, { message: 'ID do fornecedor deve ser maior que zero.' })
+    fornecedorId?: number;
+
     // Paginação
     @IsOptional() @Type(() => Number) @IsInt() @Min(1)
     page?: number;

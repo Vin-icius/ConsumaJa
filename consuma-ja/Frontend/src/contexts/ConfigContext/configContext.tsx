@@ -1,190 +1,382 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { Alert, Keyboard } from 'react-native'
-import authService from '../../services/authService'
-import pessoaService from '../../services/pessoaService'
-import locationService from '../../services/locationService'
-import configService from '../../services/configService'
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import { Alert, Keyboard } from 'react-native';
+import pessoaService from '../../services/pessoaService';
+import locationService from '../../services/locationService';
+import configService from '../../services/configService';
+import { useApplication } from '../ApplicationContext/ApplicationContext';
 
-// Tipos
-export type PessoaTipo = "Fisica" | "Juridica" | "Admin" | ""
-export type TabType = "perfil" | "endereco" | "notificacoes" | "seguranca" | "pagamento"
+type PessoaTipo = 'Fisica' | 'Juridica' | 'Admin' | '';
+type TabType = 'perfil' | 'endereco' | 'notificacoes' | 'seguranca' | 'pagamento' | 'fornecedor';
 
-export interface ConfigContextType {
-  // Estados da aba ativa
-  activeTab: TabType
-  setActiveTab: (tab: TabType) => void
+type MetodoPagamentoTipo = 'cartao_credito' | 'cartao_debito' | 'pix' | 'paypal' | 'boleto';
 
-  // Estados do perfil
-  nome: string
-  setNome: (nome: string) => void
-  email: string
-  setEmail: (email: string) => void
-  telefone: string
-  setTelefone: (telefone: string) => void
-  tipoUsuario: PessoaTipo
-  setTipoUsuario: (tipo: PessoaTipo) => void
-  cpf: string
-  setCpf: (cpf: string) => void
-  cnpj: string
-  setCnpj: (cnpj: string) => void
-  fornecedorNum: string
-  setFornecedorNum: (num: string) => void
+type NovoMetodoPagamento = {
+  tipo: MetodoPagamentoTipo;
+  numero_cartao: string;
+  nome_cartao: string;
+  data_validade: string;
+  cvv: string;
+  chave_pix: string;
+  email_paypal: string;
+};
 
-  // Estados do endereço
-  cep: string
-  setCep: (cep: string) => void
-  rua: string
-  setRua: (rua: string) => void
-  numero: string
-  setNumero: (numero: string) => void
-  complemento: string
-  setComplemento: (complemento: string) => void
-  bairro: string
-  setBairro: (bairro: string) => void
-  cidade: string
-  setCidade: (cidade: string) => void
-  estado: string
-  setEstado: (estado: string) => void
-  cidadeId: number | null
-  setCidadeId: (id: number | null) => void
+type MetodoPagamentoResumo = {
+  id: number;
+  tipo: MetodoPagamentoTipo;
+  titulo: string;
+  detalhe: string;
+  principal: boolean;
+  numero_final: string | null;
+  nome_cartao: string | null;
+  data_validade: string | null;
+  pix_chave: string | null;
+  email_paypal: string | null;
+};
 
-  // Estados de segurança (senha)
-  senhaAtual: string
-  setSenhaAtual: (senha: string) => void
-  novaSenha: string
-  setNovaSenha: (senha: string) => void
-  confirmarSenha: string
-  setConfirmarSenha: (senha: string) => void
-  autenticacao2FA: boolean
-  setAutenticacao2FA: (enabled: boolean) => void
+const createMetodoPagamentoFromTipo = (tipo: MetodoPagamentoTipo): NovoMetodoPagamento => ({
+  tipo,
+  numero_cartao: '',
+  nome_cartao: '',
+  data_validade: '',
+  cvv: '',
+  chave_pix: '',
+  email_paypal: '',
+});
 
-  // Estados de notificações
-  emailNotificacoes: boolean
-  setEmailNotificacoes: (enabled: boolean) => void
-  smsNotificacoes: boolean
-  setSmsNotificacoes: (enabled: boolean) => void
-  marketingNotificacoes: boolean
-  setMarketingNotificacoes: (enabled: boolean) => void
+const createDefaultMetodoPagamento = (): NovoMetodoPagamento => createMetodoPagamentoFromTipo('cartao_credito');
 
-  // Estados de métodos de pagamento
-  metodosPagamento: any[]
-  novoMetodoPagamento: {
-    tipo: string
-    numero_cartao: string
-    nome_cartao: string
-    data_validade: string
-    cvv: string
-  }
-  setNovoMetodoPagamento: (metodo: any) => void
+type TwoFASetupMode = 'enable' | 'view' | null;
 
-  // Estados de controle
-  loadingData: boolean
-  loadingSubmit: boolean
-  setLoadingSubmit: (loading: boolean) => void
-  loadingCep: boolean
-  errors: { [key: string]: string }
-  setErrors: (errors: { [key: string]: string }) => void
-  currentUserId: number | null
-  handleCepBlur: () => Promise<void>
-  handleSubmitPerfil: () => Promise<void>
-  handleSubmitEndereco: () => Promise<void>
-  handleSubmitNotificacoes: () => Promise<void>
-  handleSubmitSeguranca: () => Promise<void>
-  handleAdicionarMetodoPagamento: () => Promise<void>
-  handleRemoverMetodoPagamento: (pagamentoId: number) => Promise<void>
-  validarPerfil: () => boolean
-  validarEndereco: () => boolean
-  validarSeguranca: () => boolean
-  validarMetodoPagamento: () => boolean
-  clearErrors: () => void
-  handleUpdateNomeDocumento: (nome: string, documento: string) => Promise<void>
-  handleUpdatePerfilCompleto: (nome: string, email: string, telefone: string) => Promise<void>
-  loadUserData: () => Promise<void>
-}
+type ConfigContextValue = {
+  activeTab: TabType;
+  setActiveTab: (tab: TabType) => void;
 
-// Contexto
-const ConfigContext = createContext<ConfigContextType | undefined>(undefined)
+  nome: string;
+  setNome: (value: string) => void;
+  email: string;
+  setEmail: (value: string) => void;
+  telefone: string;
+  setTelefone: (value: string) => void;
+  tipoUsuario: PessoaTipo;
+  setTipoUsuario: (value: PessoaTipo) => void;
+  cpf: string;
+  setCpf: (value: string) => void;
+  cnpj: string;
+  setCnpj: (value: string) => void;
+  fornecedorNum: string;
+  setFornecedorNum: (value: string) => void;
 
-// Provider
+  cep: string;
+  setCep: (value: string) => void;
+  rua: string;
+  setRua: (value: string) => void;
+  numero: string;
+  setNumero: (value: string) => void;
+  complemento: string;
+  setComplemento: (value: string) => void;
+  bairro: string;
+  setBairro: (value: string) => void;
+  cidade: string;
+  setCidade: (value: string) => void;
+  estado: string;
+  setEstado: (value: string) => void;
+  cidadeId: number | null;
+  setCidadeId: (value: number | null) => void;
+
+  senhaAtual: string;
+  setSenhaAtual: (value: string) => void;
+  novaSenha: string;
+  setNovaSenha: (value: string) => void;
+  confirmarSenha: string;
+  setConfirmarSenha: (value: string) => void;
+  autenticacao2FA: boolean;
+  setAutenticacao2FA: (value: boolean) => void;
+  loading2FA: boolean;
+  twoFASetupVisible: boolean;
+  twoFAQRCode: string | null;
+  twoFASecret: string | null;
+  twoFAValidationCode: string;
+  setTwoFAValidationCode: (value: string) => void;
+  twoFAError: string | null;
+  twoFASetupMode: TwoFASetupMode;
+  handleToggleTwoFactor: (enabled: boolean) => Promise<void>;
+  handleConfirmTwoFactorCode: () => Promise<void>;
+  handleShowTwoFactorSetup: () => Promise<void>;
+  closeTwoFactorSetup: () => void;
+
+  emailNotificacoes: boolean;
+  setEmailNotificacoes: (value: boolean) => void;
+  smsNotificacoes: boolean;
+  setSmsNotificacoes: (value: boolean) => void;
+  marketingNotificacoes: boolean;
+  setMarketingNotificacoes: (value: boolean) => void;
+
+  metodosPagamento: MetodoPagamentoResumo[];
+  novoMetodoPagamento: NovoMetodoPagamento;
+  setNovoMetodoPagamento: (value: NovoMetodoPagamento) => void;
+  metodoPagamentoEmEdicao: MetodoPagamentoResumo | null;
+  iniciarEdicaoMetodoPagamento: (metodo: MetodoPagamentoResumo) => void;
+  cancelarEdicaoMetodoPagamento: () => void;
+  isEditandoMetodoPagamento: boolean;
+
+  loadingData: boolean;
+  loadingSubmit: boolean;
+  setLoadingSubmit: (value: boolean) => void;
+  loadingCep: boolean;
+  errors: Record<string, string>;
+  setErrors: (value: Record<string, string>) => void;
+  currentUserId: number | null;
+
+  handleCepBlur: () => Promise<void>;
+  handleSubmitPerfil: () => Promise<void>;
+  handleSubmitEndereco: () => Promise<void>;
+  handleSubmitNotificacoes: () => Promise<void>;
+  handleSubmitSeguranca: () => Promise<void>;
+  handleAdicionarMetodoPagamento: () => Promise<void>;
+  handleRemoverMetodoPagamento: (pagamentoId: number) => Promise<void>;
+  handleDefinirMetodoPagamentoPadrao: (pagamentoId: number) => Promise<void>;
+  refreshMetodosPagamento: () => Promise<void>;
+
+  validarPerfil: () => boolean;
+  validarEndereco: () => boolean;
+  validarSeguranca: () => boolean;
+  validarMetodoPagamento: () => boolean;
+  clearErrors: () => void;
+
+  handleUpdateNomeDocumento: (nome: string, documento: string) => Promise<void>;
+  handleUpdatePerfilCompleto: (nome: string, email: string, telefone: string) => Promise<void>;
+  loadUserData: () => Promise<void>;
+};
+
+const ConfigContext = createContext<ConfigContextValue | undefined>(undefined);
+
 export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Estados da aba ativa
-  const [activeTab, setActiveTab] = useState<TabType>("perfil")
+  const { user: applicationUser, validateActiveSession, setUserData } = useApplication();
+  const applicationUserId = applicationUser?.pessoa_id ?? applicationUser?.id ?? null;
+  const [activeTab, setActiveTab] = useState<TabType>('perfil');
 
-  // Estados do perfil
-  const [nome, setNome] = useState("")
-  const [email, setEmail] = useState("")
-  const [telefone, setTelefone] = useState("")
-  const [tipoUsuario, setTipoUsuario] = useState<PessoaTipo>("Fisica")
-  const [cpf, setCpf] = useState("")
-  const [cnpj, setCnpj] = useState("")
-  const [fornecedorNum, setFornecedorNum] = useState("")
+  const [nome, setNome] = useState('');
+  const [email, setEmail] = useState('');
+  const [telefone, setTelefone] = useState('');
+  const [tipoUsuario, setTipoUsuario] = useState<PessoaTipo>('Fisica');
+  const [cpf, setCpf] = useState('');
+  const [cnpj, setCnpj] = useState('');
+  const [fornecedorNum, setFornecedorNum] = useState('');
 
-  // Estados do endereço
-  const [cep, setCep] = useState("")
-  const [rua, setRua] = useState("")
-  const [numero, setNumero] = useState("")
-  const [complemento, setComplemento] = useState("")
-  const [bairro, setBairro] = useState("")
-  const [cidade, setCidade] = useState("")
-  const [estado, setEstado] = useState("")
-  const [cidadeId, setCidadeId] = useState<number | null>(null)
+  const [cep, setCep] = useState('');
+  const [rua, setRua] = useState('');
+  const [numero, setNumero] = useState('');
+  const [complemento, setComplemento] = useState('');
+  const [bairro, setBairro] = useState('');
+  const [cidade, setCidade] = useState('');
+  const [estado, setEstado] = useState('');
+  const [cidadeId, setCidadeId] = useState<number | null>(null);
 
-  // Estados de segurança
-  const [senhaAtual, setSenhaAtual] = useState("")
-  const [novaSenha, setNovaSenha] = useState("")
-  const [confirmarSenha, setConfirmarSenha] = useState("")
-  const [autenticacao2FA, setAutenticacao2FA] = useState(false)
+  const [senhaAtual, setSenhaAtual] = useState('');
+  const [novaSenha, setNovaSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [autenticacao2FA, setAutenticacao2FA] = useState(false);
+  const [loading2FA, setLoading2FA] = useState(false);
+  const [twoFASetupVisible, setTwoFASetupVisible] = useState(false);
+  const [twoFAQRCode, setTwoFAQRCode] = useState<string | null>(null);
+  const [twoFASecret, setTwoFASecret] = useState<string | null>(null);
+  const [twoFAValidationCode, setTwoFAValidationCode] = useState('');
+  const [twoFAError, setTwoFAError] = useState<string | null>(null);
+  const [twoFASetupMode, setTwoFASetupMode] = useState<TwoFASetupMode>(null);
 
-  // Estados de notificações
-  const [emailNotificacoes, setEmailNotificacoes] = useState(true)
-  const [smsNotificacoes, setSmsNotificacoes] = useState(false)
-  const [marketingNotificacoes, setMarketingNotificacoes] = useState(true)
+  const [emailNotificacoes, setEmailNotificacoes] = useState(true);
+  const [smsNotificacoes, setSmsNotificacoes] = useState(false);
+  const [marketingNotificacoes, setMarketingNotificacoes] = useState(true);
 
-  // Estados de métodos de pagamento
-  const [metodosPagamento, setMetodosPagamento] = useState<any[]>([])
-  const [novoMetodoPagamento, setNovoMetodoPagamento] = useState({
-    tipo: 'credito',
-    numero_cartao: '',
-    nome_cartao: '',
-    data_validade: '',
-    cvv: '',
-  })
+  const [metodosPagamento, setMetodosPagamento] = useState<MetodoPagamentoResumo[]>([]);
+  const [novoMetodoPagamento, setNovoMetodoPagamento] = useState<NovoMetodoPagamento>(createDefaultMetodoPagamento);
+  const [metodoPagamentoEmEdicao, setMetodoPagamentoEmEdicao] = useState<MetodoPagamentoResumo | null>(null);
 
-  // Estados de controle
-  const [loadingData, setLoadingData] = useState(false)
-  const [loadingSubmit, setLoadingSubmit] = useState(false)
-  const [loadingCep, setLoadingCep] = useState(false)
-  const [errors, setErrors] = useState<{ [key: string]: string }>({})
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null)
+  const [loadingData, setLoadingData] = useState(false);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const [loadingCep, setLoadingCep] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
-  // Busca dados do usuário quando solicitado
-  const loadUserData = useCallback(async () => {
-    setLoadingData(true)
-    setErrors({})
+  const normalizeQrCodeResponse = useCallback((payload: any): string | null => {
+    if (!payload) {
+      return null;
+    }
 
-    try {
-      // Primeiro, obter o ID do usuário logado
-      const currentUser = await authService.getCurrentUser()
-      const userId = currentUser?.pessoa_id
+    if (typeof payload === 'string') {
+      return payload;
+    }
 
-      if (!userId) {
-        setErrors({ form: "Usuário não autenticado. Faça login novamente." })
-        setLoadingData(false)
-        return
+    if (typeof payload === 'object') {
+      if (payload.qr_code) {
+        return String(payload.qr_code);
       }
 
-      setCurrentUserId(userId)
+      if (payload.qrCode) {
+        return String(payload.qrCode);
+      }
+    }
 
-      // Buscar dados reais do usuário
-      const userData = await pessoaService.buscarPessoaPorId(userId)
+    return null;
+  }, []);
 
-      // Buscar configurações do usuário
-      let configData = null
+  const resetTwoFactorTransientState = useCallback(() => {
+    setTwoFASetupVisible(false);
+    setTwoFAQRCode(null);
+    setTwoFAValidationCode('');
+    setTwoFAError(null);
+  }, []);
+
+  const handleTwoFACodeInput = useCallback(
+    (value: string) => {
+      setTwoFAValidationCode(value);
+      if (twoFAError) {
+        setTwoFAError(null);
+      }
+    },
+    [twoFAError],
+  );
+
+  const closeTwoFactorSetup = useCallback(() => {
+    resetTwoFactorTransientState();
+    setTwoFASetupMode(null);
+    setTwoFASecret(null);
+  }, [resetTwoFactorTransientState]);
+
+  const clearErrors = useCallback(() => {
+    setErrors({});
+  }, []);
+
+  const validarPerfil = useCallback((): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!nome.trim()) newErrors.nome = 'Nome é obrigatório';
+    if (!email.includes('@')) newErrors.email = 'Email inválido';
+    if (!telefone || telefone.replace(/\D/g, '').length < 10) newErrors.telefone = 'Telefone inválido';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [nome, email, telefone]);
+
+  const validarEndereco = useCallback((): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!cep || cep.replace(/\D/g, '').length !== 8) newErrors.cep = 'CEP inválido';
+    if (!rua.trim()) newErrors.rua = 'Rua é obrigatória';
+    if (!numero.trim()) newErrors.numero = 'Número é obrigatório';
+    if (!bairro.trim()) newErrors.bairro = 'Bairro é obrigatório';
+    if (!cidade.trim()) newErrors.cidade = 'Cidade é obrigatória';
+    if (!estado.trim()) newErrors.estado = 'Estado é obrigatório';
+    if (!cidadeId) newErrors.cidade = 'Confirme o CEP para vincular a cidade correta';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [cep, rua, numero, bairro, cidade, estado, cidadeId]);
+
+  const validarSeguranca = useCallback((): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!senhaAtual) newErrors.senhaAtual = 'Senha atual é obrigatória';
+    if (!novaSenha) newErrors.novaSenha = 'Nova senha é obrigatória';
+    if (novaSenha.length < 6) newErrors.novaSenha = 'A nova senha deve ter pelo menos 6 caracteres';
+    if (novaSenha !== confirmarSenha) newErrors.confirmarSenha = 'As senhas não coincidem';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [senhaAtual, novaSenha, confirmarSenha]);
+
+  const refreshMetodosPagamento = useCallback(async () => {
+    if (!currentUserId) {
+      return;
+    }
+
+    try {
+      const metodos = await configService.listarMetodosPagamento(currentUserId);
+      setMetodosPagamento(Array.isArray(metodos) ? metodos : []);
+    } catch (error) {
+      console.error('[ConfigContext] Erro ao atualizar métodos de pagamento:', error);
+    }
+  }, [currentUserId]);
+
+  const validarMetodoPagamento = useCallback((): boolean => {
+    const newErrors: Record<string, string> = {};
+    const tipo = novoMetodoPagamento.tipo;
+
+    if (tipo === 'cartao_credito' || tipo === 'cartao_debito') {
+      const numeroSanitizado = novoMetodoPagamento.numero_cartao.replace(/\D/g, '');
+      if (numeroSanitizado.length < 13 || numeroSanitizado.length > 19) {
+        newErrors.numero_cartao = 'Número do cartão inválido';
+      }
+      if (!novoMetodoPagamento.nome_cartao.trim()) {
+        newErrors.nome_cartao = 'Nome impresso no cartão é obrigatório';
+      }
+      if (!/^\d{2}\/\d{2}$/.test(novoMetodoPagamento.data_validade.trim())) {
+        newErrors.data_validade = 'Use o formato MM/AA';
+      }
+      const cvvSanitizado = novoMetodoPagamento.cvv.replace(/\D/g, '');
+      if (cvvSanitizado.length < 3 || cvvSanitizado.length > 4) {
+        newErrors.cvv = 'CVV inválido';
+      }
+    } else if (tipo === 'pix') {
+      if (!novoMetodoPagamento.chave_pix.trim()) {
+        newErrors.chave_pix = 'Informe a chave PIX';
+      }
+    } else if (tipo === 'paypal') {
+      if (!novoMetodoPagamento.email_paypal.trim()) {
+        newErrors.email_paypal = 'Informe o email da conta PayPal';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [novoMetodoPagamento]);
+
+  const loadUserData = useCallback(async () => {
+    setLoadingData(true);
+    setErrors({});
+
+    try {
+      let userId = applicationUserId;
+
+      if (!userId) {
+        const sessionUser = await validateActiveSession();
+        userId = sessionUser?.pessoa_id ?? sessionUser?.id ?? null;
+      }
+
+      if (!userId) {
+        setErrors({ form: 'Usuário não autenticado. Faça login novamente.' });
+        setLoadingData(false);
+        return;
+      }
+
+      setCurrentUserId(userId);
+
+      const userData = await pessoaService.buscarPessoaPorId(userId);
+
+      setUserData({
+        pessoa_id: userData.pessoa_id,
+        pessoa_nome: userData.pessoa_nome,
+        pessoa_email: userData.pessoa_email,
+        pessoa_tipo: userData.pessoa_tipo,
+        documento: userData.documento ?? userData.pessoa_cpf ?? userData.pessoa_cnpj ?? null,
+        pessoa_cpf: userData.pessoa_cpf ?? null,
+        pessoa_cnpj: userData.pessoa_cnpj ?? null,
+        pessoa_num_fornecedor: userData.pessoa_num_fornecedor ?? null,
+        endereco: userData.endereco ?? null,
+      });
+
+      let configData: any = null;
       try {
-        configData = await configService.getConfiguracoesUsuario(userId)
+        configData = await configService.getConfiguracoesUsuario(userId);
       } catch (configError) {
-        console.warn('Erro ao buscar configurações:', configError)
-        // Configurações padrão se não conseguir buscar
+        console.warn('[ConfigContext] Falha ao carregar configurações:', configError);
         configData = {
           notificacoes: {
             email_notificacoes: true,
@@ -194,601 +386,778 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           },
           metodos_pagamento: [],
           autenticacao_2fa: false,
-        }
+        };
       }
 
-      // Preencher dados do perfil
-      setNome(userData.pessoa_nome || "")
-      setEmail(userData.pessoa_email || "")
-      setTelefone(userData.pessoa_telefone || "")
-      setTipoUsuario(userData.pessoa_tipo as PessoaTipo || "Fisica")
+      setNome(userData.pessoa_nome ?? '');
+      setEmail(userData.pessoa_email ?? '');
+      setTelefone(userData.pessoa_telefone ?? '');
+      setTipoUsuario((userData.pessoa_tipo as PessoaTipo) ?? 'Fisica');
 
-      // Preencher CPF/CNPJ baseado no tipo
-      if (userData.pessoa_tipo === "Fisica") {
-        setCpf(userData.pessoa_cpf || "")
-      } else if (userData.pessoa_tipo === "Juridica") {
-        setCnpj(userData.pessoa_cnpj || "")
-        setFornecedorNum(userData.pessoa_num_fornecedor?.toString() || "")
+      if (userData.pessoa_tipo === 'Fisica') {
+        setCpf((userData.pessoa_cpf ?? userData.documento ?? '').toString());
+        setCnpj('');
+      } else if (userData.pessoa_tipo === 'Juridica') {
+        setCnpj((userData.pessoa_cnpj ?? userData.documento ?? '').toString());
+        setFornecedorNum(userData.pessoa_num_fornecedor?.toString() ?? '');
+        setCpf('');
+      } else {
+        setCpf('');
+        setCnpj('');
       }
 
-      // Preencher dados de endereço se existir
       if (userData.endereco) {
-        const endereco = userData.endereco
-        setCep(endereco.endereco_cep || "")
-        setRua(endereco.endereco_rua || "")
-        setNumero(endereco.endereco_numero || "")
-        setComplemento(endereco.endereco_complemento || "")
-        setBairro(endereco.endereco_bairro || "")
+        const endereco = userData.endereco;
+        setCep(endereco.endereco_cep ?? '');
+        setRua(endereco.endereco_rua ?? '');
+        setNumero(endereco.endereco_numero ?? '');
+        setComplemento(endereco.endereco_complemento ?? '');
+        setBairro(endereco.endereco_bairro ?? '');
 
-        // Buscar nome da cidade e estado se houver cidade_id
-        if (endereco.cidade_id) {
-          setCidadeId(endereco.cidade_id)
+        if (endereco.cidade_id !== undefined && endereco.cidade_id !== null) {
+          setCidadeId(Number(endereco.cidade_id));
+        } else {
+          setCidadeId(null);
+        }
+
+        if (endereco.cidade_nome) {
+          setCidade(endereco.cidade_nome);
+        }
+
+        if (endereco.estado_sigla || endereco.estado_nome) {
+          setEstado((endereco.estado_sigla ?? endereco.estado_nome ?? '').toString());
+        }
+
+        if ((!endereco.cidade_nome || !endereco.estado_sigla) && endereco.cidade_id) {
           try {
-            // Buscar dados da cidade
-            const cidadeData = await locationService.getCidadeById(endereco.cidade_id)
-            setCidade(cidadeData.cidade_nome || "")
-            // Buscar dados do estado da cidade
+            const cidadeData = await locationService.getCidadeById(endereco.cidade_id);
+            setCidade((cidadeData.cidade_nome ?? '').toString());
             if (cidadeData.estado_id) {
-              const estadoData = await locationService.getEstadoById(cidadeData.estado_id)
-              setEstado(estadoData.estado_nome || "")
+              const estadoData = await locationService.getEstadoById(cidadeData.estado_id);
+              setEstado((estadoData.estado_sigla ?? estadoData.estado_nome ?? '').toString());
             }
           } catch (cidadeError) {
-            console.warn('Erro ao buscar dados da cidade:', cidadeError)
-            // Mantém os campos vazios se não conseguir buscar
+            console.warn('[ConfigContext] Falha ao buscar dados da cidade:', cidadeError);
           }
         }
+      } else {
+        setCep('');
+        setRua('');
+        setNumero('');
+        setComplemento('');
+        setBairro('');
+        setCidade('');
+        setEstado('');
+        setCidadeId(null);
       }
 
-      // Preencher configurações
       if (configData?.notificacoes) {
-        setEmailNotificacoes(configData.notificacoes.email_notificacoes ?? true)
-        setSmsNotificacoes(configData.notificacoes.sms_notificacoes ?? false)
-        setMarketingNotificacoes(configData.notificacoes.marketing_notificacoes ?? true)
+        setEmailNotificacoes(configData.notificacoes.email_notificacoes ?? true);
+        setSmsNotificacoes(configData.notificacoes.sms_notificacoes ?? false);
+        setMarketingNotificacoes(configData.notificacoes.marketing_notificacoes ?? true);
       }
 
-      if (configData?.metodos_pagamento) {
-        setMetodosPagamento(configData.metodos_pagamento)
+      if (Array.isArray(configData?.metodos_pagamento)) {
+        setMetodosPagamento(configData.metodos_pagamento as MetodoPagamentoResumo[]);
+      } else {
+        setMetodosPagamento([]);
       }
+
+      setMetodoPagamentoEmEdicao(null);
+      setNovoMetodoPagamento(createDefaultMetodoPagamento());
 
       if (configData?.autenticacao_2fa !== undefined) {
-        setAutenticacao2FA(configData.autenticacao_2fa)
+        setAutenticacao2FA(Boolean(configData.autenticacao_2fa));
       }
 
-      setLoadingData(false)
+      setTwoFASecret(null);
+      resetTwoFactorTransientState();
+    setTwoFASetupMode(null);
+
+      setLoadingData(false);
     } catch (error: any) {
-      console.error("Erro ao buscar usuário:", error)
-      const errorMessage = error.response?.data?.message ||
-                          error.response?.data?.error ||
-                          "Erro ao carregar dados do usuário."
-      setErrors({ form: errorMessage })
-      setLoadingData(false)
+      console.error('[ConfigContext] Erro ao carregar usuário:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        'Erro ao carregar dados do usuário.';
+      setErrors({ form: errorMessage });
+      setLoadingData(false);
     }
-  }, [])
+  }, [applicationUserId, validateActiveSession, setUserData, resetTwoFactorTransientState]);
 
-  // Funções de validação
-  const validarPerfil = (): boolean => {
-    const newErrors: { [key: string]: string } = {}
+  useEffect(() => {
+    loadUserData();
+  }, [loadUserData]);
 
-    if (!nome.trim()) newErrors.nome = "Nome obrigatório"
-    if (!email.includes("@")) newErrors.email = "Email inválido"
-    if (!telefone || telefone.replace(/\D/g, "").length < 10) newErrors.telefone = "Telefone inválido"
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const validarEndereco = (): boolean => {
-    const newErrors: { [key: string]: string } = {}
-
-    if (!cep || cep.replace(/\D/g, "").length !== 8) newErrors.cep = "CEP inválido"
-    if (!rua.trim()) newErrors.rua = "Rua obrigatória"
-    if (!numero.trim()) newErrors.numero = "Número obrigatório"
-    if (!bairro.trim()) newErrors.bairro = "Bairro obrigatório"
-    if (!cidade.trim()) newErrors.cidade = "Cidade obrigatória"
-    if (!estado.trim()) newErrors.estado = "Estado obrigatório"
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const validarSeguranca = (): boolean => {
-    const newErrors: { [key: string]: string } = {}
-
-    if (!senhaAtual) newErrors.senhaAtual = "Senha atual obrigatória"
-    if (!novaSenha) newErrors.novaSenha = "Nova senha obrigatória"
-    if (novaSenha.length < 6) newErrors.novaSenha = "Nova senha deve ter pelo menos 6 caracteres"
-    if (novaSenha !== confirmarSenha) newErrors.confirmarSenha = "As senhas não coincidem"
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  // Busca CEP
   const handleCepBlur = useCallback(async () => {
-    const cepLimpo = cep.replace(/\D/g, "")
-    if (!cepLimpo || cepLimpo.length !== 8) return
+    const cepLimpo = cep.replace(/\D/g, '');
+    if (!cepLimpo || cepLimpo.length !== 8) {
+      return;
+    }
 
-    Keyboard.dismiss()
-    setLoadingCep(true)
+    Keyboard.dismiss();
+    setLoadingCep(true);
     setErrors((prev) => {
-      const { cep, rua, bairro, cidade, estado, ...rest } = prev
-      return rest
-    })
+      const { cep: cepError, rua: ruaError, bairro: bairroError, cidade: cidadeError, estado: estadoError, ...rest } = prev;
+      return rest;
+    });
 
     try {
-      // Usar API real de CEP
-      const response = await locationService.lookupCep(cepLimpo)
-      const addressData = response
-
-      // Preencher campos com dados retornados
-      setRua(addressData.logradouro || "")
-      setBairro(addressData.bairro || "")
-      setCidade(addressData.localidade || "")
-      setEstado(addressData.uf || "")
-
-      // Tentar encontrar cidade_id baseado nos dados retornados
-      // Isso pode precisar de uma busca adicional no backend
-      setCidadeId(null) // Resetar por enquanto
-
-      setLoadingCep(false)
-    } catch (error: any) {
-      console.error("Erro ao buscar CEP:", error)
-      setErrors((prev) => ({ ...prev, cep: "CEP não encontrado ou inválido" }))
-      setLoadingCep(false)
+      const addressData = await locationService.lookupCep(cepLimpo);
+      setRua(addressData.logradouro ?? '');
+      setBairro(addressData.bairro ?? '');
+      setCidade(addressData.cidade ?? addressData.localidade ?? '');
+      const estadoFromService = addressData.estado ?? addressData.uf ?? '';
+      setEstado(estadoFromService.toUpperCase());
+      setCidadeId(
+        typeof addressData.cidadeId === 'number'
+          ? addressData.cidadeId
+          : typeof addressData.cidade_id === 'number'
+          ? addressData.cidade_id
+          : null,
+      );
+    } catch (error) {
+      console.error('[ConfigContext] Erro ao consultar CEP:', error);
+      setErrors((prev) => ({ ...prev, cep: 'CEP não encontrado ou inválido' }));
+    } finally {
+      setLoadingCep(false);
     }
-  }, [cep])
+  }, [cep]);
 
-  // Submit do perfil
-  const handleSubmitPerfil = async () => {
-    Keyboard.dismiss()
-    if (!validarPerfil()) {
-      Alert.alert("Erro", "Verifique os campos.")
-      return
-    }
+  const handleSubmitPerfil = useCallback(async () => {
+    Keyboard.dismiss();
 
-    if (!currentUserId) {
-      Alert.alert("Erro", "ID do usuário não encontrado.")
-      return
+    if (!validarPerfil() || !currentUserId) {
+      Alert.alert('Erro', 'Verifique os campos do perfil.');
+      return;
     }
 
-    setLoadingSubmit(true)
+    setLoadingSubmit(true);
 
     try {
-      // Preparar dados para atualização
-      const updateData = {
+      await pessoaService.atualizarPessoa(currentUserId, {
         pessoa_email: email,
         pessoa_telefone: telefone,
-      }
+      });
 
-      // Enviar para API
-      await pessoaService.atualizarPessoa(currentUserId, updateData)
-
-      Alert.alert("Sucesso", "Perfil atualizado com sucesso!")
-      setLoadingSubmit(false)
+      Alert.alert('Sucesso', 'Perfil atualizado com sucesso!');
     } catch (error: any) {
-      console.error("Erro ao atualizar perfil:", error)
-      const errorMessage = error.response?.data?.message ||
-                          error.response?.data?.error ||
-                          "Não foi possível atualizar o perfil."
-      Alert.alert("Erro", errorMessage)
-      setLoadingSubmit(false)
+      console.error('[ConfigContext] Erro ao atualizar perfil:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        'Não foi possível atualizar o perfil.';
+      Alert.alert('Erro', errorMessage);
+    } finally {
+      setLoadingSubmit(false);
     }
-  }
+  }, [validarPerfil, currentUserId, email, telefone]);
 
-  // Submit do endereço
-  const handleSubmitEndereco = async () => {
-    Keyboard.dismiss()
-    if (!validarEndereco()) {
-      Alert.alert("Erro", "Verifique os campos.")
-      return
-    }
+  const handleSubmitEndereco = useCallback(async () => {
+    Keyboard.dismiss();
 
-    if (!currentUserId) {
-      Alert.alert("Erro", "ID do usuário não encontrado.")
-      return
+    if (!validarEndereco() || !currentUserId) {
+      Alert.alert('Erro', 'Verifique os campos do endereço.');
+      return;
     }
 
-    setLoadingSubmit(true)
+    setLoadingSubmit(true);
+
+    if (!cidadeId) {
+      setErrors((prev) => ({ ...prev, cidade: 'Use o CEP para localizar uma cidade válida.' }));
+      setLoadingSubmit(false);
+      Alert.alert('Erro', 'Não foi possível identificar a cidade. Revise o CEP informado.');
+      return;
+    }
 
     try {
-      // Preparar dados para atualização incluindo endereço
-      const updateData = {
+      await pessoaService.atualizarPessoa(currentUserId, {
         endereco: {
-          endereco_cep: cep.replace(/\D/g, ""),
+          endereco_cep: cep.replace(/\D/g, ''),
           endereco_rua: rua,
           endereco_numero: numero,
           endereco_complemento: complemento || null,
           endereco_bairro: bairro,
-          cidade_id: cidadeId, // Assumindo que cidadeId foi definido durante busca de CEP
-        }
-      }
+          cidade_id: cidadeId,
+        },
+      });
 
-      // Enviar para API
-      await pessoaService.atualizarPessoa(currentUserId, updateData)
-
-      Alert.alert("Sucesso", "Endereço atualizado com sucesso!")
-      setLoadingSubmit(false)
+      Alert.alert('Sucesso', 'Endereço atualizado com sucesso!');
     } catch (error: any) {
-      console.error("Erro ao atualizar endereço:", error)
-      const errorMessage = error.response?.data?.message ||
-                          error.response?.data?.error ||
-                          "Não foi possível atualizar o endereço."
-      Alert.alert("Erro", errorMessage)
-      setLoadingSubmit(false)
+      console.error('[ConfigContext] Erro ao atualizar endereço:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        'Não foi possível atualizar o endereço.';
+      Alert.alert('Erro', errorMessage);
+    } finally {
+      setLoadingSubmit(false);
     }
-  }
+  }, [validarEndereco, currentUserId, cep, rua, numero, complemento, bairro, cidadeId]);
 
-  // Submit das notificações
-  const handleSubmitNotificacoes = async () => {
+  const handleSubmitNotificacoes = useCallback(async () => {
     if (!currentUserId) {
-      Alert.alert("Erro", "ID do usuário não encontrado.")
-      return
+      Alert.alert('Erro', 'Usuário não encontrado.');
+      return;
     }
 
-    setLoadingSubmit(true)
+    setLoadingSubmit(true);
 
     try {
       await configService.atualizarNotificacoes(currentUserId, {
         email_notificacoes: emailNotificacoes,
         sms_notificacoes: smsNotificacoes,
         marketing_notificacoes: marketingNotificacoes,
-        push_notificacoes: true, // Mantém push sempre ativo por padrão
-      })
+        push_notificacoes: true,
+      });
 
-      Alert.alert("Sucesso", "Preferências de notificação atualizadas!")
-      setLoadingSubmit(false)
+      Alert.alert('Sucesso', 'Preferências de notificação atualizadas!');
     } catch (error: any) {
-      console.error("Erro ao atualizar notificações:", error)
-      const errorMessage = error.response?.data?.message ||
-                          error.response?.data?.error ||
-                          "Não foi possível atualizar as preferências."
-      Alert.alert("Erro", errorMessage)
-      setLoadingSubmit(false)
+      console.error('[ConfigContext] Erro ao atualizar notificações:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        'Não foi possível atualizar as preferências.';
+      Alert.alert('Erro', errorMessage);
+    } finally {
+      setLoadingSubmit(false);
     }
-  }
+  }, [currentUserId, emailNotificacoes, smsNotificacoes, marketingNotificacoes]);
 
-  // Submit da segurança
-  const handleSubmitSeguranca = async () => {
-    Keyboard.dismiss()
-    if (!validarSeguranca()) {
-      Alert.alert("Erro", "Verifique os campos.")
-      return
-    }
+  const handleToggleTwoFactor = useCallback(
+    async (enabled: boolean) => {
+      if (!currentUserId) {
+        Alert.alert('Erro', 'Usuário não encontrado.');
+        return;
+      }
 
+      const previousState = autenticacao2FA;
+      setLoading2FA(true);
+      setTwoFAError(null);
+
+      try {
+        if (enabled) {
+          const configuracao = await configService.atualizarConfiguracao2FA(currentUserId, true);
+          const qrResponse = await configService.gerarQRCode2FA(currentUserId);
+          const qrCodeValue = normalizeQrCodeResponse(qrResponse);
+
+          if (!qrCodeValue) {
+            throw new Error('Não foi possível gerar o QR code para autenticação.');
+          }
+
+          setAutenticacao2FA(true);
+          setTwoFASecret(configuracao?.codigo_2fa ?? null);
+          setTwoFAQRCode(qrCodeValue);
+          setTwoFASetupVisible(true);
+          setTwoFAValidationCode('');
+          setTwoFASetupMode('enable');
+          Alert.alert('Quase lá', 'Escaneie o QR code e confirme o código para concluir a ativação.');
+        } else {
+          await configService.atualizarConfiguracao2FA(currentUserId, false);
+          setAutenticacao2FA(false);
+          resetTwoFactorTransientState();
+          setTwoFASecret(null);
+          setTwoFASetupMode(null);
+          Alert.alert('Sucesso', 'Autenticação de dois fatores desativada.');
+          setUserData({ two_fa: false });
+        }
+      } catch (error: any) {
+        console.error('[ConfigContext] Erro ao atualizar 2FA:', error);
+        const message =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          'Não foi possível atualizar a autenticação de dois fatores.';
+
+        Alert.alert('Erro', message);
+        setAutenticacao2FA(previousState);
+        if (!previousState) {
+          resetTwoFactorTransientState();
+          setTwoFASecret(null);
+        }
+        setTwoFASetupMode(previousState ? 'view' : null);
+      } finally {
+        setLoading2FA(false);
+      }
+    },
+    [autenticacao2FA, currentUserId, normalizeQrCodeResponse, resetTwoFactorTransientState, setUserData],
+  );
+
+  const handleConfirmTwoFactorCode = useCallback(async () => {
     if (!currentUserId) {
-      Alert.alert("Erro", "ID do usuário não encontrado.")
-      return
+      Alert.alert('Erro', 'Usuário não encontrado.');
+      return;
     }
 
-    setLoadingSubmit(true)
+    const sanitizedCode = twoFAValidationCode.replace(/\D/g, '');
+
+    if (sanitizedCode.length !== 6) {
+      setTwoFAError('Informe o código de 6 dígitos.');
+      return;
+    }
+
+    setLoading2FA(true);
+    setTwoFAError(null);
+
+    try {
+      const validation = await configService.validarCodigo2FA(currentUserId, sanitizedCode);
+
+      if (!validation?.valido) {
+        setTwoFAError('Código inválido. Tente novamente.');
+        return;
+      }
+
+      setAutenticacao2FA(true);
+      setUserData({ two_fa: true });
+      Alert.alert('Sucesso', 'Autenticação de dois fatores ativada!');
+      resetTwoFactorTransientState();
+      setTwoFAQRCode(null);
+      setTwoFAValidationCode('');
+      setTwoFASetupMode(null);
+      setTwoFASecret(null);
+    } catch (error: any) {
+      console.error('[ConfigContext] Erro ao validar código 2FA:', error);
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        'Falha ao validar o código 2FA.';
+      setTwoFAError(message);
+    } finally {
+      setLoading2FA(false);
+    }
+  }, [currentUserId, twoFAValidationCode, resetTwoFactorTransientState, setUserData]);
+
+  const handleShowTwoFactorSetup = useCallback(async () => {
+    if (!currentUserId) {
+      Alert.alert('Erro', 'Usuário não encontrado.');
+      return;
+    }
+
+    setLoading2FA(true);
+    setTwoFAError(null);
+
+    try {
+      const qrResponse = await configService.gerarQRCode2FA(currentUserId);
+      const qrCodeValue = normalizeQrCodeResponse(qrResponse);
+
+      if (!qrCodeValue) {
+        throw new Error('Não foi possível carregar o QR code.');
+      }
+
+      setTwoFAQRCode(qrCodeValue);
+      setTwoFASetupVisible(true);
+      setTwoFAValidationCode('');
+      setTwoFASetupMode('view');
+    } catch (error: any) {
+      console.error('[ConfigContext] Erro ao carregar QR 2FA:', error);
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        'Não foi possível carregar o QR code.';
+      Alert.alert('Erro', message);
+    } finally {
+      setLoading2FA(false);
+    }
+  }, [currentUserId, normalizeQrCodeResponse]);
+
+  const handleSubmitSeguranca = useCallback(async () => {
+    Keyboard.dismiss();
+
+    if (!validarSeguranca() || !currentUserId) {
+      Alert.alert('Erro', 'Verifique os campos de segurança.');
+      return;
+    }
+
+    setLoadingSubmit(true);
 
     try {
       await configService.alterarSenha(currentUserId, {
         senha_atual: senhaAtual,
         nova_senha: novaSenha,
         confirmar_senha: confirmarSenha,
-      })
+      });
 
-      Alert.alert("Sucesso", "Senha alterada com sucesso!")
-      setSenhaAtual("")
-      setNovaSenha("")
-      setConfirmarSenha("")
-      setLoadingSubmit(false)
+      Alert.alert('Sucesso', 'Senha alterada com sucesso!');
+      setSenhaAtual('');
+      setNovaSenha('');
+      setConfirmarSenha('');
     } catch (error: any) {
-      console.error("Erro ao alterar senha:", error)
-      const errorMessage = error.response?.data?.message ||
-                          error.response?.data?.error ||
-                          "Não foi possível alterar a senha."
-      Alert.alert("Erro", errorMessage)
-      setLoadingSubmit(false)
+      console.error('[ConfigContext] Erro ao alterar senha:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        'Não foi possível alterar a senha.';
+      Alert.alert('Erro', errorMessage);
+    } finally {
+      setLoadingSubmit(false);
     }
-  }
+  }, [validarSeguranca, currentUserId, senhaAtual, novaSenha, confirmarSenha]);
 
-  const validarMetodoPagamento = (): boolean => {
-    const newErrors: { [key: string]: string } = {}
+  const handleAdicionarMetodoPagamento = useCallback(async () => {
+    Keyboard.dismiss();
 
-    if (!novoMetodoPagamento.numero_cartao || novoMetodoPagamento.numero_cartao.replace(/\D/g, "").length < 13) {
-      newErrors.numero_cartao = "Número do cartão inválido"
-    }
-    if (!novoMetodoPagamento.nome_cartao.trim()) {
-      newErrors.nome_cartao = "Nome no cartão obrigatório"
-    }
-    if (!novoMetodoPagamento.data_validade || !/^\d{2}\/\d{2}$/.test(novoMetodoPagamento.data_validade)) {
-      newErrors.data_validade = "Data de validade deve estar no formato MM/AA"
-    }
-    if (!novoMetodoPagamento.cvv || novoMetodoPagamento.cvv.length < 3) {
-      newErrors.cvv = "CVV deve ter pelo menos 3 dígitos"
+    if (!currentUserId) {
+      Alert.alert('Erro', 'Usuário não encontrado.');
+      return;
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  // Adicionar método de pagamento
-  const handleAdicionarMetodoPagamento = async () => {
-    Keyboard.dismiss()
     if (!validarMetodoPagamento()) {
-      Alert.alert("Erro", "Verifique os campos do cartão.")
-      return
+      Alert.alert('Erro', 'Verifique os dados do método de pagamento.');
+      return;
     }
 
-    if (!currentUserId) {
-      Alert.alert("Erro", "ID do usuário não encontrado.")
-      return
-    }
+    setLoadingSubmit(true);
 
-    setLoadingSubmit(true)
+    const payload: Record<string, string> = { tipo: novoMetodoPagamento.tipo };
+    const tipo = novoMetodoPagamento.tipo;
+
+    if (tipo === 'cartao_credito' || tipo === 'cartao_debito') {
+      payload.numero_cartao = novoMetodoPagamento.numero_cartao.replace(/\D/g, '');
+      payload.nome_cartao = novoMetodoPagamento.nome_cartao.trim();
+      payload.data_validade = novoMetodoPagamento.data_validade.trim();
+      payload.cvv = novoMetodoPagamento.cvv.replace(/\D/g, '');
+    } else if (tipo === 'pix') {
+      payload.chave_pix = novoMetodoPagamento.chave_pix.trim();
+    } else if (tipo === 'paypal') {
+      payload.email_paypal = novoMetodoPagamento.email_paypal.trim();
+    }
 
     try {
-      const metodo = await configService.adicionarMetodoPagamento(currentUserId, {
-        tipo: novoMetodoPagamento.tipo,
-        numero_cartao: novoMetodoPagamento.numero_cartao.replace(/\D/g, ""),
-        nome_cartao: novoMetodoPagamento.nome_cartao,
-        data_validade: novoMetodoPagamento.data_validade,
-        cvv: novoMetodoPagamento.cvv,
-      })
+      const isEdit = Boolean(metodoPagamentoEmEdicao?.id);
 
-      // Atualizar lista de métodos de pagamento
-      setMetodosPagamento(prev => [...prev, metodo])
+      if (isEdit) {
+        await configService.atualizarMetodoPagamento(currentUserId, metodoPagamentoEmEdicao!.id, payload);
+      } else {
+        await configService.adicionarMetodoPagamento(currentUserId, payload);
+      }
 
-      // Limpar formulário
-      setNovoMetodoPagamento({
-        tipo: 'credito',
-        numero_cartao: '',
-        nome_cartao: '',
-        data_validade: '',
-        cvv: '',
-      })
+      await refreshMetodosPagamento();
+      setNovoMetodoPagamento(createDefaultMetodoPagamento());
+      setMetodoPagamentoEmEdicao(null);
+      setErrors((prev) => {
+        const { numero_cartao, nome_cartao, data_validade, cvv, chave_pix, email_paypal, ...rest } = prev;
+        return rest;
+      });
 
-      Alert.alert("Sucesso", "Método de pagamento adicionado com sucesso!")
-      setLoadingSubmit(false)
+      Alert.alert('Sucesso', isEdit ? 'Método de pagamento atualizado!' : 'Método de pagamento adicionado!');
     } catch (error: any) {
-      console.error("Erro ao adicionar método de pagamento:", error)
-      const errorMessage = error.response?.data?.message ||
-                          error.response?.data?.error ||
-                          "Não foi possível adicionar o método de pagamento."
-      Alert.alert("Erro", errorMessage)
-      setLoadingSubmit(false)
+      console.error('[ConfigContext] Erro ao salvar método de pagamento:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        'Não foi possível salvar o método de pagamento.';
+      Alert.alert('Erro', errorMessage);
+    } finally {
+      setLoadingSubmit(false);
     }
-  }
+  }, [currentUserId, validarMetodoPagamento, novoMetodoPagamento, metodoPagamentoEmEdicao, refreshMetodosPagamento]);
 
-  // Remover método de pagamento
-  const handleRemoverMetodoPagamento = async (pagamentoId: number) => {
-    console.log('handleRemoverMetodoPagamento chamado com ID:', pagamentoId);
-    if (!currentUserId) {
-      console.log('ERRO: currentUserId não encontrado');
-      Alert.alert("Erro", "ID do usuário não encontrado.")
-      return
-    }
+  const handleRemoverMetodoPagamento = useCallback(
+    async (pagamentoId: number) => {
+      if (!currentUserId) {
+        Alert.alert('Erro', 'Usuário não encontrado.');
+        return;
+      }
 
-    console.log('Mostrando alerta de confirmação...');
+      setLoadingSubmit(true);
 
-    // TESTE: Vamos pular o Alert.alert e executar diretamente
-    console.log('TESTE: Executando remoção diretamente sem Alert.alert');
-    setLoadingSubmit(true)
-    try {
-      console.log('Fazendo chamada para configService.removerMetodoPagamento...');
-      await configService.removerMetodoPagamento(currentUserId, pagamentoId)
-      console.log('Requisição concluída com sucesso');
+      try {
+        await configService.removerMetodoPagamento(currentUserId, pagamentoId);
+        await refreshMetodosPagamento();
 
-      // Atualizar lista removendo o método
-      setMetodosPagamento(prev => prev.filter(m => m.id !== pagamentoId))
-
-      Alert.alert("Sucesso", "Método de pagamento removido com sucesso!")
-      setLoadingSubmit(false)
-    } catch (error: any) {
-      console.error("Erro ao remover método de pagamento:", error)
-      const errorMessage = error.response?.data?.message ||
-                          error.response?.data?.error ||
-                          "Não foi possível remover o método de pagamento."
-      Alert.alert("Erro", errorMessage)
-      setLoadingSubmit(false)
-    }
-
-    /*
-    Alert.alert(
-      "Confirmar remoção",
-      "Tem certeza que deseja remover este método de pagamento?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Remover",
-          style: "destructive",
-          onPress: async () => {
-            console.log('Botão "Remover" clicado, iniciando processo...');
-            setLoadingSubmit(true)
-            try {
-              console.log('Fazendo chamada para configService.removerMetodoPagamento...');
-              await configService.removerMetodoPagamento(currentUserId, pagamentoId)
-              console.log('Requisição concluída com sucesso');
-
-              // Atualizar lista removendo o método
-              setMetodosPagamento(prev => prev.filter(m => m.id !== pagamentoId))
-
-              Alert.alert("Sucesso", "Método de pagamento removido com sucesso!")
-              setLoadingSubmit(false)
-            } catch (error: any) {
-              console.error("Erro ao remover método de pagamento:", error)
-              const errorMessage = error.response?.data?.message ||
-                                  error.response?.data?.error ||
-                                  "Não foi possível remover o método de pagamento."
-              Alert.alert("Erro", errorMessage)
-              setLoadingSubmit(false)
-            }
-          }
+        if (metodoPagamentoEmEdicao?.id === pagamentoId) {
+          setMetodoPagamentoEmEdicao(null);
+          setNovoMetodoPagamento(createDefaultMetodoPagamento());
         }
-      ]
-    )
-    */
-  }
 
-  const clearErrors = () => {
-    setErrors({})
-  }
+        Alert.alert('Sucesso', 'Método de pagamento removido!');
+      } catch (error: any) {
+        console.error('[ConfigContext] Erro ao remover método de pagamento:', error);
+        const errorMessage =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          'Não foi possível remover o método de pagamento.';
+        Alert.alert('Erro', errorMessage);
+      } finally {
+        setLoadingSubmit(false);
+      }
+    },
+    [currentUserId, refreshMetodosPagamento, metodoPagamentoEmEdicao],
+  );
 
-  // Atualizar nome e documento do perfil
-  const handleUpdateNomeDocumento = async (novoNome: string, novoDocumento: string) => {
-    if (!currentUserId) {
-      throw new Error("ID do usuário não encontrado.")
-    }
+  const iniciarEdicaoMetodoPagamento = useCallback(
+    (metodo: MetodoPagamentoResumo) => {
+      setMetodoPagamentoEmEdicao(metodo);
 
-    try {
-      // Preparar dados para atualização
-      const updateData: any = {
-        pessoa_nome: novoNome,
+      const form = createMetodoPagamentoFromTipo(metodo.tipo);
+
+      if (metodo.tipo === 'cartao_credito' || metodo.tipo === 'cartao_debito') {
+        form.nome_cartao = metodo.nome_cartao ?? '';
+        form.data_validade = metodo.data_validade ?? '';
+      } else if (metodo.tipo === 'paypal') {
+        form.email_paypal = metodo.email_paypal ?? '';
       }
 
-      // Adicionar documento baseado no tipo de usuário
-      if (tipoUsuario === "Fisica") {
-        updateData.pessoa_cpf = novoDocumento
-      } else if (tipoUsuario === "Juridica") {
-        updateData.pessoa_cnpj = novoDocumento
+      setNovoMetodoPagamento(form);
+      setErrors((prev) => {
+        const { numero_cartao, nome_cartao, data_validade, cvv, chave_pix, email_paypal, ...rest } = prev;
+        return rest;
+      });
+    },
+    [],
+  );
+
+  const cancelarEdicaoMetodoPagamento = useCallback(() => {
+    setMetodoPagamentoEmEdicao(null);
+    setNovoMetodoPagamento(createDefaultMetodoPagamento());
+    setErrors((prev) => {
+      const { numero_cartao, nome_cartao, data_validade, cvv, chave_pix, email_paypal, ...rest } = prev;
+      return rest;
+    });
+  }, []);
+
+  const handleDefinirMetodoPagamentoPadrao = useCallback(
+    async (pagamentoId: number) => {
+      if (!currentUserId) {
+        Alert.alert('Erro', 'Usuário não encontrado.');
+        return;
       }
 
-      // Enviar para API
-      await pessoaService.atualizarPessoa(currentUserId, updateData)
+      setLoadingSubmit(true);
 
-      // Atualizar estados locais
-      setNome(novoNome)
-      if (tipoUsuario === "Fisica") {
-        setCpf(novoDocumento)
-      } else if (tipoUsuario === "Juridica") {
-        setCnpj(novoDocumento)
+      try {
+        const metodos = await configService.definirMetodoPagamentoPrincipal(currentUserId, pagamentoId);
+        setMetodosPagamento(Array.isArray(metodos) ? metodos : []);
+        Alert.alert('Sucesso', 'Método definido como padrão!');
+      } catch (error: any) {
+        console.error('[ConfigContext] Erro ao definir método padrão:', error);
+        const errorMessage =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          'Não foi possível definir o método como padrão.';
+        Alert.alert('Erro', errorMessage);
+      } finally {
+        setLoadingSubmit(false);
       }
-    } catch (error: any) {
-      console.error("Erro ao atualizar nome e documento:", error)
-      throw error
-    }
-  }
+    },
+    [currentUserId],
+  );
 
-  // Atualizar nome, email e telefone do perfil
-  const handleUpdatePerfilCompleto = async (novoNome: string, novoEmail: string, novoTelefone: string) => {
-    if (!currentUserId) {
-      throw new Error("ID do usuário não encontrado.")
-    }
+  const isEditandoMetodoPagamento = useMemo(() => metodoPagamentoEmEdicao !== null, [metodoPagamentoEmEdicao]);
 
-    try {
-      // Preparar dados para atualização
-      const updateData = {
+  const handleUpdateNomeDocumento = useCallback(
+    async (novoNome: string, novoDocumento: string) => {
+      if (!currentUserId) {
+        throw new Error('Usuário não encontrado.');
+      }
+
+      const updateData: Record<string, string> = { pessoa_nome: novoNome };
+
+      if (tipoUsuario === 'Fisica') {
+        updateData.pessoa_cpf = novoDocumento;
+      }
+
+      if (tipoUsuario === 'Juridica') {
+        updateData.pessoa_cnpj = novoDocumento;
+      }
+
+      await pessoaService.atualizarPessoa(currentUserId, updateData);
+
+      setNome(novoNome);
+      if (tipoUsuario === 'Fisica') {
+        setCpf(novoDocumento);
+      } else if (tipoUsuario === 'Juridica') {
+        setCnpj(novoDocumento);
+      }
+    },
+    [currentUserId, tipoUsuario],
+  );
+
+  const handleUpdatePerfilCompleto = useCallback(
+    async (novoNome: string, novoEmail: string, novoTelefone: string) => {
+      if (!currentUserId) {
+        throw new Error('Usuário não encontrado.');
+      }
+
+      await pessoaService.atualizarPessoa(currentUserId, {
         pessoa_nome: novoNome,
         pessoa_email: novoEmail,
         pessoa_telefone: novoTelefone,
-      }
+      });
 
-      // Enviar para API
-      await pessoaService.atualizarPessoa(currentUserId, updateData)
+      setNome(novoNome);
+      setEmail(novoEmail);
+      setTelefone(novoTelefone);
+    },
+    [currentUserId],
+  );
 
-      // Atualizar estados locais
-      setNome(novoNome)
-      setEmail(novoEmail)
-      setTelefone(novoTelefone)
-    } catch (error: any) {
-      console.error("Erro ao atualizar perfil completo:", error)
-      throw error
-    }
-  }
+  const contextValue: ConfigContextValue = useMemo(
+    () => ({
+      activeTab,
+      setActiveTab,
+      nome,
+      setNome,
+      email,
+      setEmail,
+      telefone,
+      setTelefone,
+      tipoUsuario,
+      setTipoUsuario,
+      cpf,
+      setCpf,
+      cnpj,
+      setCnpj,
+      fornecedorNum,
+      setFornecedorNum,
+      cep,
+      setCep,
+      rua,
+      setRua,
+      numero,
+      setNumero,
+      complemento,
+      setComplemento,
+      bairro,
+      setBairro,
+      cidade,
+      setCidade,
+      estado,
+      setEstado,
+      cidadeId,
+      setCidadeId,
+      senhaAtual,
+      setSenhaAtual,
+      novaSenha,
+      setNovaSenha,
+      confirmarSenha,
+      setConfirmarSenha,
+      autenticacao2FA,
+      setAutenticacao2FA,
+  loading2FA,
+  twoFASetupVisible,
+  twoFAQRCode,
+  twoFASecret,
+  twoFAValidationCode,
+  setTwoFAValidationCode: handleTwoFACodeInput,
+  twoFAError,
+  twoFASetupMode,
+  handleToggleTwoFactor,
+  handleConfirmTwoFactorCode,
+  handleShowTwoFactorSetup,
+  closeTwoFactorSetup,
+      emailNotificacoes,
+      setEmailNotificacoes,
+      smsNotificacoes,
+      setSmsNotificacoes,
+      marketingNotificacoes,
+      setMarketingNotificacoes,
+      metodosPagamento,
+      novoMetodoPagamento,
+      setNovoMetodoPagamento,
+  metodoPagamentoEmEdicao,
+  iniciarEdicaoMetodoPagamento,
+  cancelarEdicaoMetodoPagamento,
+  isEditandoMetodoPagamento,
+      loadingData,
+      loadingSubmit,
+      setLoadingSubmit,
+      loadingCep,
+      errors,
+      setErrors,
+      currentUserId,
+      handleCepBlur,
+      handleSubmitPerfil,
+      handleSubmitEndereco,
+      handleSubmitNotificacoes,
+      handleSubmitSeguranca,
+      handleAdicionarMetodoPagamento,
+      handleRemoverMetodoPagamento,
+  handleDefinirMetodoPagamentoPadrao,
+      refreshMetodosPagamento,
+      validarPerfil,
+      validarEndereco,
+      validarSeguranca,
+      validarMetodoPagamento,
+      clearErrors,
+      handleUpdateNomeDocumento,
+      handleUpdatePerfilCompleto,
+      loadUserData,
+    }),
+    [
+      activeTab,
+      nome,
+      email,
+      telefone,
+      tipoUsuario,
+      cpf,
+      cnpj,
+      fornecedorNum,
+      cep,
+      rua,
+      numero,
+      complemento,
+      bairro,
+      cidade,
+      estado,
+      cidadeId,
+      senhaAtual,
+      novaSenha,
+      confirmarSenha,
+      autenticacao2FA,
+  loading2FA,
+  twoFASetupVisible,
+  twoFAQRCode,
+  twoFASecret,
+  twoFAValidationCode,
+  twoFAError,
+  twoFASetupMode,
+      emailNotificacoes,
+      smsNotificacoes,
+      marketingNotificacoes,
+      metodosPagamento,
+      novoMetodoPagamento,
+      loadingData,
+      loadingSubmit,
+      loadingCep,
+      errors,
+      currentUserId,
+      handleCepBlur,
+      handleSubmitPerfil,
+      handleSubmitEndereco,
+      handleSubmitNotificacoes,
+      handleSubmitSeguranca,
+      handleAdicionarMetodoPagamento,
+      handleRemoverMetodoPagamento,
+      validarPerfil,
+      validarEndereco,
+      validarSeguranca,
+      validarMetodoPagamento,
+      clearErrors,
+      handleUpdateNomeDocumento,
+      handleUpdatePerfilCompleto,
+      handleToggleTwoFactor,
+      handleConfirmTwoFactorCode,
+      handleShowTwoFactorSetup,
+      closeTwoFactorSetup,
+      handleTwoFACodeInput,
+  metodoPagamentoEmEdicao,
+  iniciarEdicaoMetodoPagamento,
+  cancelarEdicaoMetodoPagamento,
+  isEditandoMetodoPagamento,
+  handleDefinirMetodoPagamentoPadrao,
+  refreshMetodosPagamento,
+  loadUserData,
+    ],
+  );
 
-  const value: ConfigContextType = {
-    // Estados da aba ativa
-    activeTab,
-    setActiveTab,
+  return <ConfigContext.Provider value={contextValue}>{children}</ConfigContext.Provider>;
+};
 
-    // Estados do perfil
-    nome,
-    setNome,
-    email,
-    setEmail,
-    telefone,
-    setTelefone,
-    tipoUsuario,
-    setTipoUsuario,
-    cpf,
-    setCpf,
-    cnpj,
-    setCnpj,
-    fornecedorNum,
-    setFornecedorNum,
-
-    // Estados do endereço
-    cep,
-    setCep,
-    rua,
-    setRua,
-    numero,
-    setNumero,
-    complemento,
-    setComplemento,
-    bairro,
-    setBairro,
-    cidade,
-    setCidade,
-    estado,
-    setEstado,
-    cidadeId,
-    setCidadeId,
-
-    // Estados de segurança
-    senhaAtual,
-    setSenhaAtual,
-    novaSenha,
-    setNovaSenha,
-    confirmarSenha,
-    setConfirmarSenha,
-    autenticacao2FA,
-    setAutenticacao2FA,
-
-    // Estados de notificações
-    emailNotificacoes,
-    setEmailNotificacoes,
-    smsNotificacoes,
-    setSmsNotificacoes,
-    marketingNotificacoes,
-    setMarketingNotificacoes,
-
-    // Estados de métodos de pagamento
-    metodosPagamento,
-    novoMetodoPagamento,
-    setNovoMetodoPagamento,
-
-    // Estados de controle
-    loadingData,
-    loadingSubmit,
-    setLoadingSubmit,
-    loadingCep,
-    errors,
-    setErrors,
-    currentUserId,
-
-    // Funções
-    handleCepBlur,
-    handleSubmitPerfil,
-    handleSubmitEndereco,
-    handleSubmitNotificacoes,
-    handleSubmitSeguranca,
-    handleAdicionarMetodoPagamento,
-    handleRemoverMetodoPagamento,
-    validarPerfil,
-    validarEndereco,
-    validarSeguranca,
-    validarMetodoPagamento,
-    clearErrors,
-    handleUpdateNomeDocumento,
-    handleUpdatePerfilCompleto,
-    loadUserData,
-  }
-
-  return (
-    <ConfigContext.Provider value={value}>
-      {children}
-    </ConfigContext.Provider>
-  )
-}
-
-// Hook para usar o contexto
 export const useConfig = () => {
-  const context = useContext(ConfigContext)
-  if (context === undefined) {
-    throw new Error('useConfig must be used within a ConfigProvider')
+  const context = useContext(ConfigContext);
+  if (!context) {
+    throw new Error('useConfig must be used within a ConfigProvider');
   }
-  return context
-}
+  return context;
+};

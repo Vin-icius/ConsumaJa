@@ -23,6 +23,7 @@ export type CreateLoteProdRepoData = Omit<CreateLoteProdDto, 'lote_validade' | '
     lote_quantidade_atual: number; // Serviço definirá se não vier no DTO
     ativo: boolean; // Serviço definirá como true por padrão
     data_entrada: Date; // Serviço definirá como new Date()
+    fornecedor_pessoa_id: number;
 };
 
 // Dados que o repositório espera para ATUALIZAR um lote

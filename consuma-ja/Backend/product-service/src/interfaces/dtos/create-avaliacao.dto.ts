@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsInt, Min, Max, IsArray, ValidateNested } from 'class-validator';
+import { IsNotEmpty, IsInt, Min, Max, IsArray, ValidateNested, IsOptional, IsString, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class RespostaDto {
@@ -18,4 +18,9 @@ export class CreateAvaliacaoDto {
     @ValidateNested({ each: true })
     @Type(() => RespostaDto)
     respostas!: RespostaDto[];
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(1000)
+    descricao?: string;
 }

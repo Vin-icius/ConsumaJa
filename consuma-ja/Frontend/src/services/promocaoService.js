@@ -1,4 +1,4 @@
-import { productApiClient, locationApiClient, pessoaApiClient } from "../api/client" // Importa os clients configurados
+import { productApiClient, locationApiClient, pessoaApiClient, orderApiClient } from "../api/client" // Importa os clients configurados
 
 // Funções auxiliares para tratamento de erro
 const handleRequest = async (requestPromise) => {
@@ -120,10 +120,32 @@ const buscarLotesPorProduto = (produtoId, fornecedorId) => {
   )
 }
 
+// Configurações de pagamento do fornecedor (ex.: quantidade máxima de parcelas)
+const buscarConfiguracaoPagamentoFornecedor = (fornecedorPessoaId) => {
+  if (!fornecedorPessoaId) {
+    return Promise.resolve(null)
+  }
+  return handleRequest(
+    pessoaApiClient.get(`/fornecedores/${fornecedorPessoaId}/config-pagamento`),
+  )
+}
+
 // Função para finalizar venda/promocao
 const finalizarVenda = (saleData) => {
-  console.log('[PromocaoService] Finalizando venda com dados:', saleData)
-  return handleRequest(productApiClient.post(`/promocoes/sale`, saleData))
+  console.log('[PromocaoService] Finalizando venda com dados (orderApi):', saleData)
+  // Use order service for checkout flows
+  return handleRequest(orderApiClient.post(`/promocoes/sale`, saleData))
+}
+
+// Venda helpers for order progress
+const ORDERS_PREFIX = '/orders'
+
+const getVendaStatus = (vendaId) => {
+  return handleRequest(orderApiClient.get(`${ORDERS_PREFIX}/sales/${vendaId}/status`))
+}
+
+const updateVendaStage = (vendaId, body) => {
+  return handleRequest(orderApiClient.put(`${ORDERS_PREFIX}/sales/${vendaId}/stage`, body))
 }
 
 // Função para buscar todos os produtos (para o formulário de lotes)
@@ -149,6 +171,9 @@ const promocaoService = {
   
   // Vendas
   finalizarVenda,
+  getVendaStatus,
+  updateVendaStage,
+  buscarConfiguracaoPagamentoFornecedor,
   
   // Auxiliares
   listarFornecedoresAtivos,

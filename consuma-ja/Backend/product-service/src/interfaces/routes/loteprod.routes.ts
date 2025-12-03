@@ -3,35 +3,27 @@ import { LoteProdController } from '../controls/loteprod.controller';
 import { LoteProdService } from '../../application/services/loteprod.service';
 import { LoteProdMySQLRepository } from '../../infrastructure/repositories/loteprod.mysql.repository';
 import { ProdutoMySQLRepository } from '../../infrastructure/repositories/produto.mysql.repository';
+import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = express.Router();
 
-// --- Instanciação das Dependências ---
-const produtoRepository = new ProdutoMySQLRepository(); // Necessário para LoteProdService
+const produtoRepository = new ProdutoMySQLRepository();
 const loteProdRepository = new LoteProdMySQLRepository();
 const loteProdService = new LoteProdService(loteProdRepository, produtoRepository);
 const loteProdController = new LoteProdController(loteProdService);
 
-// --- Definição das Rotas para LoteProd ---
-
-// Rota para buscar lotes disponíveis (usada no formulário de promoção)
-// GET /api/product/lotes/disponiveis
 router.get('/disponiveis', loteProdController.listarDisponiveisParaSelecao);
 
-// Rotas CRUD para LoteProd (para gerenciamento de lotes)
-// GET /api/product/lotes/
-router.get('/', /* authMiddleware, */ loteProdController.listar); // Lista todos os lotes com paginação e filtros
+router.use(authMiddleware);
 
-// POST /api/product/lotes/
-router.post('/', /* authMiddleware, */ loteProdController.criar);
+router.get('/', loteProdController.listar);
 
-// GET /api/product/lotes/:id
-router.get('/:id', /* authMiddleware, */ loteProdController.buscarPorId);
+router.post('/', loteProdController.criar);
 
-// PUT /api/product/lotes/:id
-router.put('/:id', /* authMiddleware, */ loteProdController.atualizar);
+router.get('/:id', loteProdController.buscarPorId);
 
-// DELETE /api/product/lotes/:id
-router.delete('/:id', /* authMiddleware, */ loteProdController.excluir);
+router.put('/:id', loteProdController.atualizar);
+
+router.delete('/:id', loteProdController.excluir);
 
 export default router;

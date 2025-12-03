@@ -13,41 +13,35 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { shoppingCartStyles } from '../../../../common/styles/Core/homeScreen/shoppingCart.styled';
 import { useCart } from '../../../../contexts/CartContext/cartContext';
-import promocaoService from '../../../../services/promocaoService';
-
-interface CartItem {
-  id: string;
-  produto_id: number;
-  produto_nome: string;
-  produto_imagem_url?: string | null;
-  lote_id: number;
-  lote_codigo: string;
-  itemPromocao_valor: number;
-  quantidade: number;
-  maxQuantidade: number; // estoque disponível para a promoção
-  fornecedor_nome?: string; // Nome do fornecedor
-}
+import locationService from '../../../../services/locationService';
+import { useApplication } from '../../../../contexts/ApplicationContext/ApplicationContext';
+import type { CartItem as CartItemModel } from '../../../../contexts/CartContext/cartContext';
 
 const ShoppingCartScreen = () => {
   const navigation = useNavigation<any>();
   const { cartItems, updateQuantity, removeFromCart, clearCart, getTotalItems, getTotalValue } = useCart();
+  const { user: applicationUser, validateActiveSession } = useApplication();
 
   // Estados para os modais de confirmação
   const [removeModalVisible, setRemoveModalVisible] = useState(false);
   const [clearModalVisible, setClearModalVisible] = useState(false);
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   
   // Estado para loading do checkout
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
 
-  const handleRemoveItem = (itemId: string) => {
+  const handleRemoveItem = (itemId: number) => {
     setSelectedItemId(itemId);
     setRemoveModalVisible(true);
   };
 
-  const confirmRemoveItem = () => {
+  const confirmRemoveItem = async () => {
     if (selectedItemId) {
-      removeFromCart(selectedItemId);
+      try {
+        await removeFromCart(selectedItemId);
+      } catch (error) {
+        console.error('[ShoppingCart] Erro ao remover item do carrinho:', error);
+      }
     }
     setRemoveModalVisible(false);
     setSelectedItemId(null);
@@ -62,8 +56,12 @@ const ShoppingCartScreen = () => {
     setClearModalVisible(true);
   };
 
-  const confirmClearCart = () => {
-    clearCart();
+  const confirmClearCart = async () => {
+    try {
+      await clearCart();
+    } catch (error) {
+      console.error('[ShoppingCart] Erro ao limpar carrinho:', error);
+    }
     setClearModalVisible(false);
   };
 
@@ -81,13 +79,51 @@ const ShoppingCartScreen = () => {
     setIsCheckoutLoading(true);
 
     try {
+      const currentUser = applicationUser ?? (await validateActiveSession());
+      const pessoaId = currentUser?.pessoa_id ?? currentUser?.id ?? null;
+      if (!pessoaId) {
+        Alert.alert('Sessão expirada', 'Faça login novamente para finalizar a compra.');
+        return;
+      }
+
+  const itemWithoutPromotion = cartItems.find(item => !item.promocaoId);
+      if (itemWithoutPromotion) {
+        Alert.alert('Item inválido', 'Um dos itens do carrinho não está vinculado a uma promoção ativa. Remova e adicione novamente.');
+        return;
+      }
+
+      const enderecos = await locationService.getEnderecos({ pessoaId, ativo: 'true', limit: 1 });
+      const enderecoSelecionado = Array.isArray(enderecos) && enderecos.length > 0 ? enderecos[0] : null;
+
+      if (!enderecoSelecionado?.endereco_id) {
+        Alert.alert('Endereço necessário', 'Cadastre um endereço válido antes de finalizar a compra.');
+        return;
+      }
+
+      const fornecedorIds = Array.from(
+        new Set(
+          cartItems
+            .map((item) => (typeof item.fornecedorPessoaId === 'number' ? item.fornecedorPessoaId : null))
+            .filter((id): id is number => id !== null),
+        ),
+      );
+
+      const fornecedorPessoaId = fornecedorIds.length > 0 ? fornecedorIds[0] : null;
+      if (fornecedorIds.length > 1) {
+        console.warn('[ShoppingCart] Carrinho possui produtos de múltiplos fornecedores. Usando o primeiro ID para o checkout:', fornecedorIds);
+      }
+
       // Formatar os dados do carrinho para o payload da API
       const saleData = {
-        itens: cartItems.map(item => ({
-          lote_id: item.lote_id,
+        pessoa_id: pessoaId,
+        fornecedor_pessoa_id: fornecedorPessoaId,
+        fornecedorPessoaId,
+        endereco_id: enderecoSelecionado.endereco_id,
+        itens: cartItems.map((item) => ({
+          lote_id: item.loteId,
           quantidade: item.quantidade,
-          valor_unitario: item.itemPromocao_valor,
-          promocao_id: item.promocao_id || null, // Pode ser null se não vier de promoção específica
+          valor_unitario: item.unitPrice,
+          promocao_id: item.promocaoId ?? null,
         })),
         valor_total: getTotalValue(),
         quantidade_total_itens: getTotalItems(),
@@ -97,25 +133,8 @@ const ShoppingCartScreen = () => {
 
       console.log('Enviando dados da venda:', saleData);
 
-      // Fazer a chamada da API
-      const response = await promocaoService.finalizarVenda(saleData);
-
-      console.log('Venda finalizada com sucesso:', response);
-
-      // Limpar o carrinho após venda bem-sucedida
-      clearCart();
-
-      // Mostrar mensagem de sucesso
-      Alert.alert(
-        'Compra Finalizada!',
-        'Sua compra foi processada com sucesso.',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(), // Voltar para a tela anterior
-          },
-        ]
-      );
+      // Instead of finalizing here, navigate to the checkout address screen
+      navigation.navigate('CheckoutAddress', { saleData });
 
     } catch (error: any) {
       console.error('Erro ao finalizar venda:', error);
@@ -131,35 +150,35 @@ const ShoppingCartScreen = () => {
     }
   };
 
-  const renderCartItem = ({ item }: { item: CartItem }) => (
+  const renderCartItem = ({ item }: { item: CartItemModel }) => (
     <View style={shoppingCartStyles.cartItem}>
       <Image
-        source={item.produto_imagem_url ? { uri: item.produto_imagem_url } : require('../../../../assets/placeholder.png')}
+        source={item.produtoImagemUrl ? { uri: item.produtoImagemUrl } : require('../../../../assets/placeholder.png')}
         style={shoppingCartStyles.productImage}
         resizeMode="contain"
       />
 
       <View style={shoppingCartStyles.itemDetails}>
         <Text style={shoppingCartStyles.productName} numberOfLines={2}>
-          {item.produto_nome}
+          {item.produtoNome}
         </Text>
-        {item.fornecedor_nome && (
+        {item.fornecedorNome && (
           <Text style={shoppingCartStyles.supplierText}>
-            Fornecedor: {item.fornecedor_nome}
+            Fornecedor: {item.fornecedorNome}
           </Text>
         )}
         <Text style={shoppingCartStyles.loteInfo}>
-          Lote: {item.lote_codigo}
+          Lote: {item.loteCodigo}
         </Text>
         <Text style={shoppingCartStyles.priceText}>
-          R$ {item.itemPromocao_valor.toFixed(2)} cada
+          R$ {item.unitPrice.toFixed(2)} cada
         </Text>
       </View>
 
       <View style={shoppingCartStyles.quantityControls}>
         <TouchableOpacity
           style={shoppingCartStyles.quantityButton}
-          onPress={() => updateQuantity(item.id, item.quantidade - 1)}
+          onPress={() => updateQuantity(item.cartItemId, item.quantidade - 1)}
           disabled={item.quantidade <= 1}
         >
           <Ionicons name="remove" size={16} color={item.quantidade <= 1 ? "#ccc" : "#007bff"} />
@@ -169,7 +188,7 @@ const ShoppingCartScreen = () => {
 
         <TouchableOpacity
           style={shoppingCartStyles.quantityButton}
-          onPress={() => updateQuantity(item.id, item.quantidade + 1)}
+          onPress={() => updateQuantity(item.cartItemId, item.quantidade + 1)}
           disabled={item.quantidade >= item.maxQuantidade}
         >
           <Ionicons name="add" size={16} color={item.quantidade >= item.maxQuantidade ? "#ccc" : "#007bff"} />
@@ -178,12 +197,12 @@ const ShoppingCartScreen = () => {
 
       <View style={shoppingCartStyles.itemActions}>
         <Text style={shoppingCartStyles.itemTotal}>
-          R$ {(item.itemPromocao_valor * item.quantidade).toFixed(2)}
+          R$ {(item.unitPrice * item.quantidade).toFixed(2)}
         </Text>
 
         <TouchableOpacity
           style={shoppingCartStyles.removeButton}
-          onPress={() => handleRemoveItem(item.id)}
+          onPress={() => handleRemoveItem(item.cartItemId)}
         >
           <Ionicons name="trash-outline" size={20} color="#dc3545" />
         </TouchableOpacity>
@@ -262,7 +281,7 @@ const ShoppingCartScreen = () => {
           <FlatList
             data={cartItems}
             renderItem={renderCartItem}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => String(item.cartItemId)}
             contentContainerStyle={shoppingCartStyles.cartList}
             showsVerticalScrollIndicator={false}
           />

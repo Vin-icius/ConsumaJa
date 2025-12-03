@@ -6,6 +6,7 @@ import { CreateProdutoDto } from '../dtos/create-produto.dto';
 import { UpdateProdutoDto } from '../dtos/update-produto.dto';
 import { RejeitarProdutoDto } from '../dtos/rejeitar-produto.dto';
 import { ListarProdutosSelecaoQueryDto } from "../dtos/listar-produtos-selecao-query.dto"
+import { ListarProdutosQueryDto } from '../dtos/listar-produtos-query.dto';
 import { AppError } from '../../common/errors/app-error';
 
 export class ProdutoController {
@@ -22,24 +23,46 @@ export class ProdutoController {
       this.listarParaSelecao = this.listarParaSelecao.bind(this);
   }
 
-  async criarProduto(req: Request, res: Response, next: NextFunction): Promise<void> {
-    const dto = plainToClass(CreateProdutoDto, req.body);
-    const errors = await validate(dto);
-    if (errors.length > 0) { return next(errors); }
+   async criarProduto(req: Request, res: Response, next: NextFunction): Promise<void> {
+      try {
+         const fornecedorId = this.resolveFornecedorId(req);
+         const dto = plainToClass(CreateProdutoDto, {
+            ...req.body,
+            fornecedor_pessoa_id: fornecedorId,
+         });
 
-    try {
-      const produto = await this.produtoService.criarProduto(dto);
-      res.status(201).json(produto);
-    } catch (error) { next(error); }
-  }
+         const errors = await validate(dto);
+         if (errors.length > 0) { return next(errors); }
 
-  async listarProdutos(req: Request, res: Response, next: NextFunction): Promise<void> {
-     try {
-       const filtros = req.query;
-       const produtos = await this.produtoService.listarProdutos(filtros);
-       res.status(200).json(produtos);
-     } catch (error) { next(error); }
-  }
+         const produto = await this.produtoService.criarProduto(dto);
+         res.status(201).json(produto);
+      } catch (error) { next(error); }
+   }
+
+   async listarProdutos(req: Request, res: Response, next: NextFunction): Promise<void> {
+      try {
+         const dto = plainToClass(ListarProdutosQueryDto, req.query);
+         const errors = await validate(dto);
+         if (errors.length > 0) {
+            return next(errors);
+         }
+
+         if (!req.user) {
+            throw new AppError('Usuário não autenticado.', 401);
+         }
+
+         if (req.user.tipo === 'Juridica') {
+            dto.fornecedorId = req.user.id;
+         } else if (req.user.tipo !== 'Admin') {
+            throw new AppError('Apenas administradores ou fornecedores podem acessar a listagem de produtos.', 403);
+         }
+
+         const produtos = await this.produtoService.listarProdutos(dto);
+         res.status(200).json(produtos);
+      } catch (error) {
+         next(error);
+      }
+   }
 
   async listarParaSelecao(req: Request, res: Response, next: NextFunction): Promise<void> {
    console.log('[ProdutoController] GET /para-selecao-promocao - Query Params:', req.query); // Log Adicionado
@@ -58,8 +81,33 @@ export class ProdutoController {
    } catch (error) {
        console.error('[ProdutoController] Erro capturado em listarParaSelecao:', error);
        next(error);
-   }
-}
+    }
+ }
+
+  private resolveFornecedorId(req: Request): number {
+     if (!req.user) {
+        throw new AppError('Usuário não autenticado.', 401);
+     }
+
+     if (req.user.tipo === 'Juridica') {
+        return req.user.id;
+     }
+
+     if (req.user.tipo === 'Admin') {
+        const raw = req.body?.fornecedor_pessoa_id ?? req.body?.fornecedorId;
+        if (raw === undefined || raw === null || raw === '') {
+           throw new AppError('Informe o fornecedor responsável pelo produto.', 400);
+        }
+
+        const parsed = Number(raw);
+        if (!Number.isFinite(parsed) || parsed <= 0) {
+           throw new AppError('Fornecedor informado é inválido.', 400);
+        }
+        return parsed;
+     }
+
+     throw new AppError('Apenas administradores ou fornecedores podem criar produtos.', 403);
+  }
 
   async buscarProdutoPorId(req: Request, res: Response, next: NextFunction): Promise<void> {
      try {

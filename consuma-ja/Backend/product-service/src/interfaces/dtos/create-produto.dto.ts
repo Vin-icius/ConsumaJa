@@ -40,4 +40,9 @@ export class CreateProdutoDto {
      @Min(1)
     @Type(() => Number)
     TIPO_PRODUTO_tipo_id!: number; // Nome da FK
+
+    @IsInt({ message: 'O fornecedor deve ser um ID numérico.' })
+    @Min(1, { message: 'O fornecedor deve ser válido.' })
+    @Type(() => Number)
+    fornecedor_pessoa_id!: number;
 }

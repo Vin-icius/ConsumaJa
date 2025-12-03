@@ -79,6 +79,35 @@ class JwtUtil {
             throw new app_error_1.AppError('Falha na autenticação.', 500, false);
         }
     }
+    static generateTwoFactorToken(pessoaId, expiresInSeconds = 300) {
+        try {
+            const payload = { pessoaId, scope: '2fa' };
+            return jwt.sign(payload, jwtSecret, { expiresIn: expiresInSeconds });
+        }
+        catch (error) {
+            console.error('[JwtUtil] Erro ao gerar token de 2FA:', error);
+            throw new app_error_1.AppError('Erro interno ao iniciar verificação 2FA.', 500, false);
+        }
+    }
+    static verifyTwoFactorToken(token) {
+        try {
+            const decoded = jwt.verify(token, jwtSecret);
+            if (!decoded || decoded.scope !== '2fa' || typeof decoded.pessoaId !== 'number') {
+                throw new app_error_1.AppError('Token 2FA inválido.', 401);
+            }
+            return decoded;
+        }
+        catch (error) {
+            if (error instanceof jwt.TokenExpiredError) {
+                throw new app_error_1.AppError('Código 2FA expirado. Inicie o processo novamente.', 401);
+            }
+            if (error instanceof jwt.JsonWebTokenError) {
+                throw new app_error_1.AppError('Token 2FA inválido.', 401);
+            }
+            console.error('[JwtUtil] Erro ao validar token de 2FA:', error);
+            throw new app_error_1.AppError('Falha ao validar código 2FA.', 500, false);
+        }
+    }
 }
 exports.JwtUtil = JwtUtil;
 //# sourceMappingURL=jwt.util.js.map

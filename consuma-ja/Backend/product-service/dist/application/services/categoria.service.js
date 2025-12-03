@@ -7,14 +7,18 @@ class CategoriaService {
         this.categoriaRepository = categoriaRepository;
     }
     async criarCategoria(createDto) {
+        var _a;
+        const fornecedorId = (_a = createDto.fornecedor_pessoa_id) !== null && _a !== void 0 ? _a : null;
         // Validação de Unicidade ANTES de tentar criar
-        const nomeExistente = await this.categoriaRepository.findByNome(createDto.categoria_nome);
+        const nomeExistente = await this.categoriaRepository.findByNome(createDto.categoria_nome, fornecedorId);
         if (nomeExistente) {
             throw new app_error_1.AppError(`A categoria "${createDto.categoria_nome}" já existe (ID: ${nomeExistente.categoria_id}).`, 409);
         }
         try {
-            // O DTO já tem o formato esperado por CreateCategoriaData
-            const novaCategoria = await this.categoriaRepository.criar(createDto);
+            const novaCategoria = await this.categoriaRepository.criar({
+                categoria_nome: createDto.categoria_nome,
+                fornecedor_pessoa_id: fornecedorId,
+            });
             return novaCategoria;
         }
         catch (error) {
@@ -51,9 +55,10 @@ class CategoriaService {
         }
     }
     async atualizarCategoria(id, updateDto) {
+        var _a;
         const categoriaExistente = await this.buscarCategoriaPorId(id);
         if (updateDto.categoria_nome && updateDto.categoria_nome !== categoriaExistente.categoria_nome) {
-            const outraCategoriaComNome = await this.categoriaRepository.findByNome(updateDto.categoria_nome);
+            const outraCategoriaComNome = await this.categoriaRepository.findByNome(updateDto.categoria_nome, (_a = categoriaExistente.fornecedor_pessoa_id) !== null && _a !== void 0 ? _a : null);
             if (outraCategoriaComNome && outraCategoriaComNome.categoria_id !== id) {
                 throw new app_error_1.AppError(`O nome de categoria "${updateDto.categoria_nome}" já está em uso pela categoria ID ${outraCategoriaComNome.categoria_id}.`, 409);
             }
