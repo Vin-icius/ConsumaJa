@@ -25,7 +25,7 @@ export interface CartViewApiResponse {
 interface AddCartItemPayload {
   pessoa_id: number
   produto_id: number
-  promocao_id: number
+  promocao_id: number | null
   lote_id: number
   quantidade: number
 }
