@@ -41,7 +41,8 @@ const CityFormScreen = ({ route, navigation }: any) => {
       try {
         const response = await locationService.getEstados();
         if (isMounted) {
-            setAllEstados(response.data || []);
+          const estadosData = (Array.isArray(response) ? response : response?.data || []) as EstadoInfo[];
+          setAllEstados(estadosData);
             const estadoIdParaSelecionar = cidadeParaEditar?.estado_id;
             if (isEditing && estadoIdParaSelecionar) {
                 // Garantir que estamos setando um número aqui também

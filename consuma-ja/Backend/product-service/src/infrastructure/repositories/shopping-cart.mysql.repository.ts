@@ -33,6 +33,7 @@ interface ShoppingCartDetailRow extends ShoppingCartRow {
   lote_quantidade_atual: number
   itemPromocao_qtde: number | null
   fornecedor_nome: string | null
+  fornecedor_pessoa_id: number | null
 }
 
 const mapRowToCartItem = (row: ShoppingCartRow): ShoppingCartItem => ({
@@ -56,6 +57,7 @@ const mapDetailRow = (row: ShoppingCartDetailRow): ShoppingCartItemWithDetails =
   lote_quantidade_atual: Number(row.lote_quantidade_atual),
   promocao_quantidade: row.itemPromocao_qtde !== null ? Number(row.itemPromocao_qtde) : null,
   fornecedor_nome: row.fornecedor_nome,
+  fornecedor_pessoa_id: row.fornecedor_pessoa_id !== null ? Number(row.fornecedor_pessoa_id) : null,
 })
 
 export class ShoppingCartMySQLRepository implements ShoppingCartRepository {
@@ -129,7 +131,9 @@ export class ShoppingCartMySQLRepository implements ShoppingCartRepository {
       SELECT
         sc.*, p.produto_nome, p.produto_imagem_url,
         lp.lote_codigo, lp.lote_quantidade_atual,
-        ip.itemPromocao_qtde, pj.pessoa_nome AS fornecedor_nome
+        ip.itemPromocao_qtde,
+        pj.pessoa_nome AS fornecedor_nome,
+        pr.JURIDICA_PESSOA_pessoa_id AS fornecedor_pessoa_id
       FROM SHOPPING_CART sc
       INNER JOIN PRODUTO p ON p.produto_id = sc.PRODUTO_produto_id
       INNER JOIN LOTEPROD lp ON lp.lote_id = sc.LOTEPROD_lote_id
@@ -151,7 +155,9 @@ export class ShoppingCartMySQLRepository implements ShoppingCartRepository {
       SELECT
         sc.*, p.produto_nome, p.produto_imagem_url,
         lp.lote_codigo, lp.lote_quantidade_atual,
-        ip.itemPromocao_qtde, pj.pessoa_nome AS fornecedor_nome
+        ip.itemPromocao_qtde,
+        pj.pessoa_nome AS fornecedor_nome,
+        pr.JURIDICA_PESSOA_pessoa_id AS fornecedor_pessoa_id
       FROM SHOPPING_CART sc
       INNER JOIN PRODUTO p ON p.produto_id = sc.PRODUTO_produto_id
       INNER JOIN LOTEPROD lp ON lp.lote_id = sc.LOTEPROD_lote_id

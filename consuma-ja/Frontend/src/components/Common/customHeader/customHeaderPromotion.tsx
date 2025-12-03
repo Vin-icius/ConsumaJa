@@ -6,6 +6,7 @@ import { useSearch } from '../../../contexts/SearchHomeContext/searchHomeContext
 import SearchBar from '../searchBar/SearchBar';
 import { customHeaderStyles } from './customHeader.styled';
 import FilterDropdown from '../filters/FilterDropdown';
+import NotificationBell from '../notificationBell/NotificationBell';
 
 interface CustomHeaderPromotionProps {
   showFilter?: boolean;
@@ -115,9 +116,7 @@ const CustomHeaderPromotion: React.FC<CustomHeaderPromotionProps> = ({
           </TouchableOpacity>
         )}
       </View>
-      <TouchableOpacity style={[customHeaderStyles.notificationSpacing, isLargeScreen && { marginLeft: 20 }]}>
-        <Ionicons name="notifications-outline" size={24} color="white" />
-      </TouchableOpacity>
+      <NotificationBell containerStyle={[customHeaderStyles.notificationSpacing, isLargeScreen && { marginLeft: 20 }]} />
     </View>
   );
 };

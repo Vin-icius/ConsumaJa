@@ -188,25 +188,63 @@ const PromotionDetailScreen = () => {
     const isDisponivel = disponibilidadeTotal > 0;
 
     return (
-        <View style={promotionDetailStyles.productItem}>
+      <View style={promotionDetailStyles.productItem}>
+        <View style={promotionDetailStyles.productHeaderRow}>
           <Image
             source={getProductImageSource(item.produto.produto_imagem_url)}
             style={promotionDetailStyles.productImage}
             resizeMode="contain"
           />
+
           <View style={promotionDetailStyles.productInfo}>
             <Text style={promotionDetailStyles.productName}>{nomeCompleto}</Text>
             <Text style={promotionDetailStyles.productMeasure}>Medida: {item.produto.produto_medida || 'N/A'}</Text>
+
+            <View style={promotionDetailStyles.infoChipsRow}>
+              {item.produto.marca?.marca_nome && (
+                <Text style={promotionDetailStyles.infoChip}>Marca: {item.produto.marca.marca_nome}</Text>
+              )}
+              {item.produto.categoria?.categoria_nome && (
+                <Text style={promotionDetailStyles.infoChip}>Categoria: {item.produto.categoria.categoria_nome}</Text>
+              )}
+              {item.produto.tipo?.tipo_nome && (
+                <Text style={promotionDetailStyles.infoChip}>Tipo: {item.produto.tipo.tipo_nome}</Text>
+              )}
+            </View>
+
             {item.produto.produto_precoOriginal != null && (
-                <Text style={promotionDetailStyles.originalPrice}>De: R$ {Number(item.produto.produto_precoOriginal).toFixed(2)}</Text>
+              <Text style={promotionDetailStyles.originalPrice}>
+                De: R$ {Number(item.produto.produto_precoOriginal).toFixed(2)}
+              </Text>
             )}
-            <Text style={promotionDetailStyles.promoPrice}>Por: R$ {Number(item.itemPromocao_valor).toFixed(2)}</Text>
-            <Text style={promotionDetailStyles.productStock}>
-              Disponível (lote): {disponibilidadeLote} / Ofertado (promo): {disponibilidadePromo}
-            </Text>
-            <Text style={promotionDetailStyles.productStock}>Quantidade restante para venda: {disponibilidadeTotal}</Text>
-            <Text style={promotionDetailStyles.productValidity}>Validade Lote: {validadeString}</Text>
           </View>
+        </View>
+
+        <View style={promotionDetailStyles.productStatsRow}>
+          <View style={promotionDetailStyles.statBubble}>
+            <Text style={promotionDetailStyles.statLabel}>Lote disponível</Text>
+            <Text style={promotionDetailStyles.statValue}>{disponibilidadeLote}</Text>
+          </View>
+          <View style={promotionDetailStyles.statBubble}>
+            <Text style={promotionDetailStyles.statLabel}>Ofertado na promoção</Text>
+            <Text style={promotionDetailStyles.statValue}>{disponibilidadePromo}</Text>
+          </View>
+          <View style={promotionDetailStyles.statBubble}>
+            <Text style={promotionDetailStyles.statLabel}>Restante</Text>
+            <Text style={promotionDetailStyles.statValue}>{disponibilidadeTotal}</Text>
+          </View>
+          <View style={promotionDetailStyles.statBubble}>
+            <Text style={promotionDetailStyles.statLabel}>Validade</Text>
+            <Text style={promotionDetailStyles.statValue}>{validadeString}</Text>
+          </View>
+        </View>
+
+        <View style={promotionDetailStyles.productFooterRow}>
+          <View style={promotionDetailStyles.priceGroup}>
+            <Text style={promotionDetailStyles.priceLabel}>Preço promocional</Text>
+            <Text style={promotionDetailStyles.promoPrice}>R$ {Number(item.itemPromocao_valor).toFixed(2)}</Text>
+          </View>
+
           <TouchableOpacity
             style={[promotionDetailStyles.addToCartButton, !isDisponivel && promotionDetailStyles.disabledButton]}
             onPress={() => openQuantityModal(item)}
@@ -216,6 +254,7 @@ const PromotionDetailScreen = () => {
             <Text style={promotionDetailStyles.addToCartButtonText}>Adicionar</Text>
           </TouchableOpacity>
         </View>
+      </View>
     );
   };
 

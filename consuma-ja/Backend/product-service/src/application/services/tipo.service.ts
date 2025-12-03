@@ -9,13 +9,16 @@ export class TipoService {
   constructor(private tipoRepository: TipoRepository) {}
 
   async criarTipo(createDto: CreateTipoDto): Promise<Tipo> {
-      const nomeExistente = await this.tipoRepository.findByNome(createDto.tipo_nome);
+      const fornecedorId = createDto.fornecedor_pessoa_id ?? null;
+      const nomeExistente = await this.tipoRepository.findByNome(createDto.tipo_nome, fornecedorId);
       if (nomeExistente) {
           throw new AppError(`O tipo "${createDto.tipo_nome}" já existe (ID: ${nomeExistente.tipo_id}).`, 409);
       }
       try {
-          // DTO tem os dados necessários para CreateTipoData
-          const novoTipo = await this.tipoRepository.criar(createDto);
+          const novoTipo = await this.tipoRepository.criar({
+              tipo_nome: createDto.tipo_nome,
+              fornecedor_pessoa_id: fornecedorId,
+          });
           return novoTipo;
       } catch (error) {
           if (error instanceof AppError) throw error;
@@ -52,7 +55,10 @@ export class TipoService {
       const tipoExistente = await this.buscarTipoPorId(id); 
 
       if (updateDto.tipo_nome && updateDto.tipo_nome !== tipoExistente.tipo_nome) {
-          const outroTipoComNome = await this.tipoRepository.findByNome(updateDto.tipo_nome);
+          const outroTipoComNome = await this.tipoRepository.findByNome(
+              updateDto.tipo_nome,
+              tipoExistente.fornecedor_pessoa_id ?? null
+          );
           if (outroTipoComNome && outroTipoComNome.tipo_id !== id) {
                throw new AppError(`O nome de tipo "${updateDto.tipo_nome}" já está em uso pelo tipo ID ${outroTipoComNome.tipo_id}.`, 409);
           }

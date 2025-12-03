@@ -1,153 +1,220 @@
 // src/screens/Product/ProductListScreen.tsx
 "use client"
 
-import React, { useState, useCallback, useEffect } from "react" // Adicionado useEffect
+import React, { useState, useCallback, useEffect } from "react"
 import {
   View,
   Text,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  FlatList,
   TextInput,
   RefreshControl,
-  Platform, // Adicionado para estilo do Picker
+  ScrollView,
 } from "react-native"
 import { useNavigation, useFocusEffect } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
-import produtoService from "../../services/produtoService" // Garanta que o caminho está correto
-import { Picker } from '@react-native-picker/picker'; // Importar Picker
+import { Picker } from "@react-native-picker/picker"
+
+import produtoService from "../../services/produtoService"
+import pessoaService from "../../services/pessoaService"
 import { productListStyles } from "../../common/styles/Product/productListScreen.styled"
+import {
+  ProductManagementProvider,
+  useProductManagement,
+  ProductStatusFilter,
+  ProductActiveFilter,
+  SupplierOption,
+} from "../../contexts/ProductContext/productManagementContext"
+import { useApplication } from "../../contexts/ApplicationContext/ApplicationContext"
+import ProductTable, { ProductTableItem } from "../../components/Product/ProductTable"
 
-// Definir tipo para o item Produto
-interface ProdutoListItem {
-  produto_id: number
-  produto_nome: string
-  produto_status: 'APROVADO' | 'PENDENTE' | 'REJEITADO' // Usar o tipo exato
-  produto_precoOriginal: number
-  ativo: boolean
-  categoria?: { categoria_id?: number; categoria_nome?: string } | null // Adicionado categoria_id
-  marca?: { marca_id?: number; marca_nome?: string } | null       // Adicionado marca_id
-  tipo?: { tipo_id?: number; tipo_nome?: string } | null          // Adicionado tipo_id
-}
-
-// Tipo para a resposta paginada do serviço
 interface PaginatedProdutosResponse {
-    data: ProdutoListItem[];
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
+  data?: ProductTableItem[]
+  total?: number
+  page?: number
+  limit?: number
+  totalPages?: number
 }
 
-const ITEMS_PER_PAGE = 15; // Quantos itens carregar por página
+const ITEMS_PER_PAGE = 15
+const SUPPLIER_PAGE_LIMIT = 50
 
-const ProductListScreen = () => {
+const ProductListScreenContent = () => {
   const navigation = useNavigation<any>()
+  const { user } = useApplication()
+  const isAdmin = user?.pessoa_tipo === "Admin"
+  const loggedSupplierId = !isAdmin && user?.pessoa_id ? Number(user.pessoa_id) : null
 
-  // Estados
-  const [produtos, setProdutos] = useState<ProdutoListItem[]>([])
-  const [loading, setLoading] = useState(false) // Loading principal para primeira carga/nova busca
-  const [loadingMore, setLoadingMore] = useState(false); // Loading para "carregar mais"
+  const [produtos, setProdutos] = useState<ProductTableItem[]>([])
+  const [loading, setLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [filtroStatusProduto, setFiltroStatusProduto] = useState<'APROVADO' | 'PENDENTE' | 'REJEITADO' | ''>(''); // '' para todos
-  const [filtroAtivo, setFiltroAtivo] = useState<string>(""); // "" = todos, "true" = ativos, "false" = inativos
+  const [loadingSuppliers, setLoadingSuppliers] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalProdutos, setTotalProdutos] = useState(0)
 
-  // Estados de Paginação
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalProdutos, setTotalProdutos] = useState(0);
+  const {
+    searchQuery,
+    setSearchQuery,
+    statusFilter,
+    setStatusFilter,
+    ativoFilter,
+    setAtivoFilter,
+    selectedSupplierId,
+    setSelectedSupplierId,
+    supplierOptions,
+    setSupplierOptions,
+    resetFilters,
+    setPerformSearch,
+    isSearching,
+    setIsSearching,
+  } = useProductManagement()
 
+  const fetchProdutos = useCallback(
+    async (page = 1, isRefreshing = false, isNewSearchOrFilter = false) => {
+      const shouldFlagSearching = page === 1 || isRefreshing || isNewSearchOrFilter
 
-  // Carregar produtos
-  const fetchProdutos = useCallback(async (page = 1, isRefreshing = false, isNewSearchOrFilter = false) => {
-    if (page === 1 && !isRefreshing) setLoading(true); // Loading principal
-    if (isRefreshing) setRefreshing(true);
-    if (page > 1) setLoadingMore(true); // Loading para paginação
-    setError(null);
+      if (page === 1 && !isRefreshing) setLoading(true)
+      if (isRefreshing) setRefreshing(true)
+      if (page > 1 && !isNewSearchOrFilter) setLoadingMore(true)
+      if (shouldFlagSearching) setIsSearching(true)
+      setError(null)
 
-    try {
-      const params: any = { page, limit: ITEMS_PER_PAGE };
-      if (searchQuery.trim()) {
-        params.nomeQuery = searchQuery.trim();
+      try {
+        const params: Record<string, any> = { page, limit: ITEMS_PER_PAGE }
+        const trimmedQuery = searchQuery.trim()
+        if (trimmedQuery) params.nomeQuery = trimmedQuery
+        if (ativoFilter !== "all") params.ativo = ativoFilter === "true"
+        if (statusFilter !== "ALL") params.produto_status = statusFilter
+        if (selectedSupplierId) params.fornecedorId = selectedSupplierId
+
+        const response: PaginatedProdutosResponse = await produtoService.listarProdutos(params)
+        const payload = Array.isArray(response?.data)
+          ? response.data
+          : Array.isArray(response as any)
+            ? (response as unknown as ProductTableItem[])
+            : []
+
+        setProdutos((prev) => (page === 1 || isNewSearchOrFilter ? payload : [...prev, ...payload]))
+        setTotalPages(response.totalPages || Math.max(1, Math.ceil((response.total ?? payload.length) / ITEMS_PER_PAGE)))
+        setTotalProdutos(response.total ?? payload.length)
+        setCurrentPage(response.page || page)
+      } catch (err: any) {
+        console.error("[ProductListScreen] Falha ao carregar produtos", err?.response?.data || err?.message || err)
+        setError("Não foi possível carregar os produtos.")
+        if (page === 1 || isNewSearchOrFilter) setProdutos([])
+      } finally {
+        setLoading(false)
+        setRefreshing(false)
+        setLoadingMore(false)
+        if (shouldFlagSearching) {
+          setIsSearching(false)
+        }
       }
-      if (filtroAtivo !== "") {
-        params.ativo = filtroAtivo; // Envia "true" ou "false" como string
-      }
-      if (filtroStatusProduto !== "") {
-        params.produto_status = filtroStatusProduto;
-      }
+    },
+    [ativoFilter, searchQuery, selectedSupplierId, setIsSearching, statusFilter],
+  )
 
-      const response: PaginatedProdutosResponse = await produtoService.listarProdutos(params);
-
-      if (response && response.data) {
-        setProdutos(page === 1 || isNewSearchOrFilter ? response.data : [...produtos, ...response.data]);
-        setTotalPages(response.totalPages || 0);
-        setCurrentPage(response.page || 1);
-        setTotalProdutos(response.total || 0);
-      } else {
-        // Se a resposta não tem 'data', pode ser um array direto (ajuste conforme seu serviço)
-        // ou um erro que não foi pego pelo catch
-        setProdutos(page === 1 || isNewSearchOrFilter ? (response as any || []) : produtos);
-        setTotalPages(0);
-        setCurrentPage(1);
-        setTotalProdutos(0);
-      }
-    } catch (err: any) {
-      setError("Não foi possível carregar os produtos.");
-      if (page === 1 || isNewSearchOrFilter) setProdutos([]); // Limpa em caso de erro na busca inicial/nova
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-      setLoadingMore(false);
-    }
-  }, [searchQuery, filtroAtivo, filtroStatusProduto, produtos]); // 'produtos' é dependência para o append do 'carregar mais'
-
-  // Efeito para buscar quando filtros mudam ou ao focar
   useEffect(() => {
-    fetchProdutos(1, false, true); // Força nova busca da página 1
-  }, [searchQuery, filtroAtivo, filtroStatusProduto]); // Não incluir fetchProdutos aqui para evitar loop
+    setPerformSearch(() => () => fetchProdutos(1, false, true))
+  }, [fetchProdutos, setPerformSearch])
 
   useFocusEffect(
     useCallback(() => {
-      fetchProdutos(1, true, true); // Força refresh e nova busca da página 1
-    }, []) // Executa ao focar
-  );
+      fetchProdutos(1, true, true)
+    }, [fetchProdutos]),
+  )
 
+  useEffect(() => {
+    const seedSuppliers = async () => {
+      if (!isAdmin && loggedSupplierId) {
+        setSelectedSupplierId(loggedSupplierId)
+        setSupplierOptions([
+          {
+            pessoa_id: loggedSupplierId,
+            pessoa_nome: user?.pessoa_nome || "Seu cadastro",
+          },
+        ])
+        return
+      }
+
+      if (!isAdmin) {
+        return
+      }
+
+      const extractSuppliers = (payload: any): SupplierOption[] => {
+        const rows = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : []
+        return rows
+          .map((row: any) => ({
+            pessoa_id: Number(row.pessoa_id),
+            pessoa_nome: row.pessoa_nome || row.nome || "Fornecedor",
+          }))
+          .filter((supplier: SupplierOption) => Number.isFinite(supplier.pessoa_id))
+      }
+
+      setLoadingSuppliers(true)
+      try {
+        const baseParams = {
+          pessoa_tipo: "Juridica",
+          pessoa_status: 1,
+          limit: SUPPLIER_PAGE_LIMIT,
+        }
+
+        const firstResponse = await pessoaService.listarPessoas({ ...baseParams, page: 1 })
+        const totalPages = firstResponse?.totalPages || 1
+        let aggregated = extractSuppliers(firstResponse)
+
+        if (totalPages > 1) {
+          for (let page = 2; page <= totalPages; page++) {
+            try {
+              const pagedResponse = await pessoaService.listarPessoas({ ...baseParams, page })
+              aggregated = aggregated.concat(extractSuppliers(pagedResponse))
+            } catch (pageError) {
+              console.error(`[ProductListScreen] Falha ao carregar fornecedores da página ${page}`, pageError)
+              break
+            }
+          }
+        }
+
+        setSupplierOptions(aggregated)
+      } catch (err) {
+        console.error("[ProductListScreen] Não foi possível carregar os fornecedores", err)
+      } finally {
+        setLoadingSuppliers(false)
+      }
+    }
+
+    seedSuppliers()
+  }, [isAdmin, loggedSupplierId, setSelectedSupplierId, setSupplierOptions, user?.pessoa_nome])
 
   const handleRefresh = () => {
-    setCurrentPage(1); // Reseta a página
-    fetchProdutos(1, true, true);
-  };
-
-  const handleLoadMore = () => {
-    if (!loadingMore && !refreshing && currentPage < totalPages) {
-      fetchProdutos(currentPage + 1, false, false); // Busca próxima página, não é refresh, não é nova busca
-    }
-  };
+    setCurrentPage(1)
+    fetchProdutos(1, true, true)
+  }
 
   const pesquisarProdutos = () => {
-    setCurrentPage(1); // Reseta para a primeira página ao fazer nova busca
-    fetchProdutos(1, false, true);
-  };
+    setCurrentPage(1)
+    fetchProdutos(1, false, true)
+  }
 
   const limparFiltros = () => {
-    setSearchQuery("");
-    setFiltroAtivo("");
-    setFiltroStatusProduto("");
-    setCurrentPage(1); // Reseta a página
-    // A busca será acionada pelo useEffect quando os estados de filtro mudarem para ""
-  };
+    setCurrentPage(1)
+    resetFilters()
+    if (!isAdmin && loggedSupplierId) {
+      setSelectedSupplierId(loggedSupplierId)
+    }
+  }
 
-  const handleEdit = (produto: ProdutoListItem) => {
-    navigation.navigate("ProductForm", { produtoParaEditarId: produto.produto_id });
-  };
+  const handleEdit = (produto: ProductTableItem) => {
+    navigation.navigate("ProductForm", { produtoParaEditarId: produto.produto_id })
+  }
 
-  const handleDelete = (produto: ProdutoListItem) => {
+  const handleDelete = (produto: ProductTableItem) => {
     Alert.alert(
-      "Confirmar Exclusão",
+      "Confirmar ação",
       `Tem certeza que deseja desativar o produto "${produto.produto_nome}"?`,
       [
         { text: "Cancelar", style: "cancel" },
@@ -155,162 +222,225 @@ const ProductListScreen = () => {
           text: "Desativar",
           style: "destructive",
           onPress: async () => {
-            setLoading(true); // Pode usar um loading específico para a ação
+            setLoading(true)
             try {
-              await produtoService.excluirProduto(produto.produto_id);
-              Alert.alert("Sucesso", "Produto desativado!");
-              fetchProdutos(1, false, true); // Recarrega da primeira página
+              await produtoService.excluirProduto(produto.produto_id)
+              Alert.alert("Sucesso", "Produto desativado com sucesso.")
+              fetchProdutos(currentPage, false, true)
             } catch (err: any) {
-              const message = err.response?.data?.message || err.message || "Não foi possível desativar.";
-              Alert.alert("Erro", message);
+              const message = err?.response?.data?.message || err?.message || "Não foi possível desativar o produto."
+              Alert.alert("Erro", message)
             } finally {
-              setLoading(false);
+              setLoading(false)
             }
           },
         },
       ],
     )
-  };
+  }
 
   const criarNovoProduto = () => {
-    navigation.navigate("ProductForm");
-  };
+    navigation.navigate("ProductForm")
+  }
 
-  const renderItem = ({ item }: { item: ProdutoListItem }) => (
-    <View style={[productListStyles.produtoCard, item.ativo && !productListStyles.produtoInativo]}>
-      <View style={productListStyles.produtoHeader}>
-        <Text style={productListStyles.produtoNome} numberOfLines={2}>{item.produto_nome}</Text>
-        <View style={productListStyles.produtoActions}>
-          <TouchableOpacity style={productListStyles.actionButton} onPress={() => handleEdit(item)}>
-            <Ionicons name="pencil-outline" size={22} color="#007bff" />
-          </TouchableOpacity>
-          {item.ativo && ( // Só mostra botão de desativar se estiver ativo
-            <TouchableOpacity style={productListStyles.actionButton} onPress={() => handleDelete(item)}>
-              <Ionicons name="trash-outline" size={22} color="#dc3545" />
-            </TouchableOpacity>
-          )}
-          {/* Adicionar botão para REATIVAR se necessário */}
-        </View>
-      </View>
-      <View style={productListStyles.produtoInfo}>
-        <Text style={productListStyles.produtoPreco}>
-          <Text style={productListStyles.infoLabel}>Preço: </Text>
-          R$ {Number(item.produto_precoOriginal).toFixed(2)}
-        </Text>
-        <Text style={[
-            productListStyles.produtoStatus,
-            item.produto_status === 'APROVADO' && productListStyles.statusAprovado,
-            item.produto_status === 'PENDENTE' && productListStyles.statusPendente,
-            item.produto_status === 'REJEITADO' && productListStyles.statusRejeitado,
-        ]}>
-          <Text style={productListStyles.infoLabel}>Status: </Text>
-          {item.produto_status} {!item.ativo && "(INATIVO)"}
-        </Text>
-        {item.categoria?.categoria_nome && (<Text style={productListStyles.produtoDetalhe}><Text style={productListStyles.infoLabel}>Cat: </Text>{item.categoria.categoria_nome}</Text>)}
-        {item.marca?.marca_nome && (<Text style={productListStyles.produtoDetalhe}><Text style={productListStyles.infoLabel}>Marca: </Text>{item.marca.marca_nome}</Text>)}
-        {item.tipo?.tipo_nome && (<Text style={productListStyles.produtoDetalhe}><Text style={productListStyles.infoLabel}>Tipo: </Text>{item.tipo.tipo_nome}</Text>)}
-      </View>
-    </View>
-  );
+  const handlePageChange = (direction: "prev" | "next") => {
+    if (direction === "prev" && currentPage > 1) {
+      const targetPage = currentPage - 1
+      setCurrentPage(targetPage)
+      fetchProdutos(targetPage, false, false)
+    }
+    if (direction === "next" && currentPage < totalPages) {
+      const targetPage = currentPage + 1
+      setCurrentPage(targetPage)
+      fetchProdutos(targetPage, false, false)
+    }
+  }
 
-  const renderListHeader = () => (
-    <View style={productListStyles.filtersContainer}>
-        <View style={productListStyles.searchContainer}>
-          <TextInput
-            style={productListStyles.searchInput}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Buscar por nome do produto..."
-            returnKeyType="search"
-            onSubmitEditing={pesquisarProdutos} // Busca ao pressionar enter
-          />
-          <TouchableOpacity style={productListStyles.searchButton} onPress={pesquisarProdutos}>
-            <Ionicons name="search" size={20} color="#fff" />
-          </TouchableOpacity>
-        </View>
+  const filtersApplied = Boolean(
+    searchQuery.trim() ||
+      statusFilter !== "ALL" ||
+      ativoFilter !== "all" ||
+      (isAdmin && selectedSupplierId),
+  )
 
-        <View style={productListStyles.pickerRow}>
-            <View style={productListStyles.pickerWrapper}>
-                <Picker
-                    selectedValue={filtroStatusProduto}
-                    onValueChange={(itemValue) => { setCurrentPage(1); setFiltroStatusProduto(itemValue as any);}}
-                    style={productListStyles.picker}
-                    prompt="Filtrar por Status do Produto"
-                >
-                    <Picker.Item label="Status (Todos)" value="" />
-                    <Picker.Item label="Aprovado" value="APROVADO" />
-                    <Picker.Item label="Pendente" value="PENDENTE" />
-                    <Picker.Item label="Rejeitado" value="REJEITADO" />
-                </Picker>
-            </View>
-            <View style={productListStyles.pickerWrapper}>
-                <Picker
-                    selectedValue={filtroAtivo}
-                    onValueChange={(itemValue) => { setCurrentPage(1); setFiltroAtivo(itemValue as string);}}
-                    style={productListStyles.picker}
-                    prompt="Filtrar por Atividade"
-                >
-                    <Picker.Item label="Atividade (Todos)" value="" />
-                    <Picker.Item label="Ativos" value="true" />
-                    <Picker.Item label="Inativos" value="false" />
-                </Picker>
-            </View>
-        </View>
-
-        {(searchQuery || filtroAtivo !== "" || filtroStatusProduto !== "") && (
-          <TouchableOpacity style={productListStyles.clearFiltersButton} onPress={limparFiltros}>
-            <Ionicons name="close-circle-outline" size={22} color="#6c757d" />
-            <Text style={productListStyles.clearFiltersText}>Limpar Filtros</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-  );
-
+  const showingStart = produtos.length ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0
+  const showingEnd = produtos.length ? showingStart + produtos.length - 1 : 0
 
   return (
     <View style={productListStyles.container}>
       <View style={productListStyles.header}>
-        <Text style={productListStyles.title}>Gerenciar Produtos</Text>
+        <View>
+          <Text style={productListStyles.title}>Gerenciar Produtos</Text>
+          <Text style={productListStyles.subtitle}>Pesquise, filtre e acompanhe seus cadastros</Text>
+        </View>
         <TouchableOpacity style={productListStyles.addButton} onPress={criarNovoProduto}>
-          <Ionicons name="add" size={22} color="#fff" />
-          <Text style={productListStyles.addButtonText}>Novo</Text>
+          <Ionicons name="add" size={14} color="#fff" />
         </TouchableOpacity>
       </View>
 
-      {loading && produtos.length === 0 && !refreshing ? (
-        <ActivityIndicator size="large" color="#007bff" style={productListStyles.centeredLoading} />
-      ) : error && produtos.length === 0 ? (
-        <View style={productListStyles.centeredMessageContainer}>
-            <Ionicons name="alert-circle-outline" size={60} color="#dc3545" />
-            <Text style={productListStyles.errorText}>{error}</Text>
-            <TouchableOpacity onPress={() => fetchProdutos(1, false, true)} style={productListStyles.retryButton}>
-                <Text style={productListStyles.retryButtonText}>Tentar Novamente</Text>
-            </TouchableOpacity>
-        </View>
-      ) : (
-        <FlatList
-          data={produtos}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.produto_id.toString()}
-          ListHeaderComponent={renderListHeader} // Adiciona os filtros no topo
-          contentContainerStyle={produtos.length === 0 ? productListStyles.emptyContainerCentralized : productListStyles.listContainer}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={["#007bff"]} />}
-          ListEmptyComponent={
-            !loading && !error ? (
-              <View style={productListStyles.emptyContainer}>
-                <Ionicons name="cube-outline" size={60} color="#adb5bd" />
-                <Text style={productListStyles.emptyText}>Nenhum produto encontrado.</Text>
-                <Text style={productListStyles.emptySubText}>Tente ajustar os filtros ou adicione um novo produto.</Text>
+      <ScrollView
+        style={productListStyles.scrollArea}
+        contentContainerStyle={productListStyles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={["#0d6efd"]} />}
+      >
+        <View style={productListStyles.filtersCard}>
+          <View style={productListStyles.searchRow}>
+            <Ionicons name="search" size={18} color="#adb5bd" style={productListStyles.searchIcon} />
+            <TextInput
+              style={productListStyles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Buscar por nome do produto"
+              returnKeyType="search"
+              onSubmitEditing={pesquisarProdutos}
+            />
+          </View>
+
+          <View style={productListStyles.filtersRow}>
+            <View style={productListStyles.filterBlock}>
+              <Text style={productListStyles.filterLabel}>Status</Text>
+              <Picker
+                selectedValue={statusFilter}
+                onValueChange={(value) => {
+                  setCurrentPage(1)
+                  setStatusFilter(value as ProductStatusFilter)
+                }}
+                style={productListStyles.filterPicker}
+              >
+                <Picker.Item label="Todos" value="ALL" />
+                <Picker.Item label="Aprovados" value="APROVADO" />
+                <Picker.Item label="Pendentes" value="PENDENTE" />
+                <Picker.Item label="Rejeitados" value="REJEITADO" />
+              </Picker>
+            </View>
+
+            <View style={productListStyles.filterBlock}>
+              <Text style={productListStyles.filterLabel}>Atividade</Text>
+              <Picker
+                selectedValue={ativoFilter}
+                onValueChange={(value) => {
+                  setCurrentPage(1)
+                  setAtivoFilter(value as ProductActiveFilter)
+                }}
+                style={productListStyles.filterPicker}
+              >
+                <Picker.Item label="Todos" value="all" />
+                <Picker.Item label="Ativos" value="true" />
+                <Picker.Item label="Inativos" value="false" />
+              </Picker>
+            </View>
+
+            {isAdmin && (
+              <View style={productListStyles.filterBlockWide}>
+                <Text style={productListStyles.filterLabel}>Fornecedor</Text>
+                <Picker
+                  selectedValue={selectedSupplierId ?? "__all"}
+                  onValueChange={(value) => {
+                    setCurrentPage(1)
+                    setSelectedSupplierId(value === "__all" ? null : Number(value))
+                  }}
+                  enabled={!loadingSuppliers}
+                  style={productListStyles.filterPicker}
+                >
+                  <Picker.Item label={loadingSuppliers ? "Carregando fornecedores..." : "Todos"} value="__all" />
+                  {supplierOptions.map((supplier) => (
+                    <Picker.Item
+                      key={supplier.pessoa_id}
+                      label={supplier.pessoa_nome}
+                      value={supplier.pessoa_id}
+                    />
+                  ))}
+                </Picker>
               </View>
-            ) : null
-          }
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.5} // Chama onEndReached quando estiver a 50% do final
-          ListFooterComponent={loadingMore ? <ActivityIndicator style={{ marginVertical: 20 }} color="#007bff"/> : null}
-        />
-      )}
+            )}
+          </View>
+
+          {filtersApplied && (
+            <TouchableOpacity style={productListStyles.clearFiltersButton} onPress={limparFiltros}>
+              <Ionicons name="close-circle-outline" size={18} color="#495057" />
+              <Text style={productListStyles.clearFiltersText}>Limpar filtros</Text>
+            </TouchableOpacity>
+          )}
+
+          {isSearching && (
+            <View style={productListStyles.searchingBadge}>
+              <ActivityIndicator size="small" color="#0d6efd" />
+              <Text style={productListStyles.searchingText}>Atualizando resultados...</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={productListStyles.tableCard}>
+          {error && produtos.length === 0 ? (
+            <View style={productListStyles.errorState}>
+              <Ionicons name="alert-circle" size={54} color="#e03131" />
+              <Text style={productListStyles.errorTitle}>Ops! {"\n"}Algo saiu errado.</Text>
+              <Text style={productListStyles.errorSubtitle}>{error}</Text>
+              <TouchableOpacity style={productListStyles.retryButton} onPress={() => fetchProdutos(1, false, true)}>
+                <Text style={productListStyles.retryButtonText}>Tentar novamente</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              <ProductTable
+                produtos={produtos}
+                isAdminView={isAdmin}
+                onEdit={handleEdit}
+                onDeactivate={handleDelete}
+              />
+
+              <View style={productListStyles.tableFooter}>
+                <View>
+                  <Text style={productListStyles.paginationLabel}>
+                    {totalProdutos > 0
+                      ? `Mostrando ${showingStart} - ${showingEnd} de ${totalProdutos}`
+                      : "Nenhum produto encontrado"}
+                  </Text>
+                </View>
+
+                <View style={productListStyles.paginationControls}>
+                  <TouchableOpacity
+                    style={[productListStyles.pageButton, currentPage === 1 && productListStyles.pageButtonDisabled]}
+                    disabled={currentPage === 1 || loading}
+                    onPress={() => handlePageChange("prev")}
+                  >
+                    <Ionicons name="chevron-back" size={16} color="#fff" />
+                  </TouchableOpacity>
+                  <Text style={productListStyles.pageIndicator}>
+                    {Math.min(currentPage, totalPages || 1)} / {Math.max(totalPages, 1)}
+                  </Text>
+                  <TouchableOpacity
+                    style={[
+                      productListStyles.pageButton,
+                      currentPage >= totalPages && productListStyles.pageButtonDisabled,
+                    ]}
+                    disabled={currentPage >= totalPages || loadingMore || totalPages === 0}
+                    onPress={() => handlePageChange("next")}
+                  >
+                    <Ionicons name="chevron-forward" size={16} color="#fff" />
+                  </TouchableOpacity>
+                  {loadingMore && <ActivityIndicator style={{ marginLeft: 12 }} size="small" color="#0d6efd" />}
+                </View>
+              </View>
+            </>
+          )}
+
+          {loading && produtos.length === 0 && (
+            <View style={productListStyles.tableOverlay}>
+              <ActivityIndicator size="large" color="#0d6efd" />
+              <Text style={productListStyles.overlayText}>Carregando produtos...</Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
     </View>
   )
 }
 
-export default ProductListScreen;
+const ProductListScreen = () => (
+  <ProductManagementProvider>
+    <ProductListScreenContent />
+  </ProductManagementProvider>
+)
+
+export default ProductListScreen

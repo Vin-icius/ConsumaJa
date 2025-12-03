@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, TouchableOpacity, useWindowDimensions, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
@@ -7,6 +7,7 @@ import SearchBar from '../searchBar/SearchBar';
 import { customHeaderStyles } from './customHeader.styled';
 import FilterDropdown from '../filters/FilterDropdown';
 import { useCart } from '../../../contexts/CartContext/cartContext';
+import NotificationBell from '../notificationBell/NotificationBell';
 
 interface CustomHeaderProps {
   showFilter?: boolean;
@@ -18,22 +19,14 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({ showFilter = false, showAdd
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
   const isLargeScreen = width > 768;
-  const { searchQuery, setSearchQuery, performSearch, searchType, setSearchType, selectedCategoriaId, setSelectedCategoriaId, categoriasFiltro } = useSearch();
+  const { searchQuery, setSearchQuery, performSearch, searchType, categoriasFiltro, selectedFilters, setSelectedFilters } = useSearch();
   const { getTotalItems } = useCart();
-  const [selectedFilters, setSelectedFilters] = useState<any[]>([]);
 
   if (!isLargeScreen) {
     return null;
   }
 
   const totalItems = getTotalItems();
-
-  useEffect(() => {
-    const hasFornecedor = selectedFilters.includes('fornecedor');
-    const categorias = selectedFilters.filter(v => typeof v === 'number');
-    setSearchType(hasFornecedor ? 'fornecedor' : 'promocao');
-    setSelectedCategoriaId(categorias[0] || undefined);
-  }, [selectedFilters, setSearchType, setSelectedCategoriaId]);
 
   const getPlaceholder = () => {
     if (searchType === 'produto') return 'Buscar produtos...';
@@ -123,9 +116,7 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({ showFilter = false, showAdd
           )}
         </View>
       </TouchableOpacity>
-      <TouchableOpacity style={[customHeaderStyles.notificationSpacing, isLargeScreen && { marginLeft: 20 }]}>
-        <Ionicons name="notifications-outline" size={24} color="white" />
-      </TouchableOpacity>
+      <NotificationBell containerStyle={[customHeaderStyles.notificationSpacing, isLargeScreen && { marginLeft: 20 }]} />
     </View>
   );
 };

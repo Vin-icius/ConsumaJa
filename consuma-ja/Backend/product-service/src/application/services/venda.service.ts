@@ -27,6 +27,17 @@ export class VendaService {
       throw new AppError('Todos os itens devem pertencer à mesma promoção.', 400);
     }
     const promocaoId = promocaoIds[0];
+    const promocaoDetalhada = await this.promocaoRepository.buscarPorIdComItens(promocaoId, false);
+    if (!promocaoDetalhada) {
+      throw new AppError(`Promoção ${promocaoId} não encontrada ou inativa.`, 400);
+    }
+    if (!promocaoDetalhada.itens || promocaoDetalhada.itens.length === 0) {
+      throw new AppError('A promoção selecionada não possui itens ativos.', 400);
+    }
+    const fornecedorId = promocaoDetalhada.JURIDICA_PESSOA_pessoa_id || promocaoDetalhada.fornecedor?.pessoa_id;
+    if (!fornecedorId) {
+      throw new AppError('Não foi possível identificar o fornecedor da promoção.', 400);
+    }
 
     // Validar itens
     for (const item of dto.itens) {
@@ -35,10 +46,7 @@ export class VendaService {
       if (!lote) throw new AppError(`Lote ${item.lote_id} não encontrado.`, 400);
 
       // Verificar se lote está em promoção ativa
-      const promocao = await this.promocaoRepository.buscarPorIdComItens(item.promocao_id, false);
-      if (!promocao) throw new AppError(`Promoção ${item.promocao_id} não encontrada ou inativa.`, 400);
-
-      const itemPromocao = promocao.itens?.find(i => i.LOTEPROD_lote_id === item.lote_id);
+      const itemPromocao = promocaoDetalhada.itens?.find(i => i.LOTEPROD_lote_id === item.lote_id);
       if (!itemPromocao) throw new AppError(`Lote ${item.lote_id} não está na promoção ${item.promocao_id}.`, 400);
 
       // Verificar valor_unitario
@@ -60,12 +68,27 @@ export class VendaService {
     const quantidadeTotal = dto.quantidade_total_itens || dto.itens.reduce((sum, item) => sum + item.quantidade, 0);
     const valorTotal = dto.valor_total || dto.itens.reduce((sum, item) => sum + (item.quantidade * item.valor_unitario), 0);
 
+    const retiradaNoFornecedor = Boolean(dto.retirada_no_fornecedor);
+    if (!retiradaNoFornecedor && (!dto.endereco_id || dto.endereco_id <= 0)) {
+      throw new AppError('Selecione um endereço válido para entrega.', 400);
+    }
+
+    const pagamentoPayload: Record<string, any> | undefined = (dto as any)?.pagamento;
+    const metodoPagamento = dto.metodo_pagamento || pagamentoPayload?.metodo || null;
+    const parcelas = dto.parcelas ?? pagamentoPayload?.parcelas ?? 1;
+    const detalhesPagamento = dto.detalhes_pagamento || pagamentoPayload || null;
+
     const dataParaRepo: CreateVendaRepoData = {
       venda_data: dto.data_venda ? new Date(dto.data_venda) : new Date(),
       venda_total: valorTotal,
       promocao_id: promocaoId,
+      fornecedor_pessoa_id: fornecedorId,
       pessoa_id: dto.pessoa_id,
-      endereco_id: dto.endereco_id,
+      endereco_id: retiradaNoFornecedor ? null : dto.endereco_id ?? null,
+      retirada_no_fornecedor: retiradaNoFornecedor,
+      metodo_pagamento: metodoPagamento,
+      parcelas,
+      detalhes_pagamento: detalhesPagamento,
       itens: dto.itens.map(item => ({
         lote_id: item.lote_id,
         quantidade: item.quantidade,

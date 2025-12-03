@@ -28,6 +28,23 @@ export const homeStyles = StyleSheet.create({
     backgroundColor: "#f0f0f0",
     width: "100%",
   },
+  minhasComprasButton: {
+    marginBottom: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 10,
+    backgroundColor: '#2F4F4F',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'stretch',
+  },
+  minhasComprasText: {
+    color: '#fff',
+    fontWeight: '600',
+    marginLeft: 8,
+    fontSize: 15,
+  },
   searchFilterContainer: {
     flexDirection: "row",
     alignItems: "center",

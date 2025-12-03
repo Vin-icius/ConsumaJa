@@ -65,7 +65,8 @@
           descricao: createDto.descricao ?? null,
           CATEGORIA_PRODUTO_categoria_id: createDto.CATEGORIA_PRODUTO_categoria_id,
           MARCA_PRODUTO_marca_id: createDto.MARCA_PRODUTO_marca_id,
-          TIPO_PRODUTO_tipo_id: createDto.TIPO_PRODUTO_tipo_id
+                    TIPO_PRODUTO_tipo_id: createDto.TIPO_PRODUTO_tipo_id,
+                    fornecedor_pessoa_id: createDto.fornecedor_pessoa_id,
       };
       const novoProduto = await this.produtoRepository.criar(dataToCreate);
       return novoProduto;

@@ -1,6 +1,6 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LOCATION_API_URL, PRODUCT_API_URL, PERSON_API_URL } from '../constants/api';
+import { LOCATION_API_URL, PRODUCT_API_URL, PERSON_API_URL, ORDER_API_URL } from '../constants/api';
+import { getAuthToken } from '../utils/authTokenStore';
 
 // --- Instância para Location Service ---
 const locationApiClient = axios.create({
@@ -14,6 +14,12 @@ const productApiClient = axios.create({
   headers: { Accept: 'application/json' },
 });
 
+// --- Instância para Order Service (checkout / vendas) ---
+const orderApiClient = axios.create({
+  baseURL: ORDER_API_URL,
+  headers: { Accept: 'application/json' },
+});
+
 // --- Instância para Pessoa Service ---
 const pessoaApiClient = axios.create({
   baseURL: PERSON_API_URL, // <<< USA A NOVA URL BASE
@@ -24,23 +30,32 @@ const pessoaApiClient = axios.create({
 // --- Interceptores ---
 
 // Interceptor para adicionar Token JWT (Deve ser aplicado aos clientes que precisam dele)
+const EXCLUDED_TOKEN_ENDPOINTS = ['/auth/login', '/auth/sessao/validar'];
+
 const addAuthTokenInterceptor = (client) => {
   client.interceptors.request.use(
-    async (config) => {
-      const token = await AsyncStorage.getItem('userToken');
-      if (token && !config.url?.includes('/auth/login')) {
-        console.log('[API Interceptor] Adicionando token à requisição para:', config.url);
+    (config) => {
+      const targetUrl = config?.url ?? '';
+      const shouldAttachToken = !EXCLUDED_TOKEN_ENDPOINTS.some((endpoint) => targetUrl.includes(endpoint));
+      const token = shouldAttachToken ? getAuthToken() : null;
+
+      if (token) {
+        config.headers = config.headers ?? {};
+        console.log('[API Interceptor] Adicionando token à requisição para:', targetUrl);
         config.headers.Authorization = `Bearer ${token}`;
       }
+
       return config;
-    }, (error) => Promise.reject(error)
+    },
+    (error) => Promise.reject(error),
   );
 };
 
 // Aplicar interceptor aos clientes que acessarão rotas protegidas
 // addAuthTokenInterceptor(locationApiClient); // Aplicar se location tiver rotas protegidas
-addAuthTokenInterceptor(productApiClient); // Aplicar se product tiver rotas protegidas
-// Não aplicar em pessoaApiClient se /auth/login for a única rota ou se ele tiver rotas públicas e protegidas
+addAuthTokenInterceptor(productApiClient);
+addAuthTokenInterceptor(pessoaApiClient);
+addAuthTokenInterceptor(orderApiClient);
 
 // Interceptor de Resposta para Erros
 const setupErrorInterceptor = (client) => {
@@ -61,7 +76,8 @@ const setupErrorInterceptor = (client) => {
 setupErrorInterceptor(locationApiClient);
 setupErrorInterceptor(productApiClient);
 setupErrorInterceptor(pessoaApiClient);
+setupErrorInterceptor(orderApiClient);
 
 
 // --- Exportar as instâncias ---
-export { locationApiClient, productApiClient, pessoaApiClient };
+export { locationApiClient, productApiClient, pessoaApiClient, orderApiClient };

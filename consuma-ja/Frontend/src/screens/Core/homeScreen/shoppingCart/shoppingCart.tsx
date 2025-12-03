@@ -16,14 +16,15 @@ import { createShoppingCartStyles } from '../../../../common/styles/Core/homeScr
 import { useCart } from '../../../../contexts/CartContext/cartContext';
 import type { CartItem as CartContextItem } from '../../../../contexts/CartContext/cartContext';
 import promocaoService from '../../../../services/promocaoService';
-import authService from '../../../../services/authService';
 import locationService from '../../../../services/locationService';
+import { useApplication } from '../../../../contexts/ApplicationContext/ApplicationContext';
 
 type CartItem = CartContextItem;
 
 const ShoppingCartScreen = () => {
   const navigation = useNavigation<any>();
   const { cartItems, updateQuantity, removeFromCart, clearCart, getTotalItems, getTotalValue, refreshCart } = useCart();
+  const { user: applicationUser, validateActiveSession } = useApplication();
   const { width } = useWindowDimensions();
   const shoppingCartStyles = useMemo(() => createShoppingCartStyles(width >= 768), [width]);
 
@@ -94,8 +95,9 @@ const ShoppingCartScreen = () => {
     setIsCheckoutLoading(true);
 
     try {
-      const loggedUser = await authService.getStoredUser();
-      if (!loggedUser?.id) {
+      const currentUser = applicationUser ?? (await validateActiveSession());
+      const pessoaId = currentUser?.pessoa_id ?? currentUser?.id ?? null;
+      if (!pessoaId) {
         Alert.alert('Sessão expirada', 'Faça login novamente para finalizar a compra.');
         return;
       }
@@ -106,7 +108,7 @@ const ShoppingCartScreen = () => {
         return;
       }
 
-      const enderecos = await locationService.getEnderecos({ pessoaId: loggedUser.id, ativo: 'true', limit: 1 });
+      const enderecos = await locationService.getEnderecos({ pessoaId, ativo: 'true', limit: 1 });
       const enderecoSelecionado = Array.isArray(enderecos) && enderecos.length > 0 ? enderecos[0] : null;
 
       if (!enderecoSelecionado?.endereco_id) {
@@ -114,9 +116,24 @@ const ShoppingCartScreen = () => {
         return;
       }
 
+      const fornecedorIds = Array.from(
+        new Set(
+          cartItems
+            .map((item) => (typeof item.fornecedorPessoaId === 'number' ? item.fornecedorPessoaId : null))
+            .filter((id): id is number => id !== null),
+        ),
+      );
+
+      const fornecedorPessoaId = fornecedorIds.length > 0 ? fornecedorIds[0] : null;
+      if (fornecedorIds.length > 1) {
+        console.warn('[ShoppingCart] Carrinho possui produtos de múltiplos fornecedores. Usando o primeiro ID para o checkout:', fornecedorIds);
+      }
+
       // Formatar os dados do carrinho para o payload da API
       const saleData = {
-        pessoa_id: loggedUser.id,
+  pessoa_id: pessoaId,
+        fornecedor_pessoa_id: fornecedorPessoaId,
+        fornecedorPessoaId,
         endereco_id: enderecoSelecionado.endereco_id,
         itens: cartItems.map(item => ({
           lote_id: item.loteId,
@@ -132,25 +149,8 @@ const ShoppingCartScreen = () => {
 
       console.log('Enviando dados da venda:', saleData);
 
-      // Fazer a chamada da API
-      const response = await promocaoService.finalizarVenda(saleData);
-
-      console.log('Venda finalizada com sucesso:', response);
-
-      // Limpar o carrinho após venda bem-sucedida
-      clearCart();
-
-      // Mostrar mensagem de sucesso
-      Alert.alert(
-        'Compra Finalizada!',
-        'Sua compra foi processada com sucesso.',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
+      // Instead of finalizing here, navigate to the checkout address screen
+      navigation.navigate('CheckoutAddress', { saleData });
 
     } catch (error: any) {
       console.error('Erro ao finalizar venda:', error);

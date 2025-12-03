@@ -20,11 +20,13 @@ export interface Produto {
   CATEGORIA_PRODUTO_categoria_id: number;
   MARCA_PRODUTO_marca_id: number;
   TIPO_PRODUTO_tipo_id: number;
+  fornecedor_pessoa_id: number;
 
   // Propriedades para os objetos relacionados (podem ser null)
   categoria: Categoria | null;
   marca: Marca | null;         
   tipo: Tipo | null; 
+  fornecedor?: { pessoa_id: number; pessoa_nome?: string | null } | null;
 
   produto_imagem_url?: string | null;
 }

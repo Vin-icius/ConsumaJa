@@ -17,6 +17,7 @@ const produto_routes_1 = __importDefault(require("./interfaces/routes/produto.ro
 const promocao_routes_1 = __importDefault(require("./interfaces/routes/promocao.routes"));
 const loteprod_routes_1 = __importDefault(require("./interfaces/routes/loteprod.routes")); // <<< IMPORTAR AS ROTAS DE LOTEPROD
 const shopping_cart_routes_1 = __importDefault(require("./interfaces/routes/shopping-cart.routes"));
+const order_routes_1 = __importDefault(require("./interfaces/routes/order.routes"));
 const image_url_1 = require("./common/utils/image-url");
 const error_middleware_1 = require("./interfaces/middlewares/error.middleware");
 const app_error_1 = require("./common/errors/app-error");
@@ -52,6 +53,9 @@ apiRouter.use('/produtos', produto_routes_1.default);
 apiRouter.use('/promocoes', promocao_routes_1.default);
 apiRouter.use('/lotes', loteprod_routes_1.default); // <<< MONTAR AS ROTAS DE LOTEPROD AQUI
 apiRouter.use('/cart', shopping_cart_routes_1.default);
+apiRouter.use('/orders', order_routes_1.default);
+// Temporarily expose order routes without the /orders prefix for legacy clients still calling /api/product/<route>
+apiRouter.use(order_routes_1.default);
 // Aplica o prefixo /api/product a todas as rotas definidas no apiRouter
 app.use('/api/product', apiRouter);
 // Rota de Health Check

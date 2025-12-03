@@ -13,6 +13,7 @@ import produtoRoutes from './interfaces/routes/produto.routes';
 import promocaoRoutes from './interfaces/routes/promocao.routes';
 import loteprodRoutes from './interfaces/routes/loteprod.routes'; // <<< IMPORTAR AS ROTAS DE LOTEPROD
 import shoppingCartRoutes from './interfaces/routes/shopping-cart.routes';
+import orderRoutes from './interfaces/routes/order.routes';
 import { resolveProductImageDir, PRODUCT_IMAGE_STATIC_ROUTE } from './common/utils/image-url';
 
 import { errorHandler } from './interfaces/middlewares/error.middleware';
@@ -53,6 +54,9 @@ apiRouter.use('/produtos', produtoRoutes);
 apiRouter.use('/promocoes', promocaoRoutes);
 apiRouter.use('/lotes', loteprodRoutes); // <<< MONTAR AS ROTAS DE LOTEPROD AQUI
 apiRouter.use('/cart', shoppingCartRoutes);
+apiRouter.use('/orders', orderRoutes);
+// Temporarily expose order routes without the /orders prefix for legacy clients still calling /api/product/<route>
+apiRouter.use(orderRoutes);
 
 // Aplica o prefixo /api/product a todas as rotas definidas no apiRouter
 app.use('/api/product', apiRouter);

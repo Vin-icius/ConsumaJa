@@ -1,7 +1,7 @@
 import path from "path"
 
 const URL_PATTERN = /^https?:\/\//i
-const STATIC_PATH_PREFIX = "/static/products"
+const STATIC_PATH_PREFIX = "/'/products"
 
 const normalizeFilename = (value: string): string => {
   const unixPath = value.replace(/\\/g, "/").trim()

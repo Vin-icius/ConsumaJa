@@ -38,6 +38,7 @@ export interface CartItemView {
   lote_codigo: string
   promocao_id: number | null
   fornecedor_nome: string | null
+  fornecedor_pessoa_id: number | null
   quantidade: number
   unit_price: number
   max_quantidade: number
@@ -80,6 +81,7 @@ export class ShoppingCartService {
       lote_codigo: item.lote_codigo,
       promocao_id: item.PROMOCAO_promocao_id,
       fornecedor_nome: item.fornecedor_nome ?? null,
+      fornecedor_pessoa_id: item.fornecedor_pessoa_id ?? null,
       quantidade: item.quantidade,
       unit_price: item.unit_price,
       max_quantidade: maxAvailable,

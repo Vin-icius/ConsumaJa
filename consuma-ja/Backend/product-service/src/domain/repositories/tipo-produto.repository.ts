@@ -4,7 +4,7 @@ export type CreateTipoData = Omit<Tipo, 'tipo_id' | 'ativo'>;
 export type UpdateTipoData = Partial<Pick<Tipo, 'tipo_nome'>>;
 
 export interface TipoRepository {
-    findByNome(nome: string): Promise<Tipo | null>;
+    findByNome(nome: string, fornecedorId?: number | null): Promise<Tipo | null>;
     criar(data: CreateTipoData): Promise<Tipo>;
     listar(apenasAtivos?: boolean): Promise<Tipo[]>;
     buscarPorId(id: number, incluirInativos?: boolean): Promise<Tipo | null>;

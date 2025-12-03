@@ -14,16 +14,27 @@ export class TipoMySQLRepository implements TipoRepository {
       const tipo: Tipo = {
           tipo_id: row.tipo_id,
           tipo_nome: row.tipo_nome,
+          fornecedor_pessoa_id: row.fornecedor_pessoa_id ?? null,
           ativo: Boolean(row.ativo),
       };
       return tipo;
   }
 
-  async findByNome(nome: string): Promise<Tipo | null> {
-      const query = "SELECT * FROM TIPO_PRODUTO WHERE tipo_nome = ? AND ativo = TRUE LIMIT 1";
+  async findByNome(nome: string, fornecedorId?: number | null): Promise<Tipo | null> {
+      let query = "SELECT * FROM TIPO_PRODUTO WHERE tipo_nome = ? AND ativo = TRUE";
+      const params: Array<string | number> = [nome];
+
+      if (fornecedorId === null) {
+          query += " AND fornecedor_pessoa_id IS NULL";
+      } else if (typeof fornecedorId === 'number') {
+          query += " AND fornecedor_pessoa_id = ?";
+          params.push(fornecedorId);
+      }
+
+      query += " LIMIT 1";
       try {
           if (!pool) throw new AppError("Pool de conexão não definido!", 500, false);
-          const [rows] = await pool.query<TipoRow[]>(query, [nome]);
+          const [rows] = await pool.query<TipoRow[]>(query, params);
           return rows.length > 0 ? this.mapRowToTipo(rows[0]) : null;
       } catch (error: any) {
            console.error("[Repo] Erro ao buscar tipo por nome:", error);
@@ -32,11 +43,11 @@ export class TipoMySQLRepository implements TipoRepository {
   }
 
   async criar(data: CreateTipoData): Promise<Tipo> {
-    const { tipo_nome } = data;
-    const query = "INSERT INTO TIPO_PRODUTO (tipo_nome) VALUES (?)";
+    const { tipo_nome, fornecedor_pessoa_id } = data;
+    const query = "INSERT INTO TIPO_PRODUTO (tipo_nome, fornecedor_pessoa_id) VALUES (?, ?)";
     try {
         if (!pool) throw new AppError("Pool de conexão não definido!", 500, false);
-        const [result] = await pool.query<ResultSetHeader>(query, [tipo_nome]);
+        const [result] = await pool.query<ResultSetHeader>(query, [tipo_nome, fornecedor_pessoa_id ?? null]);
         const insertedId = result.insertId;
         const novoTipo = await this.buscarPorId(insertedId, true);
         if (!novoTipo) {

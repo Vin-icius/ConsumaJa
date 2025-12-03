@@ -7,7 +7,7 @@
       "dom"
     ],
     "jsx": "react-native",
-    "module": "es2015",
+    "module": "es2020",
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,

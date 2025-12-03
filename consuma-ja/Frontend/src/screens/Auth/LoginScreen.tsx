@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react"
+import React, { useState, useRef, useEffect } from "react"
 import {
   View,
   Text,
@@ -15,6 +15,8 @@ import type { StackNavigationProp } from "@react-navigation/stack"
 import authService from "../../services/authService"
 import { styles } from "../../common/styles/Auth/loginScreen.styled"
 import { useCart } from "../../contexts/CartContext/cartContext"
+import { useApplication } from "../../contexts/ApplicationContext/ApplicationContext"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
 // Definindo tipos para navegação
 type RootStackParamList = {
@@ -31,11 +33,21 @@ interface LoginScreenProps {
 
 // Definindo tipo para resposta de login
 interface LoginResponse {
-  token: string
+  token?: string
   user: {
     tipo: string
+    two_fa?: boolean
+    twoFactorEnabled?: boolean
     [key: string]: any
   }
+  session?: {
+    id?: string
+    expiraEm?: string
+    dadosUsuario?: Record<string, unknown> | null
+  }
+  twoFactorRequired?: boolean
+  twoFactorToken?: string
+  message?: string
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
@@ -47,7 +59,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState(false)
   const [forgotPasswordVisible, setForgotPasswordVisible] = useState(false)
   const [resetEmail, setResetEmail] = useState("")
+  const [twoFactorVisible, setTwoFactorVisible] = useState(false)
+  const [twoFactorToken, setTwoFactorToken] = useState<string | null>(null)
+  const [twoFactorCode, setTwoFactorCode] = useState("")
+  const [twoFactorError, setTwoFactorError] = useState("")
+  const [twoFactorLoading, setTwoFactorLoading] = useState(false)
+  const [pendingTwoFactorUser, setPendingTwoFactorUser] = useState<LoginResponse["user"] | null>(null)
   const { refreshCart } = useCart()
+  const { setAuthenticatedUser, validateActiveSession, sessionId } = useApplication()
+  const [checkingSession, setCheckingSession] = useState(true)
 
   // Animações
   const fadeAnim = useRef(new Animated.Value(0)).current
@@ -71,6 +91,36 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       }),
     ]).start()
   }, [])
+
+  useEffect(() => {
+    let isMounted = true
+
+    const ensureActiveSession = async () => {
+      if (!sessionId) {
+        setCheckingSession(false)
+        return
+      }
+
+      try {
+        const sessionUser = await validateActiveSession()
+        if (sessionUser && isMounted) {
+          navigation.replace("Dashboard")
+        }
+      } catch (error) {
+        console.warn("Sessão anterior inválida:", error)
+      } finally {
+        if (isMounted) {
+          setCheckingSession(false)
+        }
+      }
+    }
+
+    ensureActiveSession()
+
+    return () => {
+      isMounted = false
+    }
+  }, [sessionId, validateActiveSession, navigation])
 
   // Funções de formatação CPF/CNPJ
   const formatCPF = (value: string): string => {
@@ -142,6 +192,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const handleLogin = async () => {
     Keyboard.dismiss()
     setErrorMessage("")
+    setTwoFactorVisible(false)
+    setTwoFactorToken(null)
+    setTwoFactorCode("")
+    setTwoFactorError("")
+    setPendingTwoFactorUser(null)
 
     const loginToSend = identifier.trim()
 
@@ -162,9 +217,38 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         senha: senha,
       })) as LoginResponse
 
-      const { token, user } = response
-      if (token && user?.id) {
-        await authService.storeAuthData(token, user)
+      const { token, user, session, twoFactorRequired, twoFactorToken, message } = response
+      const requiresTwoFactor = Boolean(twoFactorRequired || user?.two_fa || user?.twoFactorEnabled)
+
+      if (requiresTwoFactor) {
+        if (!twoFactorToken) {
+          setErrorMessage(message || "É necessário confirmar o código do autenticador.")
+        } else {
+          setTwoFactorToken(twoFactorToken)
+          setPendingTwoFactorUser(user)
+          setTwoFactorVisible(true)
+          setErrorMessage("")
+        }
+        return
+      }
+
+      const resolvedUserId = user?.id ?? user?.pessoa_id
+      if (token && resolvedUserId) {
+        setAuthenticatedUser({ user, token, session })
+
+        // Define role do usuário para controle de menus (Admin / Fornecedor / Cliente)
+        const pessoaTipo = user?.pessoa_tipo || user?.tipo
+        let roleToStore: "Admin" | "Fornecedor" | "Cliente" = "Cliente"
+        if (pessoaTipo === "Admin") {
+          roleToStore = "Admin"
+        } else if (pessoaTipo === "Juridica") {
+          roleToStore = "Fornecedor"
+        }
+        try {
+          await AsyncStorage.setItem("userRole", roleToStore)
+        } catch (e) {
+          console.warn("Falha ao salvar userRole no AsyncStorage", e)
+        }
         try {
           await refreshCart()
         } catch (refreshError) {
@@ -205,6 +289,61 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     )
 
     setResetEmail("")
+  }
+
+  const handleVerifyTwoFactor = async () => {
+    if (!twoFactorToken) {
+      setTwoFactorError("Token de verificação não encontrado. Faça login novamente.")
+      return
+    }
+
+    const sanitizedCode = twoFactorCode.replace(/\D/g, "")
+
+    if (sanitizedCode.length !== 6) {
+      setTwoFactorError("Informe o código com 6 dígitos.")
+      return
+    }
+
+    setTwoFactorLoading(true)
+    setTwoFactorError("")
+
+    try {
+      const verification = await authService.verifyTwoFactor(twoFactorToken, sanitizedCode)
+
+      if (!verification?.token || !verification?.user) {
+        throw new Error("Resposta inválida do servidor.")
+      }
+
+      setAuthenticatedUser({ user: verification.user, token: verification.token, session: verification.session })
+
+      try {
+        await refreshCart()
+      } catch (refreshError) {
+        console.error("Falha ao sincronizar carrinho após 2FA:", refreshError)
+      }
+
+      setTwoFactorVisible(false)
+      setTwoFactorToken(null)
+      setTwoFactorCode("")
+      setPendingTwoFactorUser(null)
+      navigation.replace("Dashboard")
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Código inválido ou expirado. Tente novamente."
+      setTwoFactorError(message)
+    } finally {
+      setTwoFactorLoading(false)
+    }
+  }
+
+  const handleCancelTwoFactor = () => {
+    setTwoFactorVisible(false)
+    setTwoFactorToken(null)
+    setTwoFactorCode("")
+    setTwoFactorError("")
+    setPendingTwoFactorUser(null)
   }
 
   return (
@@ -274,9 +413,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
           {/* Botão de login */}
           <TouchableOpacity
-            style={[styles.loginButton, loading && styles.buttonDisabled]}
+            style={[styles.loginButton, (loading || checkingSession) && styles.buttonDisabled]}
             onPress={handleLogin}
-            disabled={loading}
+            disabled={loading || checkingSession}
           >
             {loading ? (
               <ActivityIndicator size="small" color="#fff" />
@@ -333,6 +472,72 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
               <TouchableOpacity style={styles.modalConfirmButton} onPress={handleResetPassword}>
                 <Text style={styles.modalConfirmButtonText}>Enviar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {twoFactorVisible && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Confirme o código 2FA</Text>
+            <Text style={styles.modalDescription}>
+              {pendingTwoFactorUser?.pessoa_email || pendingTwoFactorUser?.email
+                ? `Informe o código gerado no aplicativo autenticador para ${pendingTwoFactorUser.pessoa_email ?? pendingTwoFactorUser.email}.`
+                : "Informe o código gerado no aplicativo autenticador para concluir o acesso."}
+            </Text>
+
+            <View style={styles.inputWrapper}>
+              <Ionicons name="keypad-outline" size={20} color="#666" style={styles.inputIcon} />
+              <TextInput
+                style={styles.twoFactorInput}
+                placeholder="000000"
+                keyboardType="numeric"
+                value={twoFactorCode}
+                onChangeText={(value) => {
+                  const sanitized = value.replace(/\D/g, "").slice(0, 6)
+                  setTwoFactorCode(sanitized)
+                  if (twoFactorError) {
+                    setTwoFactorError("")
+                  }
+                }}
+                maxLength={6}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={handleVerifyTwoFactor}
+              />
+            </View>
+
+            {twoFactorError ? (
+              <View style={styles.errorContainer}>
+                <Ionicons name="alert-circle-outline" size={18} color="#e74c3c" />
+                <Text style={styles.errorText}>{twoFactorError}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={handleCancelTwoFactor}
+                disabled={twoFactorLoading}
+              >
+                <Text style={styles.modalCancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.modalConfirmButton,
+                  (twoFactorLoading || twoFactorCode.length !== 6) && styles.buttonDisabled,
+                ]}
+                onPress={handleVerifyTwoFactor}
+                disabled={twoFactorLoading || twoFactorCode.length !== 6}
+              >
+                {twoFactorLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.modalConfirmButtonText}>Verificar</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>

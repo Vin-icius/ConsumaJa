@@ -36,7 +36,14 @@ export const createMenuSections = (screens: Record<string, MenuItem>): MenuSecti
       screens['Cadastro Produto'],
       screens['PromocaoList'],
       screens['LoteList'],
+      screens['HistoricoVendas'],
     ].filter(Boolean) as MenuItem[],
+  },
+  {
+    title: 'Cliente',
+    isDropdown: true,
+    roles: ['Admin', 'Cliente'],
+    items: [screens['MinhasCompras']].filter(Boolean) as MenuItem[],
   },
   {
     title: 'Admin',
@@ -64,6 +71,8 @@ export const createMenuSections = (screens: Record<string, MenuItem>): MenuSecti
 
 export const baseIconMap: Record<string, IconRender> = {
   Inicio: ({ color, size }) => <Ionicons name="home-outline" color={color} size={size} />,
+  HistoricoVendas: ({ color, size }) => <Ionicons name="reader-outline" color={color} size={size} />,
+  MinhasCompras: ({ color, size }) => <Ionicons name="list-outline" color={color} size={size} />,
   'Cadastro Produto': ({ color, size }) => <Ionicons name="cube-outline" color={color} size={size} />,
   PromocaoList: ({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />,
   LoteList: ({ color, size }) => <Ionicons name="layers-outline" color={color} size={size} />,

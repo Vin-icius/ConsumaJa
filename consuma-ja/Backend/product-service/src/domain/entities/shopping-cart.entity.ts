@@ -20,4 +20,5 @@ export interface ShoppingCartItemWithDetails extends ShoppingCartItem {
   lote_quantidade_atual: number
   promocao_quantidade?: number | null
   fornecedor_nome?: string | null
+  fornecedor_pessoa_id?: number | null
 }

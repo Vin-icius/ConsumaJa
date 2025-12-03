@@ -6,21 +6,32 @@ const app_error_1 = require("../../common/errors/app-error");
 class CategoriaMySQLRepository {
     // Helper para mapear linha do DB para entidade
     mapRowToCategoria(row) {
+        var _a;
         const categoria = {
             categoria_id: row.categoria_id,
             categoria_nome: row.categoria_nome,
+            fornecedor_pessoa_id: (_a = row.fornecedor_pessoa_id) !== null && _a !== void 0 ? _a : null,
             ativo: Boolean(row.ativo),
         };
         return categoria; // Retorna a variável tipada
         // ------------------------------------------------------------------
     }
-    async findByNome(nome) {
+    async findByNome(nome, fornecedorId) {
         // console.log('[Repo Categoria - findByNome] Verificando pool:', pool ? 'DEFINIDO' : '!!! INDEFINIDO !!!');
-        const query = "SELECT * FROM CATEGORIA_PRODUTO WHERE categoria_nome = ? AND ativo = TRUE LIMIT 1";
+        let query = "SELECT * FROM CATEGORIA_PRODUTO WHERE categoria_nome = ? AND ativo = TRUE";
+        const params = [nome];
+        if (fornecedorId === null) {
+            query += " AND fornecedor_pessoa_id IS NULL";
+        }
+        else if (typeof fornecedorId === 'number') {
+            query += " AND fornecedor_pessoa_id = ?";
+            params.push(fornecedorId);
+        }
+        query += " LIMIT 1";
         try {
             if (!mysql_connection_1.pool)
                 throw new app_error_1.AppError("Pool de conexão não definido!", 500, false);
-            const [rows] = await mysql_connection_1.pool.query(query, [nome]);
+            const [rows] = await mysql_connection_1.pool.query(query, params);
             return rows.length > 0 ? this.mapRowToCategoria(rows[0]) : null;
         }
         catch (error) {
@@ -30,12 +41,12 @@ class CategoriaMySQLRepository {
     }
     async criar(data) {
         // console.log('[Repo Categoria - criar] Verificando pool:', pool ? 'DEFINIDO' : '!!! INDEFINIDO !!!');
-        const { categoria_nome } = data;
-        const query = "INSERT INTO CATEGORIA_PRODUTO (categoria_nome) VALUES (?)";
+        const { categoria_nome, fornecedor_pessoa_id } = data;
+        const query = "INSERT INTO CATEGORIA_PRODUTO (categoria_nome, fornecedor_pessoa_id) VALUES (?, ?)";
         try {
             if (!mysql_connection_1.pool)
                 throw new app_error_1.AppError("Pool de conexão não definido!", 500, false);
-            const [result] = await mysql_connection_1.pool.query(query, [categoria_nome]);
+            const [result] = await mysql_connection_1.pool.query(query, [categoria_nome, fornecedor_pessoa_id !== null && fornecedor_pessoa_id !== void 0 ? fornecedor_pessoa_id : null]);
             const insertedId = result.insertId;
             const novaCategoria = await this.buscarPorId(insertedId, true);
             if (!novaCategoria)

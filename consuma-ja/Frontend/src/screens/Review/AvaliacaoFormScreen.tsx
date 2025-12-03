@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, Alert, ActivityIndicator, SafeAreaView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, ScrollView, Alert, ActivityIndicator, SafeAreaView, TouchableOpacity, TextInput } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import avaliacaoService, { Pergunta } from '../../services/avaliacaoService'; // O serviço mantém o nome
 import { avaliacaoQuestionarioStyles as styles } from '../../common/styles/Review/avaliacaoFormScreen.styled'; // <-- Caminho do estilo atualizado
 import { RootStackParamList } from '../../navigation/appNavigator'; 
+import { useApplication } from '../../contexts/ApplicationContext/ApplicationContext';
 
 // --- TIPOS ---
 interface RespostasState {
@@ -15,7 +16,7 @@ interface EstrelasProps {
   setRating: (rating: number) => void;
   size?: number;
 }
-type AvaliacaoScreenRouteProp = RouteProp<RootStackParamList, 'AvaliacaoForm'>;
+type AvaliacaoScreenRouteProp = RouteProp<RootStackParamList, 'AvaliacaoQuestionario'>;
 
 // --- COMPONENTE INTERNO DE ESTRELAS ---
 const Estrelas: React.FC<EstrelasProps> = ({ rating, setRating, size = 35 }) => (
@@ -33,6 +34,7 @@ const AvaliacaoQuestionarioScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<AvaliacaoScreenRouteProp>();
   const { pedidoId } = route.params;
+  const { user } = useApplication();
 
   // --- ESTADOS ---
   const [perguntas, setPerguntas] = useState<Pergunta[]>([]);
@@ -40,6 +42,8 @@ const AvaliacaoQuestionarioScreen: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [submitLoading, setSubmitLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [comentario, setComentario] = useState('');
+  const submitLockRef = useRef(false);
 
   // --- LÓGICA DE BUSCA ---
   const fetchPerguntas = useCallback(async () => {
@@ -64,11 +68,19 @@ const AvaliacaoQuestionarioScreen: React.FC = () => {
     setRespostas(prev => ({ ...prev, [perguntaId]: nota }));
   };
 
+  const handleComentarioChange = (value: string) => {
+    setComentario(value.slice(0, 500));
+  };
+
   const handleSubmit = async () => {
+    if (submitLockRef.current || submitLoading) {
+      return;
+    }
     if (Object.keys(respostas).length !== perguntas.length) {
       Alert.alert("Atenção", "Por favor, responda a todas as perguntas para continuar.");
       return;
     }
+    submitLockRef.current = true;
     setSubmitLoading(true);
     const respostasPayload = Object.entries(respostas).map(([pergunta_id, nota]) => ({
       pergunta_id: Number(pergunta_id),
@@ -78,14 +90,16 @@ const AvaliacaoQuestionarioScreen: React.FC = () => {
       await avaliacaoService.enviarRespostas({
         venda_id: pedidoId,
         respostas: respostasPayload,
+        descricao: comentario.trim() ? comentario.trim() : undefined,
+        pessoa_id: user?.pessoa_id ?? undefined,
       });
-      Alert.alert("Obrigado!", "Sua avaliação foi registrada com sucesso.", [
-        { text: 'OK', onPress: () => navigation.goBack() }
-      ]);
+      Alert.alert("Obrigado!", "Sua avaliação foi registrada com sucesso.");
+      navigation.navigate('MinhasCompras' as never);
     } catch (err: any) {
       const msg = err.response?.data?.message || "Ocorreu um erro ao enviar sua avaliação.";
       Alert.alert("Erro", msg);
     } finally {
+      submitLockRef.current = false;
       setSubmitLoading(false);
     }
   };
@@ -120,9 +134,26 @@ const AvaliacaoQuestionarioScreen: React.FC = () => {
               />
             </View>
           ))}
+          <View style={styles.commentContainer}>
+            <Text style={styles.commentLabel}>Conte um pouco sobre sua experiência</Text>
+            <TextInput
+              style={styles.commentInput}
+              value={comentario}
+              onChangeText={handleComentarioChange}
+              placeholder="Ex.: Produtos chegaram embalados e dentro da validade."
+              placeholderTextColor="#9aa0a6"
+              multiline
+              numberOfLines={4}
+              maxLength={500}
+            />
+            <Text style={styles.commentCounter}>{comentario.length}/500</Text>
+          </View>
           <View style={styles.buttonContainer}>
             {submitLoading ? (<ActivityIndicator size="large" color="#28a745" />) : (
-                <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+                <TouchableOpacity
+                  style={styles.submitButton}
+                  onPress={handleSubmit}
+                >
                     <Text style={styles.submitButtonText}>Enviar Avaliação</Text>
                 </TouchableOpacity>
             )}

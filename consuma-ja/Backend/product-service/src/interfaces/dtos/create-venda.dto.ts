@@ -1,4 +1,4 @@
-import { IsArray, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ItemVendaDto {
@@ -32,10 +32,22 @@ export class CreateVendaDto {
   @IsNumber({}, { each: true })
   cart_item_ids?: number[];
 
+  @IsOptional() @IsBoolean()
+  retirada_no_fornecedor?: boolean;
+
+  @IsOptional() @IsString()
+  metodo_pagamento?: string;
+
+  @IsOptional() @IsNumber() @Min(1) @Type(() => Number)
+  parcelas?: number;
+
+  @IsOptional()
+  detalhes_pagamento?: Record<string, any>;
+
   // Adicionar campos obrigatórios que podem vir do auth ou payload
   @IsNumber() @Min(1) @Type(() => Number)
   pessoa_id!: number;
 
-  @IsNumber() @Min(1) @Type(() => Number)
-  endereco_id!: number;
+  @IsOptional() @IsNumber() @Min(1) @Type(() => Number)
+  endereco_id?: number;
 }

@@ -63,4 +63,10 @@ __decorate([
     (0, class_transformer_1.Type)(() => Number),
     __metadata("design:type", Number)
 ], CreateProdutoDto.prototype, "TIPO_PRODUTO_tipo_id", void 0);
+__decorate([
+    (0, class_validator_1.IsInt)({ message: 'O fornecedor deve ser um ID numérico.' }),
+    (0, class_validator_1.Min)(1, { message: 'O fornecedor deve ser válido.' }),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateProdutoDto.prototype, "fornecedor_pessoa_id", void 0);
 //# sourceMappingURL=create-produto.dto.js.map

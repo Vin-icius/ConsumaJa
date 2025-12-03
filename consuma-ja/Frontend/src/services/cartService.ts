@@ -9,6 +9,7 @@ export interface CartItemApi {
   lote_codigo: string
   promocao_id: number | null
   fornecedor_nome: string | null
+  fornecedor_pessoa_id: number | null
   quantidade: number
   unit_price: number
   max_quantidade: number

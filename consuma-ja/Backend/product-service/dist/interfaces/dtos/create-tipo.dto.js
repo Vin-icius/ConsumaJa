@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateTipoDto = void 0;
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
 class CreateTipoDto {
 }
 exports.CreateTipoDto = CreateTipoDto;
@@ -21,4 +22,11 @@ __decorate([
     (0, class_validator_1.Length)(3, 255, { message: 'O nome do tipo deve ter pelo menos 3 caracteres.' }),
     __metadata("design:type", String)
 ], CreateTipoDto.prototype, "tipo_nome", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)({ message: 'O fornecedor deve ser um número inteiro.' }),
+    (0, class_validator_1.Min)(1, { message: 'O fornecedor deve ser um ID válido.' }),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Object)
+], CreateTipoDto.prototype, "fornecedor_pessoa_id", void 0);
 //# sourceMappingURL=create-tipo.dto.js.map

@@ -153,7 +153,8 @@ export class PessoaService {
          await this.buscarPessoaPorId(id); // Já lança 404 se não existir ou inativo
 
          // Prepara dados do DTO para UpdatePessoaData do repositório
-         const dataToUpdate: UpdatePessoaData = {};
+     const dataToUpdate: UpdatePessoaData = {};
+     const enderecoDto = dto.endereco;
          if (dto.pessoa_nome !== undefined) dataToUpdate.pessoa_nome = dto.pessoa_nome;
          if (dto.pessoa_email !== undefined) dataToUpdate.pessoa_email = dto.pessoa_email;
          if (dto.pessoa_telefone !== undefined) dataToUpdate.pessoa_telefone = dto.pessoa_telefone ?? null;
@@ -172,22 +173,33 @@ export class PessoaService {
           }
 
          // Se não houver dados válidos para atualizar no DTO (após remover login/tipo implicitamente)
-         if (Object.keys(dataToUpdate).length === 0) {
-             console.log(`[Service] Nenhum dado fornecido para atualizar pessoa ${id}.`);
-             // Retorna os dados atuais sem fazer update
-             return this.buscarPessoaPorId(id);
-         }
+          const possuiAtualizacaoPessoa = Object.keys(dataToUpdate).length > 0;
 
          try {
-            // Chama o repositório para atualizar
-            const pessoaAtualizada = await this.pessoaRepository.atualizar(id, dataToUpdate);
-            if (!pessoaAtualizada) {
-                 // Repositório retorna null se não encontrou a linha ATIVA para atualizar
-                 throw new AppError(`Pessoa com ID ${id} não encontrada ou inativa durante a atualização.`, 404);
-            }
-            delete pessoaAtualizada.pessoa_senha; // Remove hash
-            console.log(`[Service] Pessoa ${id} atualizada com sucesso.`);
-            return pessoaAtualizada;
+               if (possuiAtualizacaoPessoa) {
+                    const pessoaAtualizada = await this.pessoaRepository.atualizar(id, dataToUpdate);
+                    if (!pessoaAtualizada) {
+                         throw new AppError(`Pessoa com ID ${id} não encontrada ou inativa durante a atualização.`, 404);
+                    }
+               } else {
+                    console.log(`[Service] Nenhum dado da tabela PESSOA fornecido para atualizar pessoa ${id}.`);
+               }
+
+               if (enderecoDto) {
+                    await this.pessoaRepository.upsertEndereco(id, {
+                         endereco_cep: enderecoDto.endereco_cep,
+                         endereco_rua: enderecoDto.endereco_rua,
+                         endereco_numero: enderecoDto.endereco_numero,
+                         endereco_bairro: enderecoDto.endereco_bairro,
+                         endereco_complemento: enderecoDto.endereco_complemento ?? null,
+                         cidade_id: enderecoDto.cidade_id ?? null,
+                    });
+               }
+
+               const pessoaFinal = await this.buscarPessoaPorId(id);
+               delete pessoaFinal.pessoa_senha;
+               console.log(`[Service] Pessoa ${id} atualizada com sucesso.`);
+               return pessoaFinal;
         } catch (error) {
              if (error instanceof AppError) throw error; // Ex: 409 do repo
              console.error(`[Service] Erro ao atualizar pessoa ${id}:`, error);

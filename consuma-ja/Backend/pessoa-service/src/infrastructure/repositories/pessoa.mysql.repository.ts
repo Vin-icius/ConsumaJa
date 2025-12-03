@@ -1,7 +1,5 @@
 import { Pessoa, PessoaStatus, PessoaTipo } from "../../domain/entities/pessoa.entity";
-import { Fisica } from "../../domain/entities/fisica.entity";
-import { Juridica } from "../../domain/entities/juridica.entity";
-import { PessoaRepository, CreatePessoaData, UpdatePessoaData, PaginatedRepositoryResponse } from "../../domain/repositories/pessoa.repository";
+import { PessoaRepository, CreatePessoaData, UpdatePessoaData, PaginatedRepositoryResponse, UpdateEnderecoData } from "../../domain/repositories/pessoa.repository";
 import { pool } from "../database/mysql.connection";
 import { AppError } from "../../common/errors/app-error";
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
@@ -22,6 +20,17 @@ interface PessoaRow extends RowDataPacket {
     pessoa_fotoValidada?: number | null;
     cnpj?: string | null;
     fornecedor_num?: number | null;
+    endereco_id?: number | null;
+    endereco_rua?: string | null;
+    endereco_numero?: string | null;
+    endereco_bairro?: string | null;
+    endereco_cep?: string | null;
+    endereco_complemento?: string | null;
+    endereco_cidade_id?: number | null;
+    cidade_nome?: string | null;
+    estado_id?: number | null;
+    estado_nome?: string | null;
+    estado_sigla?: string | null;
 }
 
 
@@ -43,6 +52,8 @@ export class PessoaMySQLRepository implements PessoaRepository {
         };
 
         if (row.pessoa_tipo === 'Fisica' && row.pessoa_cpf) {
+            pessoa.pessoa_cpf = row.pessoa_cpf;
+            pessoa.documento = row.pessoa_cpf;
             pessoa.fisica = {
                 PESSOA_pessoa_id: row.pessoa_id,
                 pessoa_cpf: row.pessoa_cpf,
@@ -50,12 +61,40 @@ export class PessoaMySQLRepository implements PessoaRepository {
                 pessoa_fotoValidada: Boolean(row.pessoa_fotoValidada ?? 0),
             };
         } else if (row.pessoa_tipo === 'Juridica' && row.cnpj) {
-             pessoa.juridica = {
+            pessoa.pessoa_cnpj = row.cnpj;
+            pessoa.documento = row.cnpj;
+            pessoa.pessoa_num_fornecedor = row.fornecedor_num ?? null;
+            pessoa.juridica = {
                 PESSOA_pessoa_id: row.pessoa_id,
                 cnpj: row.cnpj,
                 fornecedor_num: row.fornecedor_num ?? null, // Usa ?? null
              };
         }
+
+        if (!pessoa.documento && row.pessoa_cpf) {
+            pessoa.documento = row.pessoa_cpf;
+        } else if (!pessoa.documento && row.cnpj) {
+            pessoa.documento = row.cnpj;
+        }
+
+        if (row.endereco_id) {
+            pessoa.endereco = {
+                endereco_id: row.endereco_id,
+                endereco_rua: row.endereco_rua ?? '',
+                endereco_numero: row.endereco_numero ?? '',
+                endereco_bairro: row.endereco_bairro ?? '',
+                endereco_cep: row.endereco_cep ?? '',
+                endereco_complemento: row.endereco_complemento ?? null,
+                cidade_id: row.endereco_cidade_id ?? null,
+                cidade_nome: row.cidade_nome ?? null,
+                estado_id: row.estado_id ?? null,
+                estado_nome: row.estado_nome ?? null,
+                estado_sigla: row.estado_sigla ?? null,
+            };
+        } else {
+            pessoa.endereco = null;
+        }
+
         return pessoa;
     }
 
@@ -66,9 +105,14 @@ export class PessoaMySQLRepository implements PessoaRepository {
             FROM PESSOA p
             LEFT JOIN FISICA f ON p.pessoa_id = f.PESSOA_pessoa_id AND p.pessoa_tipo = 'Fisica'
             LEFT JOIN JURIDICA j ON p.pessoa_id = j.PESSOA_pessoa_id AND p.pessoa_tipo = 'Juridica'
+            LEFT JOIN ENDERECO e ON e.PESSOA_pessoa_id = p.pessoa_id AND e.ativo = 1
+            LEFT JOIN CIDADE c ON c.cidade_id = e.CIDADE_cidade_id
+            LEFT JOIN ESTADO est ON est.estado_id = c.ESTADO_estado_id
         `;
         let countSelectQuery = `SELECT COUNT(DISTINCT p.pessoa_id) as total ${baseFromClause}`;
-        let dataSelectQuery = `SELECT p.*, f.pessoa_cpf, f.pessoa_documentoValidado, f.pessoa_fotoValidada, f.foto_selfie_path, f.foto_documento_path, j.cnpj, j.fornecedor_num ${baseFromClause}`;
+        let dataSelectQuery = `SELECT p.*, f.pessoa_cpf, f.pessoa_documentoValidado, f.pessoa_fotoValidada, f.foto_selfie_path, f.foto_documento_path, j.cnpj, j.fornecedor_num,
+            e.endereco_id, e.rua AS endereco_rua, e.numero AS endereco_numero, e.bairro AS endereco_bairro, e.cep AS endereco_cep, e.complemento AS endereco_complemento,
+            e.CIDADE_cidade_id AS endereco_cidade_id, c.cidade_nome, est.estado_id, est.estado_nome, est.estado_sigla ${baseFromClause}`;
 
         const conditions: string[] = [];
         const params: any[] = [];
@@ -127,10 +171,16 @@ export class PessoaMySQLRepository implements PessoaRepository {
     async findByLoginOrEmailOrDoc(identifier: string): Promise<Pessoa | null> {
         // <<< Incluir p.pessoa_senha na query de login >>>
         const query = `
-            SELECT p.*, p.pessoa_senha, f.pessoa_cpf, f.pessoa_documentoValidado, f.pessoa_fotoValidada, j.cnpj, j.fornecedor_num
+            SELECT p.*, p.pessoa_senha, f.pessoa_cpf, f.pessoa_documentoValidado, f.pessoa_fotoValidada, j.cnpj, j.fornecedor_num,
+                   e.endereco_id, e.rua AS endereco_rua, e.numero AS endereco_numero, e.bairro AS endereco_bairro, e.cep AS endereco_cep,
+                   e.complemento AS endereco_complemento, e.CIDADE_cidade_id AS endereco_cidade_id,
+                   c.cidade_nome, est.estado_id, est.estado_nome, est.estado_sigla
             FROM PESSOA p
             LEFT JOIN FISICA f ON p.pessoa_id = f.PESSOA_pessoa_id AND p.pessoa_tipo = 'Fisica'
             LEFT JOIN JURIDICA j ON p.pessoa_id = j.PESSOA_pessoa_id AND p.pessoa_tipo = 'Juridica'
+            LEFT JOIN ENDERECO e ON e.PESSOA_pessoa_id = p.pessoa_id AND e.ativo = 1
+            LEFT JOIN CIDADE c ON c.cidade_id = e.CIDADE_cidade_id
+            LEFT JOIN ESTADO est ON est.estado_id = c.ESTADO_estado_id
             WHERE p.pessoa_login = ? OR p.pessoa_email = ? OR f.pessoa_cpf = ? OR j.cnpj = ?
             LIMIT 1
         `;
@@ -145,10 +195,16 @@ export class PessoaMySQLRepository implements PessoaRepository {
     async findById(id: number): Promise<Pessoa | null> {
          // Não seleciona a senha por padrão em findById
          const query = `
-            SELECT p.*, f.pessoa_cpf, f.pessoa_documentoValidado, f.pessoa_fotoValidada, j.cnpj, j.fornecedor_num
+            SELECT p.*, f.pessoa_cpf, f.pessoa_documentoValidado, f.pessoa_fotoValidada, j.cnpj, j.fornecedor_num,
+                   e.endereco_id, e.rua AS endereco_rua, e.numero AS endereco_numero, e.bairro AS endereco_bairro,
+                   e.cep AS endereco_cep, e.complemento AS endereco_complemento, e.CIDADE_cidade_id AS endereco_cidade_id,
+                   c.cidade_nome, est.estado_id, est.estado_nome, est.estado_sigla
             FROM PESSOA p
             LEFT JOIN FISICA f ON p.pessoa_id = f.PESSOA_pessoa_id AND p.pessoa_tipo = 'Fisica'
             LEFT JOIN JURIDICA j ON p.pessoa_id = j.PESSOA_pessoa_id AND p.pessoa_tipo = 'Juridica'
+            LEFT JOIN ENDERECO e ON e.PESSOA_pessoa_id = p.pessoa_id AND e.ativo = 1
+            LEFT JOIN CIDADE c ON c.cidade_id = e.CIDADE_cidade_id
+            LEFT JOIN ESTADO est ON est.estado_id = c.ESTADO_estado_id
             WHERE p.pessoa_id = ?
             LIMIT 1
         `;
@@ -352,6 +408,70 @@ export class PessoaMySQLRepository implements PessoaRepository {
              console.error(`[Repo] Erro ao atualizar caminhos fotos para pessoa ${pessoaId}:`, error);
              // Não lança AppError aqui, serviço pode tentar de novo ou logar
              return false; // Indica falha
+        }
+    }
+
+    async upsertEndereco(pessoaId: number, endereco: UpdateEnderecoData): Promise<void> {
+        const cepSanitizado = (endereco.endereco_cep ?? '').replace(/\D/g, '');
+        const numero = endereco.endereco_numero ?? '';
+        const rua = endereco.endereco_rua ?? '';
+        const bairro = endereco.endereco_bairro ?? '';
+        const complemento = endereco.endereco_complemento ?? null;
+        const cidadeId = endereco.cidade_id ?? null;
+
+        if (!rua || !numero || !bairro || !cepSanitizado) {
+            throw new AppError('Dados de endereço incompletos para atualização.', 400);
+        }
+
+        let connection;
+        try {
+            if (!pool) throw new AppError('Pool de conexão não definido!', 500, false);
+            connection = await pool.getConnection();
+            await connection.beginTransaction();
+
+            const [rows] = await connection.query<RowDataPacket[]>(
+                'SELECT endereco_id FROM ENDERECO WHERE PESSOA_pessoa_id = ? LIMIT 1',
+                [pessoaId],
+            );
+
+            if (rows.length > 0) {
+                const enderecoId = rows[0].endereco_id;
+                await connection.query<ResultSetHeader>(
+                    `UPDATE ENDERECO
+                        SET rua = ?,
+                            numero = ?,
+                            bairro = ?,
+                            cep = ?,
+                            complemento = ?,
+                            CIDADE_cidade_id = ?,
+                            ativo = 1
+                      WHERE endereco_id = ?`,
+                    [rua, numero, bairro, cepSanitizado, complemento, cidadeId, enderecoId],
+                );
+            } else {
+                await connection.query<ResultSetHeader>(
+                    `INSERT INTO ENDERECO (
+                        PESSOA_pessoa_id,
+                        CIDADE_cidade_id,
+                        rua,
+                        numero,
+                        bairro,
+                        cep,
+                        complemento,
+                        ativo)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+                    [pessoaId, cidadeId, rua, numero, bairro, cepSanitizado, complemento],
+                );
+            }
+
+            await connection.commit();
+        } catch (error) {
+            if (connection) await connection.rollback();
+            console.error('[Repo Pessoa] Erro ao atualizar endereço:', error);
+            if (error instanceof AppError) throw error;
+            throw new AppError('Erro no banco de dados ao atualizar endereço.', 500, false);
+        } finally {
+            if (connection) connection.release();
         }
     }
 }

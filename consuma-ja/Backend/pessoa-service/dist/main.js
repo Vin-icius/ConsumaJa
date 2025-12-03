@@ -10,6 +10,9 @@ const cors_1 = __importDefault(require("cors"));
 // Importar Rotas
 const auth_routes_1 = __importDefault(require("./interfaces/routes/auth.routes"));
 const pessoa_routes_1 = __importDefault(require("./interfaces/routes/pessoa.routes"));
+const config_routes_1 = __importDefault(require("./interfaces/routes/config.routes"));
+const fornecedor_routes_1 = __importDefault(require("./interfaces/routes/fornecedor.routes"));
+const notification_routes_1 = __importDefault(require("./interfaces/routes/notification.routes"));
 // Importar Middlewares e Helpers
 const error_middleware_1 = require("./interfaces/middlewares/error.middleware");
 const app_error_1 = require("./common/errors/app-error");
@@ -28,6 +31,9 @@ const apiRouter = express_1.default.Router();
 // Montar rotas de autenticação
 apiRouter.use('/auth', auth_routes_1.default);
 apiRouter.use('/pessoa', pessoa_routes_1.default);
+apiRouter.use('/config', config_routes_1.default);
+apiRouter.use('/fornecedores', fornecedor_routes_1.default);
+apiRouter.use('/notifications', notification_routes_1.default);
 // Aplicar prefixo '/api'
 app.use('/api', apiRouter);
 // Rota de Health Check

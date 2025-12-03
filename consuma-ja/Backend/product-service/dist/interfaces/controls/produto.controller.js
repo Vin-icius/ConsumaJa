@@ -7,6 +7,7 @@ const create_produto_dto_1 = require("../dtos/create-produto.dto");
 const update_produto_dto_1 = require("../dtos/update-produto.dto");
 const rejeitar_produto_dto_1 = require("../dtos/rejeitar-produto.dto");
 const listar_produtos_selecao_query_dto_1 = require("../dtos/listar-produtos-selecao-query.dto");
+const listar_produtos_query_dto_1 = require("../dtos/listar-produtos-query.dto");
 const app_error_1 = require("../../common/errors/app-error");
 class ProdutoController {
     constructor(produtoService) {
@@ -24,12 +25,13 @@ class ProdutoController {
         this.uploadImagem = this.uploadImagem.bind(this);
     }
     async criarProduto(req, res, next) {
-        const dto = (0, class_transformer_1.plainToClass)(create_produto_dto_1.CreateProdutoDto, req.body);
-        const errors = await (0, class_validator_1.validate)(dto);
-        if (errors.length > 0) {
-            return next(errors);
-        }
         try {
+            const fornecedorId = this.resolveFornecedorId(req);
+            const dto = (0, class_transformer_1.plainToClass)(create_produto_dto_1.CreateProdutoDto, Object.assign(Object.assign({}, req.body), { fornecedor_pessoa_id: fornecedorId }));
+            const errors = await (0, class_validator_1.validate)(dto);
+            if (errors.length > 0) {
+                return next(errors);
+            }
             const produto = await this.produtoService.criarProduto(dto);
             res.status(201).json(produto);
         }
@@ -39,8 +41,21 @@ class ProdutoController {
     }
     async listarProdutos(req, res, next) {
         try {
-            const filtros = req.query;
-            const produtos = await this.produtoService.listarProdutos(filtros);
+            const dto = (0, class_transformer_1.plainToClass)(listar_produtos_query_dto_1.ListarProdutosQueryDto, req.query);
+            const errors = await (0, class_validator_1.validate)(dto);
+            if (errors.length > 0) {
+                return next(errors);
+            }
+            if (!req.user) {
+                throw new app_error_1.AppError('Usuário não autenticado.', 401);
+            }
+            if (req.user.tipo === 'Juridica') {
+                dto.fornecedorId = req.user.id;
+            }
+            else if (req.user.tipo !== 'Admin') {
+                throw new app_error_1.AppError('Apenas administradores ou fornecedores podem acessar a listagem de produtos.', 403);
+            }
+            const produtos = await this.produtoService.listarProdutos(dto);
             res.status(200).json(produtos);
         }
         catch (error) {
@@ -66,6 +81,27 @@ class ProdutoController {
             console.error('[ProdutoController] Erro capturado em listarParaSelecao:', error);
             next(error);
         }
+    }
+    resolveFornecedorId(req) {
+        var _a, _b, _c;
+        if (!req.user) {
+            throw new app_error_1.AppError('Usuário não autenticado.', 401);
+        }
+        if (req.user.tipo === 'Juridica') {
+            return req.user.id;
+        }
+        if (req.user.tipo === 'Admin') {
+            const raw = (_b = (_a = req.body) === null || _a === void 0 ? void 0 : _a.fornecedor_pessoa_id) !== null && _b !== void 0 ? _b : (_c = req.body) === null || _c === void 0 ? void 0 : _c.fornecedorId;
+            if (raw === undefined || raw === null || raw === '') {
+                throw new app_error_1.AppError('Informe o fornecedor responsável pelo produto.', 400);
+            }
+            const parsed = Number(raw);
+            if (!Number.isFinite(parsed) || parsed <= 0) {
+                throw new app_error_1.AppError('Fornecedor informado é inválido.', 400);
+            }
+            return parsed;
+        }
+        throw new app_error_1.AppError('Apenas administradores ou fornecedores podem criar produtos.', 403);
     }
     async buscarProdutoPorId(req, res, next) {
         try {

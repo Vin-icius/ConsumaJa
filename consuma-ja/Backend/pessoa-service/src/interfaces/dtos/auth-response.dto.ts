@@ -1,12 +1,14 @@
-interface UserInfo {
-  id: number;
-  nome: string;
-  email: string;
-  tipo: 'Fisica' | 'Juridica' | 'Admin';
+interface SessionInfo {
+  id: string;
+  expiraEm: string;
+  dadosUsuario: Record<string, unknown>;
 }
 
-export class AuthResponseDto {
-  // Adiciona '!' para indicar ao TS que serão inicializadas externamente
-  token!: string;
-  user!: UserInfo;
+export interface AuthResponseDto {
+  token?: string;
+  user: Record<string, unknown>;
+  session?: SessionInfo;
+  twoFactorRequired?: boolean;
+  twoFactorToken?: string;
+  message?: string;
 }

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsInt, Min, IsDateString, MaxLength, IsPositive, IsOptional, IsBoolean } from 'class-validator';
+import { IsNotEmpty, IsString, IsInt, Min, IsDateString, MaxLength, IsPositive, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateLoteProdDto {

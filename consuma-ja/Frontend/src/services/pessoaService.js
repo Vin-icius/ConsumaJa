@@ -22,6 +22,14 @@ const pessoaService = {
   atualizarPessoa: (id, data) => handleRequest(pessoaApiClient.put(`/pessoa/${id}`, data)),
   excluirPessoa: (id) => handleRequestNoData(pessoaApiClient.delete(`/pessoa/${id}`)),
 
+  buscarConfiguracaoPagamentoFornecedor: (fornecedorId) =>
+    handleRequest(pessoaApiClient.get(`/fornecedores/${fornecedorId}/config-pagamento`)),
+
+  atualizarConfiguracaoPagamentoFornecedor: (fornecedorId, payload) =>
+    handleRequest(
+      pessoaApiClient.put(`/fornecedores/${fornecedorId}/config-pagamento`, payload),
+    ),
+
   uploadFoto: (id, tipo, formData) =>
     handleRequest(pessoaApiClient.post(`/pessoa/${id}/upload/${tipo}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },

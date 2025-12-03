@@ -7,6 +7,9 @@ import cors from 'cors';
 // Importar Rotas
 import authRoutes from './interfaces/routes/auth.routes';
 import pessoaRoutes from './interfaces/routes/pessoa.routes';
+import configRoutes from './interfaces/routes/config.routes';
+import fornecedorRoutes from './interfaces/routes/fornecedor.routes';
+import notificationRoutes from './interfaces/routes/notification.routes';
 
 // Importar Middlewares e Helpers
 import { errorHandler } from './interfaces/middlewares/error.middleware';
@@ -31,6 +34,9 @@ const apiRouter = express.Router();
 // Montar rotas de autenticação
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/pessoa', pessoaRoutes);
+apiRouter.use('/config', configRoutes);
+apiRouter.use('/fornecedores', fornecedorRoutes);
+apiRouter.use('/notifications', notificationRoutes);
 
 // Aplicar prefixo '/api'
 app.use('/api', apiRouter);

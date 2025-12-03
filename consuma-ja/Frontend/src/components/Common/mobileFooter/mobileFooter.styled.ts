@@ -25,26 +25,29 @@ export const mobileFooterStyles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  paddingVertical: 4,
+	paddingVertical: 4,
   },
   activeButton: {
     backgroundColor: '#2F4F4F',
-  borderRadius: 10,
-  paddingVertical: 8,
+	borderRadius: 10,
+	paddingVertical: 8,
   },
   iconLabel: {
-  fontSize: 11,
-  marginTop: 3,
+	fontSize: 11,
+	marginTop: 3,
+	textAlign: 'center',
     color: '#2F4F4F',
     fontWeight: '500',
   },
   activeLabel: {
     color: '#ffffff',
   },
-  cartBadgeContainer: {
+  badgeContainer: {
     position: 'absolute',
     top: 4,
-  right: 22,
+	right: 22,
+	zIndex: 2,
+	elevation: 2,
     backgroundColor: '#FF4D4F',
     borderRadius: 9,
     minWidth: 18,
@@ -53,7 +56,7 @@ export const mobileFooterStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cartBadgeText: {
+  badgeText: {
     color: '#ffffff',
     fontSize: 10,
     fontWeight: '700',

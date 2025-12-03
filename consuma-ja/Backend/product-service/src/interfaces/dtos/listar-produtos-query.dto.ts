@@ -48,6 +48,12 @@ import {
       message: "Status do produto deve ser 'APROVADO', 'PENDENTE' ou 'REJEITADO'.",
     })
     produto_status?: ProdutoStatus; 
+
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt({ message: 'ID do fornecedor deve ser um número inteiro.' })
+    @Min(1, { message: 'ID do fornecedor deve ser maior que zero.' })
+    fornecedorId?: number;
   
     @IsOptional()
     // Query params são strings, então validamos como "true" ou "false"

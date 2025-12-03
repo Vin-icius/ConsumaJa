@@ -50,6 +50,11 @@ import AvaliacaoFormScreen from '../screens/Review/AvaliacaoFormScreen';
 
 import PromotionDetailScreen from '../screens/Promotions/promotionDetailScreen'
 import ShoppingCartScreen from '../screens/Core/homeScreen/shoppingCart/shoppingCart'
+import CheckoutAddressScreen from '../screens/Orders/CheckoutAddressScreen'
+import CheckoutPaymentScreen from '../screens/Orders/CheckoutPaymentScreen'
+import OrderProgressScreen from '../screens/Orders/OrderProgressScreen'
+import HistoricoVendasScreen from '../screens/Orders/HistoricoVendasScreen'
+import MinhasComprasScreen from '../screens/Orders/MinhasComprasScreen'
 import PromotionFormScreen from '../screens/Promotions/promotionFormScreen'
 import PromotionComponent from '../screens/Promotions/promotionComponent'
 import PromotionScreenWrapper from '../screens/Promotions/promotionScreenWrapper'
@@ -61,6 +66,7 @@ import CustomHeader from "../components/Common/customHeader/customHeader"
 import CustomHeaderPromotion from "../components/Common/customHeader/customHeaderPromotion"
 import InicioScreen from "../screens/Core/homeScreen/homeScreenLegacy"
 import { CartProvider } from "../contexts/CartContext/cartContext"
+import { NotificationProvider } from "../contexts/NotificationContext/notificationContext"
 import MobileBackHeader from "../components/Common/mobileHeader/mobileHeader"
 
 export type RootStackParamList = {
@@ -111,9 +117,7 @@ const CustomDrawerContent = (props: any) => {
         console.error("Erro ao buscar papel do usuário:", error)
       }
     }
-
-    // Comentado para usar o valor padrão 'Admin' para teste
-    // getUserRole();
+    getUserRole();
   }, [])
 
   const menuSections: MenuSection[] = useMemo(() => {
@@ -232,6 +236,26 @@ const drawerScreenConfigs: DrawerScreenConfig[] = [
     renderDesktopHeader: () => <CustomHeader showFilter={true} />,
   },
   {
+    key: "HistoricoVendas",
+    name: "HistoricoVendas",
+    component: HistoricoVendasScreen,
+    title: "Histórico de Vendas",
+    icon: getIconForScreen("HistoricoVendas"),
+    roles: ["Admin", "Fornecedor"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
+    key: "MinhasCompras",
+    name: "MinhasCompras",
+    component: MinhasComprasScreen,
+    title: "Minhas Compras",
+    icon: getIconForScreen("MinhasCompras"),
+    roles: ["Admin", "Cliente"],
+    renderDesktopHeader: () => <CustomHeader />,
+    renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
+  },
+  {
     key: "Cadastro Produto",
     name: "Cadastro Produto",
     component: ProductListScreen,
@@ -254,7 +278,7 @@ const drawerScreenConfigs: DrawerScreenConfig[] = [
     key: "LoteList",
     name: "LoteList",
     component: LotListScreen,
-    title: "Listagem de lotes",
+    title: "Gerenciar lotes",
     icon: getIconForScreen("LoteList"),
     roles: ["Admin", "Fornecedor"],
     renderDesktopHeader: () => <CustomHeader />,
@@ -347,7 +371,7 @@ const drawerScreenConfigs: DrawerScreenConfig[] = [
     component: RelatoriosScreen,
     title: "Relatórios",
     icon: getIconForScreen("Relatorios"),
-    roles: ["Admin"],
+    roles: ["Admin", "Fornecedor", "Cliente"],
     renderDesktopHeader: () => <CustomHeader />,
     renderMobileHeader: (navigation) => <MobileBackHeader onBack={() => navigation.navigate("Inicio")} />,
   },
@@ -438,6 +462,7 @@ const AppNavigator = () => {
     <SafeAreaProvider>
       <SearchProvider>
         <CartProvider>
+          <NotificationProvider>
           <Stack.Navigator
             initialRouteName="Login"
             screenOptions={({ navigation, route }) => {
@@ -486,7 +511,16 @@ const AppNavigator = () => {
               component={ShoppingCartScreen}
               options={{ title: "Carrinho de Compras" }}
             />
+            <Stack.Screen name="CheckoutAddress" component={CheckoutAddressScreen} options={{ title: 'Confirmar Endereço' }} />
+            <Stack.Screen name="CheckoutPayment" component={CheckoutPaymentScreen} options={{ title: 'Pagamento' }} />
+            <Stack.Screen name="OrderProgress" component={OrderProgressScreen} options={{ title: 'Progresso do Pedido' }} />
+            <Stack.Screen
+              name="AvaliacaoQuestionario"
+              component={AvaliacaoFormScreen}
+              options={{ title: 'Avaliar Compra' }}
+            />
           </Stack.Navigator>
+          </NotificationProvider>
         </CartProvider>
       </SearchProvider>
     </SafeAreaProvider>

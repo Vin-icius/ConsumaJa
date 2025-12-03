@@ -39,9 +39,14 @@ const PromotionTable: React.FC<PromotionTableProps> = ({
   refreshing,
   onRefresh,
 }) => {
+  const isEmpty = promocoes.length === 0;
+
   return (
     <TableContextProvider tableId="promotions-table">
-      <TableContent>
+      <TableContent
+        isEmpty={isEmpty}
+        emptyMessage="Ainda não há promoções cadastradas"
+      >
         <Row isHeader>
           <Head limitWidth={60}>ID</Head>
           <Head>Descrição</Head>

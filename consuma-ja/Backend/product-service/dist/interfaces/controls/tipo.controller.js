@@ -17,12 +17,13 @@ class TipoController {
         this.excluirTipo = this.excluirTipo.bind(this);
     }
     async criarTipo(req, res, next) {
-        const dto = (0, class_transformer_1.plainToClass)(create_tipo_dto_1.CreateTipoDto, req.body);
-        const errors = await (0, class_validator_1.validate)(dto);
-        if (errors.length > 0) {
-            return next(errors);
-        }
         try {
+            const fornecedorId = this.resolveFornecedorId(req);
+            const dto = (0, class_transformer_1.plainToClass)(create_tipo_dto_1.CreateTipoDto, Object.assign(Object.assign({}, req.body), { fornecedor_pessoa_id: fornecedorId }));
+            const errors = await (0, class_validator_1.validate)(dto);
+            if (errors.length > 0) {
+                return next(errors);
+            }
             const tipo = await this.tipoService.criarTipo(dto);
             res.status(201).json(tipo);
         }
@@ -85,6 +86,27 @@ class TipoController {
         catch (error) {
             next(error);
         }
+    }
+    resolveFornecedorId(req) {
+        var _a, _b, _c, _d;
+        if (!req.user) {
+            throw new app_error_1.AppError('Usuário não autenticado.', 401);
+        }
+        if (req.user.tipo === 'Juridica') {
+            return req.user.id;
+        }
+        if (req.user.tipo === 'Admin') {
+            const raw = (_d = (_b = (_a = req.body) === null || _a === void 0 ? void 0 : _a.fornecedor_pessoa_id) !== null && _b !== void 0 ? _b : (_c = req.body) === null || _c === void 0 ? void 0 : _c.fornecedorId) !== null && _d !== void 0 ? _d : null;
+            if (raw === null || raw === undefined || raw === '') {
+                return null;
+            }
+            const parsed = Number(raw);
+            if (!Number.isFinite(parsed)) {
+                throw new app_error_1.AppError('Fornecedor informado é inválido.', 400);
+            }
+            return parsed;
+        }
+        throw new app_error_1.AppError('Apenas administradores ou fornecedores podem gerenciar tipos.', 403);
     }
 }
 exports.TipoController = TipoController;

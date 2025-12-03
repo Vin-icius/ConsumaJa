@@ -2,11 +2,11 @@ import React, { useEffect } from 'react';
 import { View, Text, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { logoutStyles } from '../../common/styles/Auth/logoutScreen.styled';
-import authService from '../../services/authService';
+import { useApplication } from '../../contexts/ApplicationContext/ApplicationContext';
 
 const LogoutScreen = () => {
-  // Usar tipo específico se disponível, senão 'any'
   const navigation = useNavigation<any>();
+  const { clearSession } = useApplication();
 
   useEffect(() => {
     const performLogout = () => {
@@ -15,10 +15,10 @@ const LogoutScreen = () => {
         'Tem certeza que deseja sair?',
         [
           { text: 'Cancelar', style: 'cancel', onPress: () => navigation.goBack() },
-          { text: 'Sair', style: 'destructive', onPress: async () => {
+      { text: 'Sair', style: 'destructive', onPress: async () => {
               try {
                 console.log('[LogoutScreen] Limpando dados de sessão...');
-                await authService.clearAuthData();
+        await clearSession();
                 console.log('[LogoutScreen] Redirecionando para Login...');
                 navigation.reset({
                   index: 0,

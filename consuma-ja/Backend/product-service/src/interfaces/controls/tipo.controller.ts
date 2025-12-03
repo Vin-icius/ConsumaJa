@@ -16,15 +16,19 @@ export class TipoController {
       this.excluirTipo = this.excluirTipo.bind(this);
   }
 
-  async criarTipo(req: Request, res: Response, next: NextFunction): Promise<void> {
-    const dto = plainToClass(CreateTipoDto, req.body);
-    const errors = await validate(dto);
-    if (errors.length > 0) { return next(errors); }
-    try {
-      const tipo = await this.tipoService.criarTipo(dto);
-      res.status(201).json(tipo);
-    } catch (error) { next(error); }
-  }
+   async criarTipo(req: Request, res: Response, next: NextFunction): Promise<void> {
+      try {
+         const fornecedorId = this.resolveFornecedorId(req);
+         const dto = plainToClass(CreateTipoDto, {
+               ...req.body,
+               fornecedor_pessoa_id: fornecedorId,
+         });
+         const errors = await validate(dto);
+         if (errors.length > 0) { return next(errors); }
+         const tipo = await this.tipoService.criarTipo(dto);
+         res.status(201).json(tipo);
+      } catch (error) { next(error); }
+   }
 
   async listarTipos(req: Request, res: Response, next: NextFunction): Promise<void> {
      try {
@@ -66,5 +70,30 @@ export class TipoController {
          await this.tipoService.excluirTipo(id);
          res.status(204).send();
       } catch (error) { next(error); }
+  }
+
+  private resolveFornecedorId(req: Request): number | null {
+     if (!req.user) {
+        throw new AppError('Usuário não autenticado.', 401);
+     }
+
+     if (req.user.tipo === 'Juridica') {
+        return req.user.id;
+     }
+
+     if (req.user.tipo === 'Admin') {
+        const raw = req.body?.fornecedor_pessoa_id ?? req.body?.fornecedorId ?? null;
+        if (raw === null || raw === undefined || raw === '') {
+           return null;
+        }
+
+        const parsed = Number(raw);
+        if (!Number.isFinite(parsed)) {
+           throw new AppError('Fornecedor informado é inválido.', 400);
+        }
+        return parsed;
+     }
+
+     throw new AppError('Apenas administradores ou fornecedores podem gerenciar tipos.', 403);
   }
 }
