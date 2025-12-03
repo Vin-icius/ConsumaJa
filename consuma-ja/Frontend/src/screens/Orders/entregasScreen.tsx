@@ -27,12 +27,12 @@ interface EntregaItem {
   data_venda: string;
   total: string;
   status: 'PENDENTE' | 'EM_TRANSITO' | 'ENTREGUE' | 'CANCELADO' | 'CONCLUIDA';
-  itens: ProdutoVenda[]; // Agora é uma lista de objetos!
+  itens: ProdutoVenda[];
 }
 
 const EntregasScreen = () => {
   const navigation = useNavigation<any>();
-  const userIdReal = 1004; // João's ID from your database check
+  const userIdReal = 1004;
 
   const [refreshing, setRefreshing] = useState(false);
   const [entregas, setEntregas] = useState<EntregaItem[]>([]);
@@ -44,10 +44,10 @@ const EntregasScreen = () => {
     setTimeout(() => {
       const dadosDoBanco: EntregaItem[] = [
         {
-          venda_id: 8,  // João's valid sale ID from your database check
+          venda_id: 8,
           data_venda: new Date().toLocaleDateString(),
           total: 'R$ 11,98',
-          status: 'ENTREGUE', // Só aparece botão de avaliar aqui
+          status: 'ENTREGUE',
           itens: [
             { produto_id: 1, nome: 'Iogurte Natural 170g', quantidade: 2, preco_unitario: 'R$ 5,99' }
           ]
@@ -86,7 +86,7 @@ const EntregasScreen = () => {
     
     navigation.navigate('AvaliacaoForm', {
       pedidoId: vendaId,
-      pessoaId: userIdReal // <--- FALTAVA ADICIONAR ISSO AQUI!
+      pessoaId: userIdReal
     });
   };
 

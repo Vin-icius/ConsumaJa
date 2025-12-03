@@ -112,7 +112,8 @@ const CustomDrawerContent = (props: any) => {
       try {
         const role = await AsyncStorage.getItem("userRole")
         if (role && (role === "Admin" || role === "Fornecedor" || role === "Cliente")) {
-          setUserRole(role as UserRole)
+          // setUserRole(role as UserRole)
+          setUserRole("Admin") // Valor fixo para teste
         }
       } catch (error) {
         console.error("Erro ao buscar papel do usuário:", error)
@@ -161,13 +162,14 @@ const CustomDrawerContent = (props: any) => {
   }, [])
 
   // Filtrar seções com base no papel do usuário
-  const filteredSections = menuSections
-    .filter((section) => section.roles.includes(userRole))
-    .map((section) => ({
-      ...section,
-      items: section.items.filter((item) => item.roles.includes(userRole)),
-    }))
-    .filter((section) => section.items.length > 0)
+  const filteredSections = menuSections;
+  // const filteredSections = menuSections
+  //   .filter((section) => section.roles.includes(userRole))
+  //   .map((section) => ({
+  //     ...section,
+  //     items: section.items.filter((item) => item.roles.includes(userRole)),
+  //   }))
+  //   .filter((section) => section.items.length > 0)
   const insets = useSafeAreaInsets();
   return (
     
