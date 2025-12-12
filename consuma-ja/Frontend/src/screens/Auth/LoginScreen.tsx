@@ -237,11 +237,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         setAuthenticatedUser({ user, token, session })
 
         // Define role do usuário para controle de menus (Admin / Fornecedor / Cliente)
-        const pessoaTipo = user?.pessoa_tipo || user?.tipo
+        const rawTipo = (user?.tipo ?? user?.pessoa_tipo ?? "").toString().toLowerCase()
         let roleToStore: "Admin" | "Fornecedor" | "Cliente" = "Cliente"
-        if (pessoaTipo === "Admin") {
+
+        // Prioriza sinalização explícita de Admin, mesmo que o pessoa_tipo seja Juridica
+        if (rawTipo === "admin" || rawTipo === "administrador" || user?.is_admin) {
           roleToStore = "Admin"
-        } else if (pessoaTipo === "Juridica") {
+        } else if (rawTipo === "juridica" || rawTipo === "fornecedor") {
           roleToStore = "Fornecedor"
         }
         try {
@@ -326,6 +328,22 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       setTwoFactorToken(null)
       setTwoFactorCode("")
       setPendingTwoFactorUser(null)
+      // Deriva e persiste a role após 2FA para manter a navegação correta
+      const verifiedRawTipo = (verification.user?.tipo ?? verification.user?.pessoa_tipo ?? "").toString().toLowerCase()
+      let verifiedRole: "Admin" | "Fornecedor" | "Cliente" = "Cliente"
+
+      if (verifiedRawTipo === "admin" || verifiedRawTipo === "administrador" || verification.user?.is_admin) {
+        verifiedRole = "Admin"
+      } else if (verifiedRawTipo === "juridica" || verifiedRawTipo === "fornecedor") {
+        verifiedRole = "Fornecedor"
+      }
+
+      try {
+        await AsyncStorage.setItem("userRole", verifiedRole)
+      } catch (e) {
+        console.warn("Falha ao salvar userRole após 2FA", e)
+      }
+
       navigation.replace("Dashboard")
     } catch (error: any) {
       const message =

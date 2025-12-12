@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, Image, useWindowDimensions, Platform } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import MarqueeText from "./MarqueeText" // Importação corrigida para o mesmo diretório
 import { resolveProductImageUrl } from "../../utils/image"
+import promocaoService from "../../services/promocaoService"
 
 const DEFAULT_PRODUCT_IMAGE = require("../../assets/placeholder.png")
 
@@ -27,24 +28,63 @@ interface PromocaoCardProps {
   onPressDetalhes: () => void
 }
 
-const PromocaoCard = ({ promocao_descricao, fornecedor, itens_preview, onPressDetalhes }: PromocaoCardProps) => {
+const PromocaoCard = ({ promocao_id, promocao_descricao, fornecedor, itens_preview, onPressDetalhes }: PromocaoCardProps) => {
   const { width } = useWindowDimensions()
   const isMobile = width < 768
 
+  const [items, setItems] = useState(itens_preview ?? [])
   // Estado para controlar o item atual no carrossel
   const [currentItemIndex, setCurrentItemIndex] = useState(0)
 
+  // Se recebermos apenas um preview, tentamos carregar todos os itens da promoção para o carrossel
+  useEffect(() => {
+    let isMounted = true
+
+    const hydrateItems = async () => {
+      // Já temos 3+ itens? nada a fazer
+      if ((itens_preview?.length ?? 0) >= 3) {
+        return
+      }
+
+      try {
+        const full = await promocaoService.getPromocaoDetalhes(promocao_id)
+        const fullItems = Array.isArray(full?.itens)
+          ? full.itens.map((it: any) => ({
+              produto_id: it?.produto?.produto_id ?? it?.produto_id,
+              produto_nome: it?.produto?.produto_nome ?? it?.produto_nome ?? "",
+              itemPromocao_valor: it?.itemPromocao_valor ?? it?.valor ?? 0,
+              imagem_url: it?.produto?.produto_imagem_url ?? it?.imagem_url,
+            }))
+          : []
+
+        if (isMounted && fullItems.length > 0) {
+          setItems(fullItems)
+          setCurrentItemIndex(0)
+        }
+      } catch (error) {
+        // Mantém o preview original se falhar
+        console.warn('[PromocaoCard] Não foi possível carregar itens completos da promoção:', error)
+      }
+    }
+
+    hydrateItems()
+
+    return () => {
+      isMounted = false
+    }
+  }, [promocao_id, itens_preview])
+
   // Verifica se há itens para exibir
-  const hasItems = itens_preview && itens_preview.length > 0
+  const hasItems = items && items.length > 0
 
   // Item atual a ser exibido no carrossel
-  const currentItem = hasItems ? itens_preview[currentItemIndex] : null
+  const currentItem = hasItems ? items[currentItemIndex] : null
 
   // Função para navegar para o próximo item
   const nextItem = (e?: any) => {
     if (e) e.stopPropagation()
     if (hasItems) {
-      setCurrentItemIndex((prevIndex) => (prevIndex + 1) % itens_preview.length)
+      setCurrentItemIndex((prevIndex) => (prevIndex + 1) % items.length)
     }
   }
 
@@ -52,13 +92,13 @@ const PromocaoCard = ({ promocao_descricao, fornecedor, itens_preview, onPressDe
   const prevItem = (e?: any) => {
     if (e) e.stopPropagation()
     if (hasItems) {
-      setCurrentItemIndex((prevIndex) => (prevIndex - 1 + itens_preview.length) % itens_preview.length)
+      setCurrentItemIndex((prevIndex) => (prevIndex - 1 + items.length) % items.length)
     }
   }
 
   // Encontra o menor preço entre os itens (com verificação de segurança)
   const menorPreco = hasItems
-    ? itens_preview.reduce((min, item) => {
+    ? items.reduce((min, item) => {
         const valor = item.itemPromocao_valor !== undefined ? item.itemPromocao_valor : Number.POSITIVE_INFINITY
         return valor < min ? valor : min
       }, Number.POSITIVE_INFINITY)
@@ -73,7 +113,7 @@ const PromocaoCard = ({ promocao_descricao, fornecedor, itens_preview, onPressDe
             <Image source={getItemImageSource(currentItem?.imagem_url)} style={styles.itemImage} resizeMode="cover" />
 
             {/* Botões de navegação do carrossel */}
-            {itens_preview.length > 1 && (
+            {items.length > 1 && (
               <>
                 <TouchableOpacity
                   style={[styles.carouselButton, styles.carouselButtonLeft]}
@@ -94,10 +134,10 @@ const PromocaoCard = ({ promocao_descricao, fornecedor, itens_preview, onPressDe
             )}
 
             {/* Indicador de quantidade de itens */}
-            {itens_preview.length > 1 && (
+            {items.length > 1 && (
               <View style={styles.itemCountBadge}>
                 <Text style={styles.itemCountText}>
-                  {currentItemIndex + 1}/{itens_preview.length}
+                  {currentItemIndex + 1}/{items.length}
                 </Text>
               </View>
             )}
@@ -141,9 +181,9 @@ const PromocaoCard = ({ promocao_descricao, fornecedor, itens_preview, onPressDe
         </View>
 
         {/* Indicador de Página (pontos) */}
-        {itens_preview.length > 1 && (
+        {items.length > 1 && (
           <View style={styles.paginationContainer}>
-            {itens_preview.map((_, index) => (
+            {items.map((_, index) => (
               <View
                 key={index}
                 style={[styles.paginationDot, index === currentItemIndex && styles.paginationDotActive]}
