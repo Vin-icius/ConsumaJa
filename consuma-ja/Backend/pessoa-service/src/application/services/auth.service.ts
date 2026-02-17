@@ -156,6 +156,8 @@ export class AuthService {
             // 1. Buscar usuário
             const user = await this.pessoaRepository.findByLoginOrEmailOrDoc(loginDto.login);
             console.log('[AuthService] Resultado da busca de usuário:', user ? `Encontrado ID ${user.pessoa_id}` : 'NÃO ENCONTRADO');
+            console.log(loginDto)
+            console.log(user)
 
             // 2. Verificar se usuário existe e tem senha
             if (!user || !user.pessoa_senha) {

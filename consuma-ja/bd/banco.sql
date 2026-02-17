@@ -72,9 +72,9 @@ DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
 
---- -----------------------------------------------------
---- Table `ConsumaJaDB`.`SESSOES_USUARIO`
---- -----------------------------------------------------
+-- -----------------------------------------------------
+-- Table `ConsumaJaDB`.`SESSOES_USUARIO`
+-- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `ConsumaJaDB`.`ENDERECO` (
   `endereco_id` INT NOT NULL AUTO_INCREMENT,
   `rua` VARCHAR(60) NOT NULL,
